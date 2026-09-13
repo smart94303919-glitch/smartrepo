@@ -1,0 +1,33 @@
+<!-- index.page.html -->
+<ion-content class="ion-text-center ion-padding">
+  <!-- Logo -->
+  <ion-img src="assets/SMART.png" alt="SMART" class="logo"></ion-img>
+
+  <div class="login-container">
+    <form [formGroup]="loginForm" (ngSubmit)="onEnter()">
+      <ion-item [class.error]="isFieldInvalid('p_log')">
+        <ion-label position="stacked">PROF ID:</ion-label>
+        <ion-input type="text" formControlName="p_log"></ion-input>
+      </ion-item>
+      <div class="error-text" *ngIf="isFieldInvalid('p_log')">
+        {{ getFieldError('p_log') }}
+      </div>
+
+      <ion-item [class.error]="isFieldInvalid('password')">
+        <ion-label position="stacked">PASSWORD:</ion-label>
+        <ion-input type="password" formControlName="password"></ion-input>
+      </ion-item>
+      <div class="error-text" *ngIf="isFieldInvalid('password')">
+        {{ getFieldError('password') }}
+      </div>
+      
+
+      <div class="buttons">
+        <ion-button type="submit" color="primary" [disabled]="isSubmitting">
+          <span *ngIf="!isSubmitting">LOGIN</span>
+          <span *ngIf="isSubmitting">LOGGING IN...</span>
+        </ion-button>
+      </div>
+    </form>
+  </div>
+</ion-content>

@@ -1,0 +1,107 @@
+<!--
+  image-picker.component.html
+  Two big touch-friendly buttons + preview thumbnails once images are
+  acquired, so the user can visually confirm they picked/shot the right
+  sheets before they get uploaded.
+
+  Behavior by scan mode:
+  - mode='key'   (Teacher Answer Key): single image only, both camera & gallery.
+  - mode='grade' (Student Sheet):
+      * Camera  -> strictly 1 image per session (single-scan mode).
+      * Gallery -> batch import of 1 to 5 images per session.
+-->
+<div class="picker-buttons">
+  <ion-button
+    expand="block"
+    color="primary"
+    (click)="captureFromCamera()"
+    [disabled]="isCameraActive || cameraLocked"
+  >
+    <ion-icon name="camera-outline" slot="start"></ion-icon>
+    Capture with Camera
+  </ion-button>
+  <p class="guide-text" *ngIf="scanMode === 'grade'">
+    This button is for a single photo per session only.
+  </p>
+
+  <ion-button expand="block" fill="outline" (click)="importFromGallery()">
+    <ion-icon name="image-outline" slot="start"></ion-icon>
+    Import from Gallery
+  </ion-button>
+  <p class="guide-text" *ngIf="scanMode === 'grade'">
+    This button allows importing 1 to 5 photos per session.
+  </p>
+</div>
+
+<div class="preview" *ngIf="previewDataUrl">
+  <ion-label>
+    <h3>Preview</h3>
+  </ion-label>
+  <img [src]="previewDataUrl" alt="Captured OMR sheet preview" />
+</div>
+
+<div class="batch-preview" *ngIf="batchPreviewUrls.length > 0">
+  <ion-label>
+    <h3>Batch Preview ({{ batchPreviewUrls.length }} image{{ batchPreviewUrls.length > 1 ? 's' : '' }})</h3>
+  </ion-label>
+  <div class="batch-thumbnails">
+    <img
+      *ngFor="let url of batchPreviewUrls; let i = index"
+      [src]="url"
+      [alt]="'Imported OMR sheet ' + (i + 1)"
+    />
+  </div>
+</div>
+
+<ion-modal
+  [isOpen]="isCameraActive"
+  (didPresent)="attachCameraStream()"
+  (didDismiss)="stopCamera()"
+  class="camera-fullscreen-modal"
+>
+  <ng-template>
+    <div class="mobile-camera-wrapper">
+      <div class="camera-top-bar">
+        <ion-button fill="clear" color="light" (click)="stopCamera()" aria-label="Close camera">
+          <ion-icon name="close-outline" slot="icon-only"></ion-icon>
+        </ion-button>
+        <span class="camera-title">Align Sheet in Frame</span>
+        <ion-button
+          fill="clear"
+          color="light"
+          (click)="switchCamera()"
+          [disabled]="!hasMultipleCameras || isProcessingCapture"
+          aria-label="Switch camera"
+        >
+          <ion-icon name="camera-reverse-outline" slot="icon-only"></ion-icon>
+        </ion-button>
+      </div>
+
+      <div class="video-container">
+        <video #videoElement autoplay playsinline muted class="camera-video-feed"></video>
+        <div class="shutter-flash" [class.flash-active]="isFlashing"></div>
+        <div class="alignment-overlay">
+          <div class="viewfinder-box">
+            <div class="corner top-left"></div>
+            <div class="corner top-right"></div>
+            <div class="corner bottom-left"></div>
+            <div class="corner bottom-right"></div>
+            <p class="guide-text">Position answer sheet within frame</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="camera-bottom-bar">
+        <button
+          type="button"
+          class="shutter-button"
+          (click)="triggerMobileCapture()"
+          [disabled]="!isCameraReady || isProcessingCapture"
+          aria-label="Capture photo"
+        >
+          <span class="shutter-inner"></span>
+        </button>
+      </div>
+    </div>
+  </ng-template>
+</ion-modal>

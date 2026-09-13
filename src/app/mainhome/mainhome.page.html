@@ -1,0 +1,76 @@
+<!-- home.page.html -->
+
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>HOME</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+
+  <!-- Welcome Section -->
+  <div class="welcome-section">
+    <h1>Welcome to SMART</h1>
+    <p>A SMART-based tool for fast grading and record management.</p>
+  </div>
+
+  <section class="performance-section" aria-labelledby="performance-heading">
+    <div class="performance-heading">
+      <div>
+        <p class="section-kicker">Results overview</p>
+        <h2 id="performance-heading">High Performers by Section</h2>
+      </div>
+      <ion-icon name="podium-outline" aria-hidden="true"></ion-icon>
+    </div>
+
+    <div *ngIf="performanceLoading" class="performance-state">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Loading performance...</p>
+    </div>
+
+    <div *ngIf="!performanceLoading && sectionPerformance.length" class="section-chart-list">
+      <article *ngFor="let section of sectionPerformance" class="section-chart-card">
+        <h3>{{ section.sectionName }}</h3>
+        <div *ngFor="let student of section.students" class="performance-row">
+          <div class="performance-label">
+            <span>{{ student.name }}</span>
+            <strong>{{ student.percentage }}%</strong>
+          </div>
+          <div class="performance-track">
+            <span class="performance-bar" [style.width.%]="student.percentage"></span>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <p *ngIf="!performanceLoading && !sectionPerformance.length && !performanceError" class="performance-state">
+      No graded students are available yet.
+    </p>
+    <p *ngIf="performanceError" class="performance-state performance-error">{{ performanceError }}</p>
+  </section>
+
+</ion-content>
+
+<!-- Bottom Navigation -->
+<ion-footer>
+  <ion-tab-bar slot="bottom" color="primary">
+
+    <ion-tab-button tab="exams" (click)="onExams()">
+      <ion-icon name="document-text"></ion-icon>
+      <ion-label>Exams</ion-label>
+    </ion-tab-button>
+
+    <ion-tab-button tab="student" (click)="onStudents()">
+      <ion-icon name="person"></ion-icon>
+      <ion-label>Section</ion-label>
+    </ion-tab-button>
+
+  
+
+    <ion-tab-button tab="more" (click)="onMore()">
+      <ion-icon name="ellipsis-horizontal"></ion-icon>
+      <ion-label>More</ion-label>
+    </ion-tab-button>
+
+  </ion-tab-bar>
+</ion-footer>

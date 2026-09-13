@@ -1,0 +1,357 @@
+import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { SupabaseService } from '../services/supabase.service';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AlertController, IonicModule } from '@ionic/angular';
+import * as XLSX from 'xlsx';
+
+@Component({
+  selector: 'app-studentreg',
+  templateUrl: './studentreg.page.html',
+  styleUrls: ['./studentreg.page.scss'],
+  standalone: true,
+  imports: [CommonModule, FormsModule, IonicModule]
+})
+export class StudentregPage implements OnInit {
+  @ViewChild('csvInput') csvInput!: ElementRef<HTMLInputElement>;
+
+  student = this.getEmptyStudent();
+  selectedSubject = '';
+  sections: { section_id: number; section: string }[] = [];
+  subjects: { SubjectID: number; subject: string }[] = [];
+  registeringStudent = false;
+  importingStudents = false;
+
+  constructor(
+    private supabaseService: SupabaseService,
+    private router: Router,
+    private route: ActivatedRoute,
+    private alertCtrl: AlertController
+  ) {}
+
+  ngOnInit() {
+    const subject = this.route.snapshot.queryParamMap.get('subject');
+    const section = this.route.snapshot.queryParamMap.get('section');
+
+    if (subject) {
+      this.selectedSubject = subject;
+      this.student.subject = subject;
+    }
+
+    if (section) {
+      this.student.section = section;
+    }
+
+    this.loadSections();
+  }
+
+  getEmptyStudent() {
+    return {
+      student_id: '',
+      first_name: '',
+      middle_name: '',
+      last_name: '',
+      age: null,
+      gender: '',
+      department: '',
+      year: '',
+      section: '',
+      subject: '',
+      subjectId: null as number | null
+    };
+  }
+
+  private async loadSections() {
+    try {
+      const currentUser = localStorage.getItem('currentUser');
+      let rows: any[] = [];
+
+      if (currentUser) {
+        const user = JSON.parse(currentUser);
+        if (user?.prof_id) {
+          rows = await this.supabaseService.getProfessorAssignedSections(user.prof_id);
+        }
+      }
+
+      this.sections = rows ?? [];
+
+      if (this.student.section) {
+        await this.onSectionChange();
+      }
+    } catch (error) {
+      console.error('Failed to load sections:', error);
+    }
+  }
+
+  private getCurrentProfessorId(): number | null {
+    const currentUser = localStorage.getItem('currentUser');
+    if (!currentUser) {
+      return null;
+    }
+
+    const user = JSON.parse(currentUser);
+    return user?.prof_id ?? null;
+  }
+
+  async onSectionChange() {
+    const selectedSection = this.sections.find((section) => section.section === this.student.section);
+
+    if (!selectedSection?.section_id) {
+      this.subjects = [];
+      this.student.subject = '';
+      this.student.subjectId = null;
+      this.selectedSubject = '';
+      return;
+    }
+
+    const currentUser = localStorage.getItem('currentUser');
+    const user = currentUser ? JSON.parse(currentUser) : null;
+    this.subjects = await this.supabaseService.getSubjectsByProfessorSection(
+      user?.prof_id ?? null,
+      selectedSection.section_id
+    );
+
+    if (!this.subjects.some((subject) => subject.subject === this.student.subject)) {
+      this.student.subject = '';
+      this.student.subjectId = null;
+      this.selectedSubject = '';
+    }
+  }
+
+  onSubjectChange(event: any) {
+    const selectedSubject = event?.detail?.value;
+    const matchedSubject = this.subjects.find((subject) => subject.subject === selectedSubject);
+
+    this.student.subject = matchedSubject?.subject ?? selectedSubject ?? '';
+    this.student.subjectId = matchedSubject?.SubjectID ?? null;
+    this.selectedSubject = this.student.subject;
+  }
+
+  async onSubmit() {
+    if (!this.student.student_id || !this.student.first_name || !this.student.last_name) {
+      const validationAlert = await this.alertCtrl.create({
+        header: 'Missing information',
+        message: 'Please fill all required fields before registering the student.',
+        buttons: ['OK']
+      });
+      await validationAlert.present();
+      return;
+    }
+
+    await this.showRegistrationConfirmation();
+  }
+
+  async showRegistrationConfirmation() {
+    const studentName = [this.student.first_name, this.student.middle_name, this.student.last_name]
+      .filter(Boolean)
+      .join(' ');
+
+    const alert = await this.alertCtrl.create({
+      header: 'Confirm registration',
+      message: `Register student ${studentName || this.student.student_id} for ${this.student.subject || 'the selected subject'}?`,
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel'
+        },
+        {
+          text: 'Register',
+          handler: async () => {
+            await this.submitRegistration();
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  private async submitRegistration() {
+    this.registeringStudent = true;
+
+    try {
+      const result = await this.supabaseService.registerStudent({
+        ...this.student,
+        subjectId: this.student.subjectId ?? null,
+        professorId: this.getCurrentProfessorId()
+      });
+
+      if (result.success) {
+        const successAlert = await this.alertCtrl.create({
+          header: 'Registration complete',
+          message: 'Student registered successfully.',
+          buttons: [{
+            text: 'OK',
+            handler: () => {
+              this.student = this.getEmptyStudent();
+              this.router.navigate(['/sections']);
+            }
+          }]
+        });
+
+        await successAlert.present();
+      } else {
+        const errorAlert = await this.alertCtrl.create({
+          header: 'Registration failed',
+          message: 'Registration failed: ' + (result.error || 'Unknown error'),
+          buttons: ['OK']
+        });
+
+        await errorAlert.present();
+      }
+    } catch (error) {
+      console.error('Student registration failed:', error);
+      const errorAlert = await this.alertCtrl.create({
+        header: 'Registration failed',
+        message: 'Unable to register the student. Please try again.',
+        buttons: ['OK']
+      });
+
+      await errorAlert.present();
+    } finally {
+      this.registeringStudent = false;
+    }
+  }
+
+  private normalizeCsvHeader(header: string): string {
+    const normalized = (header ?? '').toLowerCase().trim().replace(/[\s-]+/g, '_');
+
+    const aliases: Record<string, string> = {
+      studentid: 'student_id',
+      id: 'student_id',
+      s_id: 'student_id',
+      lastname: 'last_name',
+      firstname: 'first_name',
+      middlename: 'middle_name',
+      s_lastname: 'last_name',
+      s_firstname: 'first_name',
+      s_middlename: 'middle_name',
+      subjectid: 'subjectId',
+      subj_id: 'subjectId',
+      subject: 'subject',
+      section: 'section',
+      section_id: 'section_id',
+      prof_id: 'professorId',
+      professor_id: 'professorId'
+    };
+
+    return aliases[normalized] ?? normalized;
+  }
+
+  private normalizeCsvValue(value: string | undefined | null): string {
+    return (value ?? '').toString().trim();
+  }
+
+  private async resolveImportedStudentSubjectId(importedStudent: any): Promise<number | null> {
+    const sectionName = this.normalizeCsvValue(importedStudent.section);
+    if (sectionName) {
+      this.student.section = sectionName;
+      await this.onSectionChange();
+    }
+
+    const subjectName = this.normalizeCsvValue(importedStudent.subject);
+    const matchedSubject = this.subjects.find(
+      (subject) => subject.subject?.trim().toLowerCase() === subjectName.toLowerCase()
+    );
+
+    return importedStudent.subjectId ?? importedStudent.subj_id ?? importedStudent.SubjectID ?? matchedSubject?.SubjectID ?? this.student.subjectId ?? null;
+  }
+
+  onImportCsvClick() {
+    this.csvInput.nativeElement.click();
+  }
+
+  async onCsvSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    this.importingStudents = true;
+
+    try {
+      let rows: any[][];
+      const isExcelFile = /\.(xls|xlsx)$/i.test(file.name);
+
+      if (isExcelFile) {
+        const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const firstSheet = firstSheetName ? workbook.Sheets[firstSheetName] : null;
+        rows = firstSheet
+          ? XLSX.utils.sheet_to_json<any[]>(firstSheet, { header: 1, defval: '' })
+          : [];
+      } else {
+        const text = await file.text();
+        rows = text
+          .split(/\r?\n/)
+          .filter((row) => row.trim().length > 0)
+          .map((row) => row.split(','));
+      }
+
+      if (!rows.length) {
+        alert('The selected CSV or Excel file is empty.');
+        return;
+      }
+
+      const header = rows[0]
+        .map((value) => value?.toString().trim() ?? '')
+        .map((value) => this.normalizeCsvHeader(value));
+      const dataRows = rows.slice(1);
+
+      const importedStudents = dataRows.map((row) => {
+        const studentData: any = {};
+
+        header.forEach((key, index) => {
+          if (key) {
+            studentData[key] = row[index]?.toString().trim() ?? '';
+          }
+        });
+
+        return studentData;
+      });
+
+      if (!importedStudents.length) {
+        alert('No student data found in the selected CSV file.');
+        return;
+      }
+
+      const professorId = this.getCurrentProfessorId();
+      const results = [] as Array<{ success: boolean; error?: string }>;
+      for (const importedStudent of importedStudents) {
+        const subjectId = await this.resolveImportedStudentSubjectId(importedStudent);
+        const sectionValue = this.normalizeCsvValue(importedStudent.section) || this.student.section || '';
+        const subjectValue = this.normalizeCsvValue(importedStudent.subject) || this.selectedSubject || '';
+
+        const result = await this.supabaseService.registerStudent({
+          ...this.getEmptyStudent(),
+          ...importedStudent,
+          subject: subjectValue,
+          subjectId,
+          section: sectionValue,
+          professorId
+        });
+
+        results.push({ success: result.success, error: result.error });
+      }
+
+      const failed = results.filter((result) => !result.success);
+      if (failed.length) {
+        const firstError = failed[0]?.error ? ` First error: ${failed[0].error}` : '';
+        alert(`Imported ${importedStudents.length - failed.length} student(s), but ${failed.length} failed.${firstError}`);
+      } else {
+        alert(`Successfully imported ${importedStudents.length} student(s).`);
+      }
+
+      input.value = '';
+    } finally {
+      this.importingStudents = false;
+    }
+  }
+
+  onGoback() {
+    this.router.navigate(['/sections']);
+  }
+}

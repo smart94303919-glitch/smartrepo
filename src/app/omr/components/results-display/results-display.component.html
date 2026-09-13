@@ -1,0 +1,121 @@
+<!--
+  results-display.component.html
+  Displays the result of the scan just performed (score/key/overlay).
+-->
+
+<ion-accordion-group *ngIf="results.length || result" multiple="true">
+<ion-accordion *ngFor="let displayResult of (results.length ? results : (result ? [result] : [])); let resultIndex = index" [value]="'omr-result-' + resultIndex">
+  <ion-item slot="header" lines="full">
+    <ion-label>
+      <h2 *ngIf="displayResult.mode === 'grade'">{{ displayResult.student_name || 'Student' }}</h2>
+      <h2 *ngIf="displayResult.mode === 'key'">Teacher Answer Key</h2>
+      <p *ngIf="displayResult.mode === 'grade'">
+        Student ID: {{ displayResult.clean_student_id || displayResult.student_id || 'No ID' }} &middot;
+        Sheet ID: {{ displayResult.display_sheet_id || displayResult.sheet_id || 'N/A' }} &middot;
+        Score: {{ displayResult.score ?? 0 }}/{{ displayResult.total_questions ?? 0 }}
+        ({{ displayResult.percentage ?? 0 }}%)
+      </p>
+    </ion-label>
+  </ion-item>
+  <div slot="content">
+<ion-card *ngIf="displayResult.mode === 'grade'" [color]="displayResult.student_found ? 'success' : 'warning'" class="student-recognition-card">
+  <ion-card-content>
+    <strong>{{ displayResult.student_found ? 'Student Recognized' : 'Student Not Found' }}:</strong>
+    {{ displayResult.student_name || 'Unknown / Unassigned' }}
+    <span *ngIf="displayResult.student_id"> (ID: {{ displayResult.student_id }})</span>
+  </ion-card-content>
+</ion-card>
+<ion-card>
+  <ion-card-header>
+    <ion-card-title>
+      {{ displayResult.mode === 'key' ? 'Answer Key Captured' : (displayResult.student_name || 'Grading Result') }}
+    </ion-card-title>
+    <ion-card-subtitle *ngIf="displayResult.mode === 'grade'">
+      Student ID: {{ displayResult.clean_student_id || displayResult.student_id || 'No ID' }} &mdash;
+      Sheet ID: {{ displayResult.display_sheet_id || displayResult.sheet_id || 'N/A' }} &mdash;
+      Score: {{ displayResult.score ?? 0 }} / {{ displayResult.total_questions ?? 0 }} ({{ displayResult.percentage ?? 0 }}%)
+    </ion-card-subtitle>
+  </ion-card-header>
+
+  <ion-card-content>
+    <ion-card *ngIf="displayResult.mode === 'grade' && displayResult.sheet_id_matches === false" color="danger">
+      <ion-card-content>
+        Sheet ID Mismatch: Selected '{{ displayResult.selected_sheet_id }}' does not match scanned paper ID
+        '{{ displayResult.scanned_sheet_id || displayResult.display_sheet_id || displayResult.sheet_id }}'.
+        Results cannot be saved.
+      </ion-card-content>
+    </ion-card>
+
+    <div *ngIf="displayResult.mode === 'grade'" class="score-block">
+      <h1>{{ displayResult.score ?? 0 }} / {{ displayResult.total_questions ?? 0 }}</h1>
+      <ion-badge [color]="(displayResult.percentage ?? 0) >= 60 ? 'success' : 'warning'">{{ displayResult.percentage ?? 0 }}%</ion-badge>
+      <p>{{ displayResult.attempted ?? 0 }} of {{ displayResult.total_questions ?? 0 }} questions attempted</p>
+    </div>
+
+    <ion-item lines="none">
+      <ion-label>
+          <p>{{ displayResult.questions_read }} questions read &middot;
+            {{ displayResult.blank_count }} blank &middot;
+            {{ displayResult.multi_marked_count }} ambiguous/double-marked</p>
+      </ion-label>
+    </ion-item>
+
+    <div class="overlay-block" *ngIf="displayResult.overlay_image_base64">
+      <ion-label><h3>Processed Result Overlay</h3></ion-label>
+      <img [src]="'data:image/png;base64,' + displayResult.overlay_image_base64" alt="Bubble detection overlay" />
+    </div>
+
+    <ion-list *ngIf="displayResult.itemized" lines="full">
+      <ion-item *ngFor="let row of displayResult.itemized" [color]="row.is_correct ? '' : 'light'">
+        <ion-label>
+          Q{{ row.question }}: your answer <b>{{ row.student_answer }}</b>
+          &middot; correct: <b>{{ row.correct_answer }}</b>
+        </ion-label>
+        <ion-icon
+          [name]="row.is_correct ? 'checkmark-circle' : 'close-circle'"
+          [color]="row.is_correct ? 'success' : 'danger'"
+          slot="end"
+        ></ion-icon>
+      </ion-item>
+    </ion-list>
+
+    <ion-list *ngIf="displayResult.answer_key" lines="full">
+      <ion-item *ngFor="let q of displayResult.answer_key | keyvalue">
+        <ion-label>Q{{ q.key }}: {{ q.value ?? '(blank)' }}</ion-label>
+      </ion-item>
+    </ion-list>
+
+    <ion-button
+      *ngIf="displayResult.mode === 'grade' && displayResult.student_id_missing !== true && displayResult.student_id"
+      expand="block"
+      color="success"
+      [disabled]="displayResult.sheet_id_matches !== true || savingResultKey === resultKey(displayResult) || savedResultKey === resultKey(displayResult)"
+      (click)="requestSave(displayResult)"
+    >
+      <ion-icon name="save-outline" slot="start"></ion-icon>
+      {{ savedResultKey === resultKey(displayResult) ? 'Already Saved to Database' : 'Save Score to Database' }}
+    </ion-button>
+  </ion-card-content>
+</ion-card>
+</div>
+</ion-accordion>
+</ion-accordion-group>
+
+<ion-card *ngIf="processingError" color="danger">
+  <ion-card-header>
+    <ion-card-title>Scan Failed</ion-card-title>
+  </ion-card-header>
+  <ion-card-content>{{ processingError }}</ion-card-content>
+</ion-card>
+
+<ion-button
+  *ngIf="result || results.length || processingError"
+  expand="block"
+  color="primary"
+  class="confirm-results-button"
+  (click)="confirmResults()"
+>
+  <ion-icon name="checkmark-outline" slot="start"></ion-icon>
+  OK
+</ion-button>
+

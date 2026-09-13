@@ -1,0 +1,51 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="onGoBack()">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Sections</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div *ngIf="loading" class="loading-state">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Loading sections...</p>
+  </div>
+
+  <div class="page-heading">
+    <h1 class="page-title">Sections</h1>
+  </div>
+
+  <div *ngIf="groupedSections.length > 0" class="subject-list">
+    <ion-card *ngFor="let section of groupedSections" button (click)="onSubjectClick(section)">
+      <ion-card-header>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;">
+          <ion-card-title>{{ section.sectionName }}</ion-card-title>
+          <ion-button
+            size="small"
+            fill="outline"
+            color="primary"
+            (click)="$event.stopPropagation(); onRegisterStudent(section)"
+          >
+            <ion-icon name="person-add-outline" slot="start"></ion-icon>
+            Add Student
+          </ion-button>
+        </div>
+      </ion-card-header>
+      <ion-card-content>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <span *ngFor="let subject of section.subjects" style="padding: 4px 8px; border: 1px solid var(--ion-color-medium); border-radius: 999px;">
+            {{ subject.subject }}
+          </span>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <div *ngIf="!loading && errorMessage" class="empty-message">
+    {{ errorMessage }}
+  </div>
+</ion-content>

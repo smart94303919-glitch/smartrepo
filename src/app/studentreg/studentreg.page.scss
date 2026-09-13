@@ -1,0 +1,153 @@
+/* student-registration.page.scss */
+
+ion-content {
+  --padding-start: 12px;
+  --padding-end: 12px;
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+  --background: linear-gradient(180deg, #f6f9ff 0%, #eef4ff 100%);
+}
+
+.form-scroll-area {
+  height: calc(100vh - 180px);
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+.hero-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #ffffff 0%, #edf4ff 100%);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.12);
+}
+
+.hero-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(59, 130, 246, 0.14);
+  color: var(--ion-color-primary);
+  font-size: 22px;
+}
+
+.hero-copy h2 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #11213d;
+}
+
+.hero-copy p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #5f6f8f;
+}
+
+.form-card {
+  margin: 0 0 12px;
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.form-card ion-card-content {
+  padding: 12px 12px 16px;
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.card-title-row h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #14213d;
+}
+
+ion-list {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.form-field {
+  --background: #f8fbff;
+  --border-radius: 12px;
+  --padding-start: 12px;
+  --inner-padding-end: 12px;
+  --min-height: 58px;
+  border: 1px solid #e5ebf5;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+}
+
+ion-label {
+  font-size: clamp(14px, 2vw, 15px);
+  font-weight: 600;
+  color: #30425f;
+  margin-bottom: 4px;
+}
+
+ion-input,
+ion-select {
+  font-size: clamp(15px, 2.2vw, 16px);
+  color: #10223f;
+}
+
+.submit-button {
+  margin-top: 8px;
+  height: 48px;
+  font-size: clamp(14px, 2vw, 15px);
+  font-weight: 700;
+  --border-radius: 14px;
+  --box-shadow: 0 10px 18px rgba(59, 130, 246, 0.22);
+
+  ion-spinner {
+    margin-right: 8px;
+  }
+}
+
+ion-toolbar {
+  --min-height: 54px;
+}
+
+ion-title {
+  font-size: clamp(16px, 2.5vw, 18px);
+  font-weight: 700;
+}
+
+ion-alert {
+  --backdrop-opacity: 0.45;
+}
+
+ion-alert .alert-wrapper {
+  border-radius: 18px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+}
+
+ion-alert .alert-title {
+  color: #11213d;
+  font-weight: 700;
+}
+
+ion-alert .alert-message {
+  color: #465a7a;
+}
+
+ion-alert .alert-button {
+  font-weight: 700;
+}

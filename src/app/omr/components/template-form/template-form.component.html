@@ -1,0 +1,159 @@
+<!--
+  template-form.component.html
+  Touch-friendly form for OMR sheet parameters. Uses standard Ionic
+  form controls (ion-input, ion-select) so it behaves natively on both
+  Android and iOS without any extra styling work.
+-->
+<ion-card class="metadata-card">
+  <ion-card-header>
+    <div class="form-heading">
+      <div class="form-heading-icon">
+        <ion-icon name="document-text-outline"></ion-icon>
+      </div>
+      <div>
+        <ion-card-title>Sheet Metadata</ion-card-title>
+        <ion-card-subtitle>Configure your assessment sheet</ion-card-subtitle>
+      </div>
+    </div>
+  </ion-card-header>
+
+  <ion-card-content>
+    <ion-grid>
+      <ion-row>
+        <ion-col size="12" size-md="6">
+          <ion-item>
+            <ion-icon name="text-outline" slot="start" color="primary"></ion-icon>
+            <ion-label position="stacked">Title</ion-label>
+            <ion-input [(ngModel)]="model.title" placeholder="e.g. Midterm Examination"></ion-input>
+          </ion-item>
+        </ion-col>
+
+        <ion-col size="12" size-md="6">
+          <ion-item>
+            <ion-icon name="book-outline" slot="start" color="primary"></ion-icon>
+            <ion-label position="stacked">Subject</ion-label>
+            <ion-select
+              [value]="model.SubjectID ?? null"
+              interface="popover"
+              [disabled]="!model.section_id || isLoadingSubjects || subjectsLoadError || !subjects.length"
+              (ionChange)="onSubjectChange($event.detail.value)"
+            >
+              <ion-select-option [value]="null">
+                {{ !model.section_id ? 'Select a section first...' : 'Select a subject...' }}
+              </ion-select-option>
+              <ion-select-option *ngFor="let availableSubject of subjects" [value]="availableSubject.SubjectID">
+                {{ availableSubject.subject }}
+              </ion-select-option>
+            </ion-select>
+            <ion-note slot="helper" *ngIf="isLoadingSubjects">Loading subjects...</ion-note>
+            <ion-note slot="helper" color="danger" *ngIf="subjectsLoadError">Unable to load subjects.</ion-note>
+            <ion-note slot="helper" *ngIf="model.section_id && !isLoadingSubjects && !subjectsLoadError && !subjects.length">
+              No subjects assigned to this section.
+            </ion-note>
+          </ion-item>
+        </ion-col>
+
+        <ion-col size="12" size-md="6">
+          <ion-item>
+            <ion-icon name="people-outline" slot="start" color="primary"></ion-icon>
+            <ion-label position="stacked">Section</ion-label>
+            <ion-select
+              [value]="model.section_id ?? null"
+              interface="popover"
+              [disabled]="isLoadingSections || sectionsLoadError || !sections.length"
+              (ionChange)="onSectionChange($event.detail.value)"
+            >
+              <ion-select-option [value]="null">Select a section...</ion-select-option>
+              <ion-select-option *ngFor="let availableSection of sections" [value]="availableSection.section_id">
+                {{ availableSection.section }}
+              </ion-select-option>
+            </ion-select>
+            <ion-note slot="helper" *ngIf="isLoadingSections">Loading sections...</ion-note>
+            <ion-note slot="helper" color="danger" *ngIf="sectionsLoadError">Unable to load sections.</ion-note>
+            <ion-note slot="helper" *ngIf="!isLoadingSections && !sectionsLoadError && !sections.length">
+              No sections available.
+            </ion-note>
+          </ion-item>
+        </ion-col>
+
+        <ion-col size="12" size-md="6">
+          <ion-item>
+            <ion-icon name="list-outline" slot="start" color="primary"></ion-icon>
+            <ion-label position="stacked">Quiz Type</ion-label>
+            <ion-select
+              [(ngModel)]="model.quiz_type"
+              interface="popover"
+              (ionChange)="onQuizTypeChange($event.detail.value)"
+            >
+              <ion-select-option value="Multiple Choice">Multiple Choice</ion-select-option>
+              <ion-select-option value="True or False">True or False</ion-select-option>
+            </ion-select>
+          </ion-item>
+        </ion-col>
+
+        <ion-col size="12" size-md="6">
+          <ion-item>
+            <ion-icon name="key-outline" slot="start" color="primary"></ion-icon>
+            <ion-label position="stacked">Sheet ID</ion-label>
+            <ion-input [(ngModel)]="model.sheet_id" placeholder="e.g. BIO101-MID"></ion-input>
+          </ion-item>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+
+    <div class="section-heading">
+      <ion-icon name="options-outline" color="primary"></ion-icon>
+      <ion-card-subtitle class="section-label">Layout Controls</ion-card-subtitle>
+    </div>
+    <ion-grid>
+      <ion-row>
+        <ion-col size="12" size-md="4">
+          <ion-item>
+            <ion-icon name="help-circle-outline" slot="start" color="primary"></ion-icon>
+            <ion-label position="stacked">Questions</ion-label>
+            <ion-input type="number" inputmode="numeric" [(ngModel)]="model.total_questions" min="1"></ion-input>
+          </ion-item>
+        </ion-col>
+
+        <ion-col size="12" size-md="4">
+          <ion-item>
+            <ion-icon name="radio-button-on-outline" slot="start" color="primary"></ion-icon>
+            <ion-label position="stacked">Options</ion-label>
+            <ion-select
+              [(ngModel)]="model.options_per_question"
+              interface="popover"
+              [disabled]="isTrueFalse"
+            >
+              <ion-select-option *ngFor="let n of optionChoices" [value]="n">{{ n }} options</ion-select-option>
+            </ion-select>
+            <ion-note slot="helper" *ngIf="isTrueFalse">True or False sheets always use 2 options.</ion-note>
+          </ion-item>
+        </ion-col>
+
+        <ion-col size="12" size-md="4">
+          <ion-item>
+            <ion-icon name="grid-outline" slot="start" color="primary"></ion-icon>
+            <ion-label position="stacked">Columns</ion-label>
+            <ion-input type="number" inputmode="numeric" [(ngModel)]="model.columns" min="1"></ion-input>
+          </ion-item>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+
+    <ion-item>
+      <ion-icon name="folder-open-outline" slot="start" color="primary"></ion-icon>
+      <ion-label position="stacked">Output PDF Name</ion-label>
+      <ion-input [(ngModel)]="model.output_name" placeholder="e.g. sheet.pdf"></ion-input>
+    </ion-item>
+
+    <ion-button
+      expand="block"
+      class="ion-margin-top"
+      [disabled]="isGenerating"
+      (click)="onGenerateAndDownload()"
+    >
+      <ion-icon name="document-outline" slot="start"></ion-icon>
+      Generate &amp; Download OMR Sheet
+    </ion-button>
+  </ion-card-content>
+</ion-card>

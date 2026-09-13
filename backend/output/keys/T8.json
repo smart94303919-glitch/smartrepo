@@ -1,0 +1,15 @@
+{
+  "sheet_config": {
+    "total_questions": 5,
+    "options_per_question": 3,
+    "columns": 1
+  },
+  "answer_key": {
+    "1": "A",
+    "2": "A",
+    "3": "B",
+    "4": "C",
+    "5": "C"
+  },
+  "saved_at": "2026-09-06T16:23:44"
+}

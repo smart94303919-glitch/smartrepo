@@ -1,0 +1,213 @@
+.picker-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+}
+
+.guide-text {
+  margin: -4px 0 4px;
+  padding: 0 4px;
+  font-size: 0.8rem;
+  color: var(--ion-color-medium);
+  text-align: center;
+}
+
+.preview {
+  padding: 0 12px 12px;
+
+  img {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--ion-color-medium);
+    margin-top: 8px;
+  }
+}
+
+.batch-preview {
+  padding: 0 12px 12px;
+
+  .batch-thumbnails {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+
+    img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--ion-color-medium);
+    }
+  }
+}
+
+.camera-fullscreen-modal {
+  --width: 100%;
+  --height: 100%;
+  --border-radius: 0;
+
+  .mobile-camera-wrapper {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background: #000;
+    overflow: hidden;
+  }
+
+  .camera-top-bar,
+  .camera-bottom-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+  }
+
+  .camera-top-bar {
+    top: 0;
+    justify-content: space-between;
+    padding: max(12px, env(safe-area-inset-top)) 16px 28px;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.82), transparent);
+    color: #fff;
+
+    .camera-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    ion-button {
+      min-width: 48px;
+      min-height: 48px;
+      margin: 0;
+    }
+
+    ion-icon {
+      font-size: 26px;
+    }
+  }
+
+  .video-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .camera-video-feed {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #000;
+    }
+
+    .shutter-flash {
+      position: absolute;
+      inset: 0;
+      z-index: 8;
+      background: #fff;
+      opacity: 0;
+      pointer-events: none;
+
+      &.flash-active {
+        animation: camera-flash 150ms ease-out;
+      }
+    }
+
+    .alignment-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.28);
+
+      .viewfinder-box {
+        position: relative;
+        width: min(82vw, 520px);
+        height: min(68vh, 720px);
+        border: 2px dashed rgba(255, 255, 255, 0.65);
+        border-radius: 12px;
+        box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.38);
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding-bottom: 16px;
+
+        .guide-text {
+          margin: 0;
+          padding: 6px 14px;
+          border-radius: 20px;
+          background: rgba(0, 0, 0, 0.62);
+          color: rgba(255, 255, 255, 0.9);
+          font-size: 13px;
+        }
+
+        .corner {
+          position: absolute;
+          width: 24px;
+          height: 24px;
+          border-color: #10dc60;
+          border-style: solid;
+          filter: drop-shadow(0 0 3px rgba(16, 220, 96, 0.7));
+
+          &.top-left { top: -2px; left: -2px; border-width: 4px 0 0 4px; border-top-left-radius: 12px; }
+          &.top-right { top: -2px; right: -2px; border-width: 4px 4px 0 0; border-top-right-radius: 12px; }
+          &.bottom-left { bottom: -2px; left: -2px; border-width: 0 0 4px 4px; border-bottom-left-radius: 12px; }
+          &.bottom-right { right: -2px; bottom: -2px; border-width: 0 4px 4px 0; border-bottom-right-radius: 12px; }
+        }
+      }
+    }
+  }
+
+  .camera-bottom-bar {
+    bottom: 0;
+    justify-content: center;
+    padding: 24px 0 max(36px, env(safe-area-inset-bottom));
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.88), transparent);
+
+    .shutter-button {
+      width: 76px;
+      height: 76px;
+      min-width: 76px;
+      min-height: 76px;
+      padding: 0;
+      border: 4px solid #fff;
+      border-radius: 50%;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 100ms ease;
+
+      &:active:not(:disabled) { transform: scale(0.92); }
+      &:disabled { opacity: 0.45; cursor: default; }
+
+      .shutter-inner {
+        display: block;
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        background: #fff;
+      }
+    }
+  }
+}
+
+@keyframes camera-flash {
+  0% { opacity: 0; }
+  35% { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+
+@media (orientation: landscape) {
+  .camera-fullscreen-modal .viewfinder-box {
+    width: min(62vw, 760px);
+    height: min(78vh, 520px);
+  }
+}

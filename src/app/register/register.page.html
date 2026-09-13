@@ -1,0 +1,93 @@
+<!-- register.page.html -->
+<ion-content>
+  <div class="register-container">
+    <!-- Left Panel -->
+    <div class="left-panel">
+      <h1>REGISTER</h1>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="right-panel">
+      <form [formGroup]="registrationForm" (ngSubmit)="onRegister()">
+        
+        <ion-item [class.error]="isFieldInvalid('p_log')">
+          <ion-label position="stacked">P_LOG / PROFESSOR ID:</ion-label>
+          <ion-input type="text" formControlName="p_log"></ion-input>
+        </ion-item>
+        <div class="error-text" *ngIf="isFieldInvalid('p_log')">
+          {{ getFieldError('p_log') }}
+        </div>
+        
+
+        <ion-item [class.error]="isFieldInvalid('first_name')">
+          <ion-label position="stacked">FIRST NAME:</ion-label>
+          <ion-input type="text" formControlName="first_name"></ion-input>
+        </ion-item>
+        <div class="error-text" *ngIf="isFieldInvalid('first_name')">
+          {{ getFieldError('first_name') }}
+        </div>
+
+        <ion-item [class.error]="isFieldInvalid('middle_name')">
+          <ion-label position="stacked">MIDDLE NAME:</ion-label>
+          <ion-input type="text" formControlName="middle_name"></ion-input>
+        </ion-item>
+        <div class="error-text" *ngIf="isFieldInvalid('middle_name')">
+          {{ getFieldError('middle_name') }}
+        </div>
+
+        <ion-item [class.error]="isFieldInvalid('last_name')">
+          <ion-label position="stacked">LAST NAME:</ion-label>
+          <ion-input type="text" formControlName="last_name"></ion-input>
+        </ion-item>
+        <div class="error-text" *ngIf="isFieldInvalid('last_name')">
+          {{ getFieldError('last_name') }}
+        </div>
+
+        <ion-item [class.error]="isFieldInvalid('gender')">
+          <ion-label position="stacked">GENDER:</ion-label>
+          <ion-select formControlName="gender">
+            <ion-select-option value="Male">Male</ion-select-option>
+            <ion-select-option value="Female">Female</ion-select-option>
+            <ion-select-option value="Other">Other</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <div class="error-text" *ngIf="isFieldInvalid('gender')">
+          {{ getFieldError('gender') }}
+        </div>
+
+        <ion-item [class.error]="isFieldInvalid('email')">
+          <ion-label position="stacked">EMAIL:</ion-label>
+          <ion-input type="email" formControlName="email"></ion-input>
+        </ion-item>
+        <div class="error-text" *ngIf="isFieldInvalid('email')">
+          {{ getFieldError('email') }}
+        </div>
+
+        <ion-item [class.error]="isFieldInvalid('age')">
+          <ion-label position="stacked">AGE:</ion-label>
+          <ion-input type="number" formControlName="age"></ion-input>
+        </ion-item>
+        <div class="error-text" *ngIf="isFieldInvalid('age')">
+          {{ getFieldError('age') }}
+        </div>
+
+        <ion-item [class.error]="isFieldInvalid('password')">
+          <ion-label position="stacked">PASSWORD:</ion-label>
+          <ion-input type="password" formControlName="password"></ion-input>
+        </ion-item>
+        <div class="error-text" *ngIf="isFieldInvalid('password')">
+          {{ getFieldError('password') }}
+        </div>
+
+        <div class="buttons">
+          <ion-button type="submit" color="primary" [disabled]="isSubmitting">
+            <span *ngIf="!isSubmitting">REGISTER</span>
+            <span *ngIf="isSubmitting">REGISTERING...</span>
+          </ion-button>
+          <ion-button type="button" color="medium" (click)="onCancel()">CLEAR</ion-button>
+          <ion-button type="button" color="primary" (click)="onLogin()">LOGIN</ion-button>
+        </div>
+      </form>
+    </div>
+  </div>
+</ion-content>

@@ -1,0 +1,23 @@
+ion-card {
+  margin: 12px;
+  border-radius: 18px;
+}
+
+ion-item {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+}
+
+.section-label {
+  display: block;
+  margin: 16px 0 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ion-color-primary);
+}
+
+ion-button {
+  min-height: 46px;
+}

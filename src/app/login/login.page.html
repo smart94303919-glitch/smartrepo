@@ -1,0 +1,46 @@
+<!-- login.page.html -->
+<ion-content>
+  <div class="login-container">
+    <!-- Left Panel -->
+    <div class="left-panel">
+      <h1>LOGIN</h1>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="right-panel">
+      <!-- ✅ Wrap inputs in a form -->
+      <form [formGroup]="loginForm" (ngSubmit)="onEnter()">
+
+        <!-- PROF ID -->
+        <ion-item [class.error]="isFieldInvalid('p_log')">
+          <ion-label position="stacked">PROF ID:</ion-label>
+          <ion-input type="text" formControlName="p_log"></ion-input>
+        </ion-item>
+        <div class="error-text" *ngIf="isFieldInvalid('p_log')">
+          {{ getFieldError('p_log') }}
+        </div>
+
+        <!-- PASSWORD -->
+        <ion-item [class.error]="isFieldInvalid('password')">
+          <ion-label position="stacked">PASSWORD:</ion-label>
+          <ion-input type="password" formControlName="password"></ion-input>
+        </ion-item>
+        <div class="error-text" *ngIf="isFieldInvalid('password')">
+          {{ getFieldError('password') }}
+        </div>
+
+        <!-- BUTTONS -->
+        <div class="buttons">
+          <ion-button type="submit" color="primary" [disabled]="isSubmitting">
+            <span *ngIf="!isSubmitting">ENTER</span>
+            <span *ngIf="isSubmitting">LOGGING IN...</span>
+          </ion-button>
+
+          <ion-button color="danger" (click)="onGoback()">GO BACK</ion-button>
+          <ion-button type="button" color="medium" (click)="onForgotPassword()">FORGOT PASSWORD</ion-button>
+        </div>
+      </form>
+    </div>
+  </div>
+</ion-content>
+

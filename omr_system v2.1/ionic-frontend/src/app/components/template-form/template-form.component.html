@@ -1,0 +1,88 @@
+<!--
+  template-form.component.html
+  Touch-friendly form for OMR sheet parameters. Uses standard Ionic
+  form controls (ion-input, ion-select) so it behaves natively on both
+  Android and iOS without any extra styling work.
+-->
+<ion-card>
+  <ion-card-header>
+    <ion-card-title>Sheet Metadata</ion-card-title>
+  </ion-card-header>
+
+  <ion-card-content>
+    <ion-grid>
+      <ion-row>
+        <ion-col size="12" size-md="6">
+          <ion-item>
+            <ion-label position="stacked">Title</ion-label>
+            <ion-input [(ngModel)]="model.title" placeholder="e.g. Midterm Examination"></ion-input>
+          </ion-item>
+        </ion-col>
+
+        <ion-col size="12" size-md="6">
+          <ion-item>
+            <ion-label position="stacked">Subject</ion-label>
+            <ion-input [(ngModel)]="model.subject" placeholder="e.g. Biology 101"></ion-input>
+          </ion-item>
+        </ion-col>
+
+        <ion-col size="12" size-md="6">
+          <ion-item>
+            <ion-label position="stacked">Quiz Type</ion-label>
+            <ion-input [(ngModel)]="model.quiz_type" placeholder="e.g. Multiple Choice"></ion-input>
+          </ion-item>
+        </ion-col>
+
+        <ion-col size="12" size-md="6">
+          <ion-item>
+            <ion-label position="stacked">Sheet ID</ion-label>
+            <ion-input [(ngModel)]="model.sheet_id" placeholder="e.g. BIO101-MID"></ion-input>
+          </ion-item>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+
+    <ion-card-subtitle class="section-label">Layout Controls</ion-card-subtitle>
+    <ion-grid>
+      <ion-row>
+        <ion-col size="12" size-md="4">
+          <ion-item>
+            <ion-label position="stacked">Questions</ion-label>
+            <ion-input type="number" inputmode="numeric" [(ngModel)]="model.total_questions" min="1"></ion-input>
+          </ion-item>
+        </ion-col>
+
+        <ion-col size="12" size-md="4">
+          <ion-item>
+            <ion-label position="stacked">Options</ion-label>
+            <ion-select [(ngModel)]="model.options_per_question" interface="popover">
+              <ion-select-option *ngFor="let n of optionChoices" [value]="n">{{ n }} options</ion-select-option>
+            </ion-select>
+          </ion-item>
+        </ion-col>
+
+        <ion-col size="12" size-md="4">
+          <ion-item>
+            <ion-label position="stacked">Columns</ion-label>
+            <ion-input type="number" inputmode="numeric" [(ngModel)]="model.columns" min="1"></ion-input>
+          </ion-item>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+
+    <ion-item>
+      <ion-label position="stacked">Output PDF Name</ion-label>
+      <ion-input [(ngModel)]="model.output_name" placeholder="e.g. sheet.pdf"></ion-input>
+    </ion-item>
+
+    <ion-button
+      expand="block"
+      class="ion-margin-top"
+      [disabled]="isGenerating"
+      (click)="onGenerateAndDownload()"
+    >
+      <ion-icon name="document-outline" slot="start"></ion-icon>
+      Generate &amp; Download OMR Sheet
+    </ion-button>
+  </ion-card-content>
+</ion-card>

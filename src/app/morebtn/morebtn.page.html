@@ -1,0 +1,46 @@
+<!-- more.page.html -->
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="goBack()">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <ion-title class="header-title">More</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding ion-text-center simple-text-page">
+  <div class="page-header">
+    <div class="professor-info">
+      <ion-icon name="person-circle-outline" class="profile-icon"></ion-icon>
+      <h2>{{ userName }}</h2>
+      <p class="school-year">School Year: {{ schoolYear }}</p>
+      <div *ngIf="profileLoading" class="profile-loading">
+        <ion-spinner name="crescent"></ion-spinner>
+      </div>
+      <div *ngIf="!profileLoading && !profileError" class="profile-details">
+        <p><ion-icon name="card-outline"></ion-icon> Professor Number: {{ professorNumber }}</p>
+        <p><ion-icon name="mail-outline"></ion-icon> {{ professorEmail }}</p>
+      </div>
+      <p *ngIf="profileError" class="profile-error">{{ profileError }}</p>
+    </div>
+  </div>
+
+  <div class="option" (click)="goAbout()">
+    <div>
+      <h2>About and Use</h2>
+      <p>View app guidance and feature details.</p>
+    </div>
+    <ion-icon name="information-circle-outline"></ion-icon>
+  </div>
+
+  <div class="option logout" (click)="goBak()">
+    <div>
+      <h2>Log out</h2>
+      <p>Sign out and return to the login screen.</p>
+    </div>
+    <ion-icon name="power-outline"></ion-icon>
+  </div>
+</ion-content>

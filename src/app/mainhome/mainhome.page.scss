@@ -1,0 +1,173 @@
+/* home.page.scss */
+
+ion-content {
+  --padding-top: 12px;
+  --padding-bottom: 20px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+}
+
+/* Welcome Section */
+.welcome-section {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.welcome-section h1 {
+  font-size: clamp(24px, 4vw, 30px);
+  font-weight: 700;
+  color: #003a8a;
+  margin-bottom: 8px;
+}
+
+.welcome-section p {
+  font-size: clamp(14px, 2.5vw, 16px);
+  color: #666;
+  margin: 0;
+}
+
+/* Cards */
+.info-card {
+  background: linear-gradient(135deg, #004aad 0%, #003a8a 100%);
+  color: white;
+  padding: 24px 20px;
+  border-radius: 14px;
+  margin-bottom: 20px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+}
+
+.info-card h2 {
+  font-size: clamp(20px, 3vw, 24px);
+  font-weight: 700;
+  color: #ffd60a;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.info-card p {
+  font-size: clamp(14px, 2.2vw, 16px);
+  line-height: 1.6;
+  color: #f1f1f1;
+  text-align: center;
+  margin: 0;
+}
+
+/* Footer Navigation */
+ion-tab-bar {
+  --border: none;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+}
+
+ion-tab-button {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+ion-icon {
+  font-size: 20px;
+}
+
+.performance-section {
+  max-width: 960px;
+  margin: 0 auto 28px;
+  padding: 20px;
+  border: 1px solid #dbe5f2;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.performance-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.section-kicker {
+  margin: 0 0 4px;
+  color: #2563eb;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.performance-heading h2 {
+  margin: 0;
+  color: #003a8a;
+  font-size: 1.25rem;
+}
+
+.performance-heading > ion-icon {
+  color: #f59e0b;
+  font-size: 32px;
+}
+
+.section-chart-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.section-chart-card {
+  padding: 16px;
+  border-radius: 10px;
+  background: #f6f9fe;
+}
+
+.section-chart-card h3 {
+  margin: 0 0 16px;
+  color: #11213d;
+  font-size: 1rem;
+}
+
+.performance-row + .performance-row {
+  margin-top: 13px;
+}
+
+.performance-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 5px;
+  color: #334155;
+  font-size: 0.84rem;
+}
+
+.performance-label span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.performance-label strong {
+  color: #0f766e;
+}
+
+.performance-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dbe5f2;
+}
+
+.performance-bar {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #14b8a6, #2563eb);
+}
+
+.performance-state {
+  margin: 0;
+  padding: 24px 8px;
+  color: #64748b;
+  text-align: center;
+}
+
+.performance-error {
+  color: var(--ion-color-danger);
+}

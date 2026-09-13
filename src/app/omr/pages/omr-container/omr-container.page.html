@@ -1,0 +1,137 @@
+<!--
+  omr-container.page.html
+  Conditional rendering based on mode query parameter:
+  - mode=metadata: Show only sheet form
+  - mode=scanner: Show only image picker & grading
+  - mode=results: Show only scan results
+  - default/full: Show all sections
+-->
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button (click)="goBack()" color="primary">
+        <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>OMR Grading System</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="omr-shell">
+  <!-- METADATA / CREATE ANSWER SHEETS MODE -->
+  <div *ngIf="displayMode === 'metadata' || displayMode === 'full'" class="section">
+    <div class="section-header" *ngIf="displayMode === 'full'">
+      <h2>Create Answer Sheets</h2>
+      <p>Generate OMR sheet templates with your custom parameters</p>
+    </div>
+    <app-template-form (sheetGenerated)="onSheetGenerated($event)"></app-template-form>
+  </div>
+
+  <!-- SCANNER / SCAN & GRADE MODE -->
+  <div *ngIf="displayMode === 'scanner' || displayMode === 'full'" class="section">
+    <div class="section-header" *ngIf="displayMode === 'full'">
+      <h2>Scan & Grade Answer Sheets</h2>
+      <p>Capture sheets and process them for grading</p>
+    </div>
+
+    <ion-card class="scanner-card">
+      <ion-card-header>
+        <ion-card-title>Scanning & Grading Controls</ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        <ion-item class="control-item">
+          <ion-icon name="key-outline" slot="start" color="primary"></ion-icon>
+          <ion-label position="stacked">Sheet ID</ion-label>
+          <ion-input
+            [(ngModel)]="activeSheetId"
+            placeholder="e.g. BIO101-MID"
+            [value]="activeSheetId"
+          ></ion-input>
+        </ion-item>
+
+        <div class="mode-heading">
+          <ion-icon name="swap-horizontal-outline" color="primary"></ion-icon>
+          <span>Choose scan mode</span>
+        </div>
+        <ion-segment [(ngModel)]="scanMode" (ionChange)="onScanModeChange($event.detail.value)" class="scan-mode-segment">
+          <ion-segment-button value="key">
+            <ion-icon name="document-text-outline"></ion-icon>
+            <ion-label>Teacher Answer Key</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="grade">
+            <ion-icon name="school-outline"></ion-icon>
+            <ion-label>Student Sheet</ion-label>
+          </ion-segment-button>
+        </ion-segment>
+
+        <ion-item *ngIf="scanMode === 'grade'" lines="none" class="ion-margin-top auto-id-note">
+          <ion-icon name="information-circle-outline" slot="start" color="primary"></ion-icon>
+          <ion-label>
+            <p style="font-size: 0.85rem; color: var(--ion-color-medium);">
+              Student ID will be automatically detected and scanned from the paper.
+            </p>
+          </ion-label>
+        </ion-item>
+
+        <ion-card class="capture-card">
+          <ion-card-header>
+            <div class="capture-heading">
+              <ion-icon name="camera-outline" color="primary"></ion-icon>
+              <ion-card-subtitle>Capture Sheet Image</ion-card-subtitle>
+            </div>
+          </ion-card-header>
+          <ion-card-content>
+            <app-image-picker
+              [scanMode]="scanMode"
+              (imageCaptured)="onImageCaptured($event)"
+              (imagesCaptured)="onImagesCaptured($event)"
+            ></app-image-picker>
+          </ion-card-content>
+        </ion-card>
+
+        <ion-button
+          expand="block"
+          color="success"
+          class="ion-margin-top"
+          [disabled]="isProcessing || (scanMode === 'key' ? !teacherKeyImage : (!studentImage && studentImages.length === 0))"
+          (click)="onProcessAndGrade()"
+        >
+          <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>
+          Process &amp; Grade Sheet
+        </ion-button>
+
+        <ion-button
+          expand="block"
+          fill="outline"
+          class="ion-margin-top"
+          (click)="scanMode === 'key' ? resetTeacherKey() : resetStudentSheet()"
+        >
+          <ion-icon name="refresh-outline" slot="start"></ion-icon>
+          Reset {{ scanMode === 'key' ? 'Teacher Answer Key' : 'Student Sheets' }}
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <!-- RESULTS / STUDENT GRADES MODE -->
+  <div
+    *ngIf="displayMode === 'results' || displayMode === 'full' || teacherKeyResult || studentResult || studentBatchResults.length || scanError"
+    class="section"
+  >
+    <div class="section-header" *ngIf="displayMode === 'full'">
+      <h2>Student Grades & Results</h2>
+      <p>View individual scan results</p>
+    </div>
+
+    <app-results-display
+      [result]="scanMode === 'key' ? teacherKeyResult : studentResult"
+      [results]="scanMode === 'grade' ? studentBatchResults : []"
+      [processingError]="scanError"
+      [savingResultKey]="savingResultKey"
+      [savedResultKey]="savedResultKey"
+      (saveResult)="saveScoreToDatabase($event)"
+      (resultConfirmed)="onConfirmResult()"
+    ></app-results-display>
+  </div>
+</ion-content>

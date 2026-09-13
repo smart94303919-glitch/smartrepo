@@ -1,0 +1,129 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="onGoBack()">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>{{ selectedSectionName || subjectTabs[selectedSubjectTab]?.subject || '' }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="openArchive()" aria-label="Open archive">
+        Archive
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="student-dashboard-content">
+  <div class="student-dashboard-body">
+    <div *ngIf="loading" class="loading-state" aria-label="Loading student dashboard">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Loading student dashboard...</p>
+    </div>
+
+    <div *ngIf="!loading && errorMessage" class="error-message ion-padding ion-text-center">
+      <ion-text color="danger">
+        <p>{{ errorMessage }}</p>
+      </ion-text>
+    </div>
+
+    <div *ngIf="!loading && subjectTabs.length > 0" class="tabs-container">
+      <div class="hero-panel">
+        <div>
+          <p class="eyebrow">Class overview</p>
+          <h2>{{ selectedSectionName || subjectTabs[selectedSubjectTab]?.subject || 'Students' }}</h2>
+        </div>
+        <ion-chip color="primary" outline="true">
+          <ion-icon name="people-outline"></ion-icon>
+          <ion-label>{{ filteredStudents.length }} students</ion-label>
+        </ion-chip>
+      </div>
+
+      <ion-segment [(ngModel)]="selectedSubjectTab" (ionChange)="onSubjectTabChange($event)" color="primary">
+        <ion-segment-button 
+          *ngFor="let subject of subjectTabs; let i = index" 
+          [value]="i"
+          layout="icon-bottom"
+        >
+          <ion-label>{{ subject.subject }}</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+
+      <div class="tab-content">
+        <ion-card class="search-card">
+          <ion-card-content>
+            <ion-item lines="none" class="search-item">
+              <ion-icon name="search-outline" slot="start"></ion-icon>
+              <ion-input
+                [(ngModel)]="searchText"
+                placeholder="Search students"
+                clearInput="true"
+              ></ion-input>
+            </ion-item>
+          </ion-card-content>
+        </ion-card>
+
+        <ion-card class="students-card">
+          <ion-card-header>
+            <div class="students-card-heading">
+              <ion-card-title>Students</ion-card-title>
+              <div class="archive-actions">
+                <ion-button *ngIf="!archiveSelectionMode" fill="outline" size="small" (click)="startArchiveSelection()">
+                  Archive
+                </ion-button>
+                <ng-container *ngIf="archiveSelectionMode">
+                  <ion-button fill="solid" size="small" [disabled]="!selectedStudentIds.size" (click)="archiveSelectedStudents()">
+                    Select
+                  </ion-button>
+                  <ion-button fill="clear" size="small" color="medium" (click)="cancelArchiveSelection()">
+                    Cancel
+                  </ion-button>
+                </ng-container>
+              </div>
+            </div>
+          </ion-card-header>
+
+          <div *ngIf="studentsLoading" class="student-list-loading" aria-label="Loading students">
+            <ion-spinner name="crescent"></ion-spinner>
+            <p>Loading students...</p>
+          </div>
+
+          <ion-list *ngIf="!studentsLoading && filteredStudents.length > 0" lines="none">
+            <ion-item *ngFor="let student of filteredStudents" class="student-item">
+              <ion-checkbox
+                *ngIf="archiveSelectionMode"
+                slot="start"
+                [checked]="isStudentSelected(student)"
+                (ionChange)="toggleStudentForArchive(student)"
+                [attr.aria-label]="'Select ' + student.first_name + ' ' + student.last_name + ' for archive'"
+              ></ion-checkbox>
+              <ion-label>
+                <h3>{{ student.first_name }} {{ student.middle_name || '' }} {{ student.last_name }}</h3>
+                <p>Age: {{ student.age }} • Gender: {{ student.gender || 'N/A' }}</p>
+                <p>Subject: {{ subjectTabs[selectedSubjectTab]?.subject || selectedSubject || 'N/A' }} • Section: {{ selectedSectionName || 'N/A' }}</p>
+              </ion-label>
+              <ion-note slot="end" *ngIf="student.studentCode" class="student-code">{{ student.studentCode }}</ion-note>
+              <div slot="end" class="student-actions" *ngIf="!archiveSelectionMode">
+                <ion-text color="primary" class="info-link" (click)="goToStudentInfo(student)">Update</ion-text>
+                <ion-button color="danger" fill="clear" (click)="removeStudent(student)">
+                  Remove
+                </ion-button>
+              </div>
+            </ion-item>
+          </ion-list>
+
+          <div *ngIf="!studentsLoading && filteredStudents.length === 0" class="ion-padding ion-text-center empty-list">
+            <p>No students found for this subject.</p>
+          </div>
+        </ion-card>
+      </div>
+    </div>
+
+    <!-- Empty state when no subjects -->
+    <div *ngIf="!loading && subjectTabs.length === 0 && !errorMessage" class="empty-state ion-padding ion-text-center">
+      <ion-text>
+        <p>Welcome to the student dashboard.</p>
+      </ion-text>
+    </div>
+  </div>
+</ion-content>

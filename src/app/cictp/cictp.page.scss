@@ -1,0 +1,23 @@
+/* cictp.page.scss */
+
+.page-title {
+  padding: 20px;
+}
+
+.page-title h1 {
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+  margin: 0;
+}
+
+.button-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  padding: 20px;
+}
+
+.button-grid ion-button {
+  height: 50px;
+}

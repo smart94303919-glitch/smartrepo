@@ -1,0 +1,14 @@
+{
+  "total_questions": 5,
+  "options_per_question": 4,
+  "columns": 1,
+  "title": "Quiz 1",
+  "subject": "IT-WS01",
+  "quiz_type": "Multiple Choice",
+  "student_id_digits": 13,
+  "embed_qr": true,
+  "section_id": 126,
+  "SubjectID": 45,
+  "prof_id": null,
+  "saved_at": "2026-09-08T22:41:13"
+}

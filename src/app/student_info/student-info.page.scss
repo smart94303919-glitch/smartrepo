@@ -1,0 +1,129 @@
+:host {
+  display: block;
+}
+
+ion-content {
+  --padding-bottom: 24px;
+  --background: linear-gradient(180deg, #f7faff 0%, #eef5ff 100%);
+}
+
+.form-scroll-area {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding-bottom: 24px;
+}
+
+.hero-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #ffffff 0%, #edf4ff 100%);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(59, 130, 246, 0.12);
+}
+
+.hero-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(59, 130, 246, 0.14);
+  color: var(--ion-color-primary);
+  font-size: 22px;
+}
+
+.hero-copy h2 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #11213d;
+}
+
+.hero-copy p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: #5f6f8f;
+}
+
+.student-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-card {
+  margin: 0;
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.form-card ion-card-content {
+  padding: 12px 12px 16px;
+}
+
+ion-list {
+  padding-bottom: 8px;
+  background: transparent;
+}
+
+.form-field {
+  --background: #f8fbff;
+  --border-radius: 12px;
+  --padding-start: 12px;
+  --inner-padding-end: 12px;
+  --min-height: 58px;
+  border: 1px solid #e5ebf5;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+}
+
+ion-label {
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: #30425f;
+}
+
+ion-input,
+ion-select {
+  font-size: 0.96rem;
+  color: #10223f;
+}
+
+.save-button {
+  margin-top: 8px;
+  margin-bottom: 4px;
+  height: 48px;
+  font-weight: 700;
+  --border-radius: 14px;
+  --box-shadow: 0 10px 18px rgba(59, 130, 246, 0.22);
+}
+
+ion-alert {
+  --backdrop-opacity: 0.45;
+}
+
+ion-alert .alert-wrapper {
+  border-radius: 18px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+}
+
+ion-alert .alert-title {
+  color: #11213d;
+  font-weight: 700;
+}
+
+ion-alert .alert-message {
+  color: #465a7a;
+}
+
+ion-alert .alert-button {
+  font-weight: 700;
+}

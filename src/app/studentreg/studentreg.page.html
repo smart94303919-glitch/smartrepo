@@ -1,0 +1,110 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="onGoback()">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Student Registration</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="solid" color="light" size="small" aria-label="Import CSV or Excel" (click)="onImportCsvClick()" [disabled]="importingStudents || registeringStudent">
+        <ion-spinner *ngIf="importingStudents" name="crescent"></ion-spinner>
+        <ion-icon *ngIf="!importingStudents" name="cloud-upload-outline"></ion-icon>
+      </ion-button>
+      <input #csvInput type="file" accept=".csv,.xls,.xlsx" hidden (change)="onCsvSelected($event)" />
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="form-scroll-area">
+    <div class="hero-card">
+      <div class="hero-icon">
+        <ion-icon name="school-outline"></ion-icon>
+      </div>
+      <div class="hero-copy">
+        <h2>Student Registration</h2>
+        <p>Add and assign students</p>
+      </div>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" class="registration-form">
+      <ion-card class="form-card">
+        <ion-card-content>
+          <div class="card-title-row">
+            <h3>Registration details</h3>
+            <ion-chip *ngIf="selectedSubject" color="primary" outline="true">
+              <ion-icon name="book-outline"></ion-icon>
+              <ion-label>{{ selectedSubject }}</ion-label>
+            </ion-chip>
+          </div>
+
+          <ion-list lines="none">
+            <!-- Student ID -->
+            <ion-item class="form-field">
+              <ion-label position="stacked">Student ID</ion-label>
+              <ion-input [(ngModel)]="student.student_id" name="student_id" type="text" required></ion-input>
+            </ion-item>
+
+            <!-- Last Name -->
+            <ion-item class="form-field">
+              <ion-label position="stacked">Last Name</ion-label>
+              <ion-input [(ngModel)]="student.last_name" name="last_name" required></ion-input>
+            </ion-item>
+
+            <!-- First Name -->
+            <ion-item class="form-field">
+              <ion-label position="stacked">First Name</ion-label>
+              <ion-input [(ngModel)]="student.first_name" name="first_name" required></ion-input>
+            </ion-item>
+
+            <!-- Middle Name -->
+            <ion-item class="form-field">
+              <ion-label position="stacked">Middle Name</ion-label>
+              <ion-input [(ngModel)]="student.middle_name" name="middle_name"></ion-input>
+            </ion-item>
+
+            <!-- Age -->
+            <ion-item class="form-field">
+              <ion-label position="stacked">Age</ion-label>
+              <ion-input type="number" [(ngModel)]="student.age" name="age" required></ion-input>
+            </ion-item>
+
+            <!-- Gender -->
+            <ion-item class="form-field">
+              <ion-label position="stacked">Gender</ion-label>
+              <ion-select [(ngModel)]="student.gender" name="gender" interface="popover" required>
+                <ion-select-option value="Male">Male</ion-select-option>
+                <ion-select-option value="Female">Female</ion-select-option>
+              </ion-select>
+            </ion-item>
+            
+            <!-- Section -->
+            <ion-item class="form-field">
+              <ion-label position="stacked">Section</ion-label>
+              <ion-select [(ngModel)]="student.section" name="section" interface="popover" required (ionChange)="onSectionChange()">
+                <ion-select-option *ngFor="let s of sections" [value]="s.section">{{ s.section }}</ion-select-option>
+              </ion-select>
+            </ion-item>
+          </ion-list>
+
+            <!-- Subject -->
+            <ion-item class="form-field">
+              <ion-label position="stacked">Subject</ion-label>
+              <ion-select [(ngModel)]="student.subject" name="subject" interface="popover" required [disabled]="!student.section" (ionChange)="onSubjectChange($event)">
+                <ion-select-option *ngIf="!student.section" value="">Select a section first</ion-select-option>
+                <ion-select-option *ngIf="student.section && !subjects.length" value="">No subjects for this section</ion-select-option>
+                <ion-select-option *ngFor="let subject of subjects" [value]="subject.subject">{{ subject.subject }}</ion-select-option>
+              </ion-select>
+            </ion-item>
+
+          <ion-button expand="block" type="submit" class="submit-button" [disabled]="registeringStudent || importingStudents">
+            <ion-spinner *ngIf="registeringStudent" name="crescent"></ion-spinner>
+            <ion-icon *ngIf="!registeringStudent" slot="start" name="person-add-outline"></ion-icon>
+            {{ registeringStudent ? 'Registering Student...' : 'Register Student' }}
+          </ion-button>
+        </ion-card-content>
+      </ion-card>
+    </form>
+  </div>
+</ion-content>

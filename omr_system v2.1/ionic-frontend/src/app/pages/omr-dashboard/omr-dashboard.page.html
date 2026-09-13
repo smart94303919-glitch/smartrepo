@@ -1,0 +1,78 @@
+<!--
+  omr-dashboard.page.html
+  Single scrollable page with clearly separated sections matching the
+  4 requested dashboard actions. Real deployments may prefer splitting
+  this into ion-tabs (Generate / Scan / Results) once the app grows --
+  structured this way for now so it's easy to lift into tabs later.
+-->
+<ion-header>
+  <ion-toolbar>
+    <ion-title>OMR Grading</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="dashboard-shell">
+  <div class="page-header ion-padding-horizontal ion-padding-top">
+    <h2>Sheet Generation &amp; Scoring</h2>
+    <p>Generate forms, capture filled sheets, and grade them without leaving the browser.</p>
+  </div>
+
+  <ion-grid class="ion-no-padding">
+    <ion-row>
+      <ion-col size="12" size-lg="7">
+        <app-template-form (sheetGenerated)="onSheetGenerated($event)"></app-template-form>
+      </ion-col>
+
+      <ion-col size="12" size-lg="5">
+        <ion-card>
+          <ion-card-header>
+            <ion-card-title>OMR Actions</ion-card-title>
+          </ion-card-header>
+
+          <ion-card-content>
+            <ion-item>
+              <ion-label position="stacked">Sheet ID</ion-label>
+              <ion-input [(ngModel)]="activeSheetId" placeholder="e.g. BIO101-MID"></ion-input>
+            </ion-item>
+
+            <ion-segment [(ngModel)]="scanMode" class="ion-margin-top">
+              <ion-segment-button value="key">
+                <ion-label>Teacher Answer Key</ion-label>
+              </ion-segment-button>
+              <ion-segment-button value="grade">
+                <ion-label>Student Sheet</ion-label>
+              </ion-segment-button>
+            </ion-segment>
+
+            <app-image-picker (imageCaptured)="onImageCaptured($event)"></app-image-picker>
+
+            <ion-button
+              expand="block"
+              color="tertiary"
+              class="ion-margin-top"
+              [disabled]="isProcessing || !pendingImage"
+              (click)="onProcessAndGrade()"
+            >
+              <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>
+              Process &amp; Grade Sheet
+            </ion-button>
+
+            <ion-button
+              expand="block"
+              fill="outline"
+              class="ion-margin-top"
+              (click)="resetForm()"
+            >
+              <ion-icon name="refresh-outline" slot="start"></ion-icon>
+              Reset Form
+            </ion-button>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+
+  <app-results-display
+    [result]="lastResult"
+  ></app-results-display>
+</ion-content>

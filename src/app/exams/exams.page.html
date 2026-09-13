@@ -1,0 +1,139 @@
+<ion-content class="smart-content">
+  <div class="smart-container" *ngIf="!showGrades">
+    <!-- Header Section -->
+    <div class="header-section">
+      <div class="header-decoration"></div>
+      <div class="icon-badge">
+        <ion-icon name="school"></ion-icon>
+      </div>
+      <h1 class="main-title">Smart Classroom Analytics<br><span class="highlight">Where Education Meets Innovation</span></h1>
+      <p class="subtitle">Manage master answer keys, track student performance, and store item analysis data seamlessly to make your teaching workflow smoother.</p>
+    </div>
+
+    <!-- SMART Logo Section -->
+    <div class="smart-branding">
+      <h2 class="smart-title">S M A R T</h2>
+      <p class="smart-tagline">YOUR PARTNER IN<br><span class="tagline-highlight">SMARTER ASSESSMENT</span></p>
+    </div>
+
+    <!-- Features Grid -->
+    <div class="features-grid">
+      <!-- Sheet Maker -->
+      <div class="feature-card assessments" (click)="openSheetMaker()" role="button" tabindex="0" (keydown.enter)="openSheetMaker()" (keydown.space)="openSheetMaker()">
+        <div class="card-icon">
+          <ion-icon name="document-text"></ion-icon>
+        </div>
+        <h3>Create Answer Sheets</h3>
+        <p>Create & manage tests</p>
+        <ion-icon class="arrow-icon" name="chevron-forward"></ion-icon>
+      </div>
+
+      <!--Scan Answer Sheet -->
+      <div class="feature-card students" (click)="openScanner()" role="button" tabindex="0" (keydown.enter)="openScanner()" (keydown.space)="openScanner()">
+        <div class="card-icon">
+          <ion-icon name="camera"></ion-icon>
+        </div>
+        <h3>Scan Answer Sheets</h3>
+        <p>Upload and analyze answer sheets</p>
+        <ion-icon class="arrow-icon" name="chevron-forward"></ion-icon>
+      </div>
+
+      <!-- Reports Card -->
+      <div class="feature-card reports" (click)="openStudentGrades()" role="button" tabindex="0" (keydown.enter)="openStudentGrades()" (keydown.space)="openStudentGrades()">
+        <div class="card-icon">
+          <ion-icon name="bar-chart"></ion-icon>
+        </div>
+        <h3>Student Grades</h3>
+        <p>View grades & analytics</p>
+        <ion-icon class="arrow-icon" name="chevron-forward"></ion-icon>
+      </div>
+
+   
+      
+    </div>
+
+    <!-- Go Back Button -->
+    <ion-button class="go-back-btn" routerLink="/mainhome" color="primary" shape="round">
+      ← GO BACK
+    </ion-button>
+  </div>
+
+  <div class="grades-container" *ngIf="showGrades">
+    <div class="grades-header">
+      <ion-button fill="clear" color="primary" (click)="showGrades = false">
+        <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
+        Exam Tools
+      </ion-button>
+      <div class="grades-header-row">
+        <div class="grades-heading">
+          <div class="grades-heading-icon">
+            <ion-icon name="bar-chart-outline"></ion-icon>
+          </div>
+          <div>
+            <h1>Student Grades</h1>
+            <p>Scores recorded from graded answer sheets</p>
+          </div>
+        </div>
+        <ion-button
+          class="export-button"
+          fill="solid"
+          color="primary"
+          [disabled]="loadingGrades || !filteredGrades.length"
+          (click)="exportGrades()"
+          aria-label="Export student grades"
+        >
+          <ion-icon name="download-outline" slot="start"></ion-icon>
+          Export
+        </ion-button>
+        </div>
+    </div>
+
+    <div *ngIf="loadingGrades" class="grades-state">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Loading student grades...</p>
+    </div>
+
+    <div *ngIf="!loadingGrades && gradeTabs.length" class="grade-filter-group">
+      <div class="grade-filter-label">
+        <ion-icon name="filter-outline" color="primary"></ion-icon>
+        <span>Filter by class</span>
+      </div>
+      <ion-segment [(ngModel)]="selectedGradeTab" [scrollable]="true" class="grade-tabs">
+      <ion-segment-button value="all">
+        <ion-icon name="layers-outline"></ion-icon>
+        <ion-label>All Classes</ion-label>
+      </ion-segment-button>
+      <ion-segment-button *ngFor="let tab of gradeTabs" [value]="tab.key">
+        <ion-icon name="school-outline"></ion-icon>
+        <ion-label>{{ tab.subjectName }} | {{ tab.sectionName }}</ion-label>
+      </ion-segment-button>
+      </ion-segment>
+    </div>
+
+    <ion-card *ngIf="!loadingGrades && filteredGrades.length" class="grades-card">
+      <ion-list>
+        <ion-item *ngFor="let grade of filteredGrades">
+          <ion-icon name="person-circle-outline" slot="start" color="primary"></ion-icon>
+          <ion-label>
+            <h2>{{ grade.student_name }}</h2>
+            <p>{{ grade.student_id }} | {{ grade.subject_name }} | {{ grade.section_name }}</p>
+            <p>Sheet: {{ grade.sheet_id }}</p>
+          </ion-label>
+          <div slot="end" class="grade-result">
+            <strong>{{ grade.percentage | number:'1.0-2' }}%</strong>
+            <span>{{ grade.score_value ?? 0 }} pts</span>
+            <ion-badge [color]="getLetterGrade(grade.percentage) === 'F' ? 'danger' : 'success'">
+              {{ getLetterGrade(grade.percentage) }}
+            </ion-badge>
+          </div>
+        </ion-item>
+      </ion-list>
+    </ion-card>
+
+    <div *ngIf="!loadingGrades && !filteredGrades.length && !gradesError" class="grades-state">
+      <ion-icon name="document-text-outline"></ion-icon>
+      <p>{{ grades.length ? 'No grades recorded for this class yet.' : 'No student grades have been recorded yet.' }}</p>
+    </div>
+    <div *ngIf="gradesError" class="grades-state error-state">{{ gradesError }}</div>
+  </div>
+</ion-content>

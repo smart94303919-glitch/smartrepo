@@ -1,0 +1,14 @@
+{
+  "total_questions": 7,
+  "options_per_question": 4,
+  "columns": 1,
+  "title": "trye",
+  "subject": "CC-100",
+  "quiz_type": "Multiple Choice",
+  "student_id_digits": 13,
+  "embed_qr": true,
+  "section_id": 126,
+  "SubjectID": 41,
+  "prof_id": null,
+  "saved_at": "2026-09-09T18:13:27"
+}

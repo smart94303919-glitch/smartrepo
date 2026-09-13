@@ -1,0 +1,29 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+
+    <!-- Back Icon -->
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="onGoto()">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+
+  <!-- Title -->
+  <div class="page-title">
+    <h1>Number of Section of 2nd year</h1>
+  </div>
+  <!-- 5 Vertical Buttons -->
+  <div class="button-container">
+    <ion-button fill="outline" expand="block" (click)="onSectionA()">Section A</ion-button>
+    <ion-button fill="outline" expand="block" (click)="onSectionB()">Section B</ion-button>
+    <ion-button fill="outline" expand="block" (click)="onSectionC()">Section C</ion-button>
+    <ion-button fill="outline" expand="block" (click)="onSectionD()">Section D</ion-button>
+    <ion-button fill="outline" expand="block" (click)="onSectionE()">Section E</ion-button>
+  </div>
+
+</ion-content>

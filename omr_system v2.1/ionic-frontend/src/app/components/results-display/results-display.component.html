@@ -1,0 +1,55 @@
+<!--
+  results-display.component.html
+  Displays the result of the scan just performed (score/key/overlay).
+-->
+
+<ion-card *ngIf="result">
+  <ion-card-header>
+    <ion-card-title>
+      {{ result.mode === 'key' ? 'Answer Key Captured' : 'Grading Result' }}
+    </ion-card-title>
+  </ion-card-header>
+
+  <ion-card-content>
+    <div *ngIf="result.mode === 'grade'" class="score-block">
+      <h2>Detected Student ID: {{ result.student_id || 'Not detected' }}</h2>
+      <h1>{{ result.score ?? 0 }} / {{ result.total_questions ?? 0 }}</h1>
+      <ion-badge [color]="(result.percentage ?? 0) >= 60 ? 'success' : 'warning'">{{ result.percentage ?? 0 }}%</ion-badge>
+      <p>{{ result.attempted ?? 0 }} of {{ result.total_questions ?? 0 }} questions attempted</p>
+    </div>
+
+    <ion-item lines="none">
+      <ion-label>
+        <p>{{ result.questions_read }} questions read &middot;
+           {{ result.blank_count }} blank &middot;
+           {{ result.multi_marked_count }} ambiguous/double-marked</p>
+      </ion-label>
+    </ion-item>
+
+    <div class="overlay-block" *ngIf="overlayImageUrl">
+      <ion-label><h3>Processed Result Overlay</h3></ion-label>
+      <img [src]="overlayImageUrl" alt="Bubble detection overlay" />
+    </div>
+
+    <ion-list *ngIf="result.itemized" lines="full">
+      <ion-item *ngFor="let row of result.itemized" [color]="row.is_correct ? '' : 'light'">
+        <ion-label>
+          Q{{ row.question }}: your answer <b>{{ row.student_answer }}</b>
+          &middot; correct: <b>{{ row.correct_answer }}</b>
+        </ion-label>
+        <ion-icon
+          [name]="row.is_correct ? 'checkmark-circle' : 'close-circle'"
+          [color]="row.is_correct ? 'success' : 'danger'"
+          slot="end"
+        ></ion-icon>
+      </ion-item>
+    </ion-list>
+
+    <ion-list *ngIf="result.answer_key" lines="full">
+      <ion-item *ngFor="let q of result.answer_key | keyvalue">
+        <ion-label>Q{{ q.key }}: {{ q.value ?? '(blank)' }}</ion-label>
+      </ion-item>
+    </ion-list>
+  </ion-card-content>
+</ion-card>
+

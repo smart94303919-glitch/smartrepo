@@ -1,0 +1,72 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Registered Students</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <!-- Back button -->
+  <ion-button fill="clear" color="primary" (click)="onGoto()">
+    Back
+  </ion-button>
+
+  <!-- Student list -->
+  <ion-list>
+    <ion-item *ngFor="let student of students">
+      <ion-label>
+        <h2>{{ student.first_name }} {{ student.last_name }}</h2>
+        <p>
+          Age: {{ student.age }} |
+          Dept: {{ student.student_department[0]?.department?.department }} |
+          Year: {{ student.student_year_assignment[0]?.year?.year }} |
+          Section: {{ student.student_section_assignment[0]?.section?.section }}
+        </p>
+
+      </ion-label>
+      <ion-button fill="outline" size="small" (click)="edit(student)">Edit</ion-button>
+      <ion-button color="danger" size="small" (click)="delete(student)">Delete</ion-button>
+    </ion-item>
+  </ion-list>
+<!-- Edit Modal -->
+  <ion-modal [isOpen]="isEditOpen" (didDismiss)="closeEdit()">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Edit Student</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="closeEdit()">Close</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="ion-padding">
+      <ion-item>
+        <ion-label position="stacked">First Name</ion-label>
+        <ion-input [(ngModel)]="editStudent.first_name"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label position="stacked">Last Name</ion-label>
+        <ion-input [(ngModel)]="editStudent.last_name"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label position="stacked">Age</ion-label>
+        <ion-input type="number" [(ngModel)]="editStudent.age"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label position="stacked">Department</ion-label>
+        <ion-input [(ngModel)]="editStudent.department"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label position="stacked">Year</ion-label>
+        <ion-input [(ngModel)]="editStudent.year"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-label position="stacked">Section</ion-label>
+        <ion-input [(ngModel)]="editStudent.section"></ion-input>
+      </ion-item>
+
+      <ion-button expand="block" (click)="saveEdit()">Save</ion-button>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+</ion-content>

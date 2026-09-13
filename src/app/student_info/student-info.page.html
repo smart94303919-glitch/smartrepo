@@ -1,0 +1,88 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="goBack()">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Student Information</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="form-scroll-area">
+    <div class="hero-card">
+      <div class="hero-icon">
+        <ion-icon name="person-circle-outline"></ion-icon>
+      </div>
+      <div class="hero-copy">
+        <h2>Student Details</h2>
+        <p>Keep their section and subject details current</p>
+      </div>
+    </div>
+
+    <form (ngSubmit)="confirmSaveChanges()" class="student-form">
+      <ion-card class="form-card">
+        <ion-card-content>
+          <ion-list lines="none">
+            <ion-item class="form-field">
+              <ion-label position="stacked">Student ID</ion-label>
+              <ion-input [(ngModel)]="student.student_id" name="student_id" required></ion-input>
+            </ion-item>
+
+            <ion-item class="form-field">
+              <ion-label position="stacked">Last Name</ion-label>
+              <ion-input [(ngModel)]="student.last_name" name="last_name" required></ion-input>
+            </ion-item>
+
+            <ion-item class="form-field">
+              <ion-label position="stacked">First Name</ion-label>
+              <ion-input [(ngModel)]="student.first_name" name="first_name" required></ion-input>
+            </ion-item>
+
+            <ion-item class="form-field">
+              <ion-label position="stacked">Middle Name</ion-label>
+              <ion-input [(ngModel)]="student.middle_name" name="middle_name"></ion-input>
+            </ion-item>
+
+            <ion-item class="form-field">
+              <ion-label position="stacked">Age</ion-label>
+              <ion-input type="number" [(ngModel)]="student.age" name="age" required></ion-input>
+            </ion-item>
+
+            <ion-item class="form-field">
+              <ion-label position="stacked">Gender</ion-label>
+              <ion-select [(ngModel)]="student.gender" name="gender" interface="popover" required>
+                <ion-select-option value="Male">Male</ion-select-option>
+                <ion-select-option value="Female">Female</ion-select-option>
+              </ion-select>
+            </ion-item>
+
+            <ion-item class="form-field">
+              <ion-label position="stacked">Section</ion-label>
+              <ion-select [(ngModel)]="student.section" name="section" interface="popover" (ionChange)="onSectionChange()" required>
+                <ion-select-option *ngFor="let section of sections" [value]="section.section">
+                  {{ section.section }}
+                </ion-select-option>
+              </ion-select>
+            </ion-item>
+
+            <ion-item class="form-field">
+              <ion-label position="stacked">Subject</ion-label>
+              <ion-select [(ngModel)]="student.subject" name="subject" interface="popover" (ionChange)="onSubjectChange($event)" required>
+                <ion-select-option *ngFor="let subject of subjects" [value]="subject.subject">
+                  {{ subject.subject }}
+                </ion-select-option>
+              </ion-select>
+            </ion-item>
+          </ion-list>
+
+          <ion-button expand="block" type="submit" class="save-button">
+            <ion-icon slot="start" name="save-outline"></ion-icon>
+            Save Changes
+          </ion-button>
+        </ion-card-content>
+      </ion-card>
+    </form>
+  </div>
+</ion-content>

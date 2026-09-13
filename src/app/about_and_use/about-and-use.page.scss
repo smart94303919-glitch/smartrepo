@@ -1,0 +1,47 @@
+.about-use-page {
+  --background: #f5f7fb;
+  --padding-top: 12px;
+  --padding-bottom: 20px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+}
+
+.card {
+  background: linear-gradient(135deg, #004aad 0%, #003a8a 100%);
+  color: white;
+  padding: 24px 20px;
+  border-radius: 14px;
+  margin-bottom: 20px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+}
+
+.card h2 {
+  font-size: clamp(20px, 3vw, 24px);
+  font-weight: 700;
+  color: #ffd60a;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.card p {
+  font-size: clamp(14px, 2.2vw, 16px);
+  line-height: 1.6;
+  color: #f1f1f1;
+  text-align: center;
+  margin: 0;
+}
+
+h1,
+h2 {
+  margin-top: 0;
+}
+
+ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  line-height: 1.7;
+}
+
+li {
+  margin-bottom: 0.75rem;
+}

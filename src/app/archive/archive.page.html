@@ -1,0 +1,78 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="goBack()" aria-label="Back to student dashboard">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </ion-button>
+      <span class="archive-toolbar-title">Student List</span>
+    </ion-buttons>
+    <ion-buttons slot="end">
+      <ion-button *ngIf="!exportSelectionMode" fill="clear" (click)="startExportSelection()" aria-label="Select archived students to export">
+        Export
+      </ion-button>
+      <ion-button *ngIf="exportSelectionMode" fill="clear" [disabled]="!selectedArchiveIds.size" (click)="exportSelectedStudents()">
+        Export Selected
+      </ion-button>
+      <ion-button *ngIf="exportSelectionMode" fill="clear" color="light" (click)="cancelExportSelection()">
+        Cancel
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding archive-content">
+  <div *ngIf="loading" class="archive-empty-state">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Loading archived students...</p>
+  </div>
+
+  <div *ngIf="errorMessage" class="archive-empty-state error-state">{{ errorMessage }}</div>
+
+  <div *ngIf="!loading && !errorMessage && archivedStudents.length" class="archive-list">
+    <ion-card *ngFor="let student of archivedStudents" class="archive-card">
+      <ion-card-header>
+        <div class="archive-card-heading">
+          <ion-checkbox
+            *ngIf="exportSelectionMode"
+            [checked]="isArchiveSelected(student)"
+            (ionChange)="toggleArchiveSelection(student)"
+            [attr.aria-label]="'Select archive record ' + student.p_archive_id + ' for export'"
+          ></ion-checkbox>
+          <div>
+            <ion-card-title>
+              {{ student.student_tbl?.s_firstname }} {{ student.student_tbl?.s_middlename || '' }} {{ student.student_tbl?.s_lastname }}
+            </ion-card-title>
+            <ion-card-subtitle>Student ID: {{ student.student_id }}</ion-card-subtitle>
+          </div>
+          <ion-badge color="medium">Archive #{{ student.p_archive_id }}</ion-badge>
+        </div>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="archive-details">
+          <div><span>Department ID</span><strong>{{ student.dept_id || 'N/A' }}</strong></div>
+          <div><span>Section ID</span><strong>{{ student.section_id }}</strong></div>
+          <div><span>Subject ID</span><strong>{{ student.subj_id }}</strong></div>
+          <div><span>Score ID</span><strong>{{ student.Score_id || 'N/A' }}</strong></div>
+          <div><span>Score</span><strong>{{ student.student_score?.score_value ?? 'N/A' }}</strong></div>
+          <div><span>Percentage</span><strong>{{ student.student_score?.percentage != null ? (student.student_score.percentage + '%') : 'N/A' }}</strong></div>
+        </div>
+        <div class="archive-card-action">
+        <ion-button
+          fill="outline"
+          size="small"
+          [disabled]="restoringArchiveId === student.p_archive_id"
+          (click)="restoreStudent(student)"
+        >
+          {{ restoringArchiveId === student.p_archive_id ? 'Restoring...' : 'Restore' }}
+        </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <div class="archive-empty-state" *ngIf="!loading && !errorMessage && !archivedStudents.length">
+    <ion-icon name="archive-outline"></ion-icon>
+    <h1>Archive</h1>
+    <p>No archived students yet.</p>
+  </div>
+</ion-content>

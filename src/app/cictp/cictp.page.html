@@ -1,0 +1,29 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+
+    <!-- Back Icon -->
+    <ion-buttons slot="start">
+      <ion-button fill="clear" (click)="onGoto()">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+
+  <!-- Title -->
+  <div class="page-title">
+    <h1>CICT Department</h1>
+  </div>
+
+  <!-- Existing Buttons (do not change) -->
+  <div class="button-grid">
+    <ion-button expand="block" (click)="onGogo()">1st Year</ion-button>
+    <ion-button expand="block" (click)="onGege()">2nd Year</ion-button>
+    <ion-button expand="block" (click)="onGigi()">3rd Year</ion-button>
+    <ion-button expand="block" (click)="onGego()">4th Year</ion-button>
+  </div>
+
+</ion-content>

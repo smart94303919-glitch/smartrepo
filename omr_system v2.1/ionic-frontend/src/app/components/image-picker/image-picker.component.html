@@ -1,0 +1,24 @@
+<!--
+  image-picker.component.html
+  Two big touch-friendly buttons + a preview thumbnail once an image is
+  acquired, so the user can visually confirm they picked/shot the right
+  sheet before it gets uploaded.
+-->
+<div class="picker-buttons">
+  <ion-button expand="block" color="primary" (click)="captureFromCamera()">
+    <ion-icon name="camera-outline" slot="start"></ion-icon>
+    Capture with Camera
+  </ion-button>
+
+  <ion-button expand="block" fill="outline" (click)="importFromGallery()">
+    <ion-icon name="image-outline" slot="start"></ion-icon>
+    Import from Gallery
+  </ion-button>
+</div>
+
+<div class="preview" *ngIf="previewDataUrl">
+  <ion-label>
+    <h3>Preview</h3>
+  </ion-label>
+  <img [src]="previewDataUrl" alt="Captured OMR sheet preview" />
+</div>

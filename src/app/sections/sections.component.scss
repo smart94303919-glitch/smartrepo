@@ -1,0 +1,21 @@
+/* Student Class Component Styles */
+
+.page-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 16px;
+  gap: 12px;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.page-title-row ion-button {
+  --padding-start: 4px;
+  --padding-end: 4px;
+  margin: 0;
+}

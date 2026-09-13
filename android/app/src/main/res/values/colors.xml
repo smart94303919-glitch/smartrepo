@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Warmer theme color scheme -->
+    <color name="colorPrimary">#FF5722</color>      <!-- Deep Orange -->
+    <color name="colorPrimaryDark">#D84315</color>  <!-- Darker Deep Orange -->
+    <color name="colorAccent">#FFC107</color>      <!-- Amber -->
+</resources>

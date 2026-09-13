@@ -1,0 +1,16 @@
+{
+  "name": "omr-system-v2",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "start": "cross-env NG_CLI_ANALYTICS=false concurrently -k \"python server.py\" \"cd ionic-frontend && cross-env NG_CLI_ANALYTICS=false npx ng serve --host 0.0.0.0 --port 8100 --disable-host-check --poll 1000\"",
+    "backend": "python server.py",
+    "frontend": "cd ionic-frontend && cross-env NG_CLI_ANALYTICS=false npx ng serve --host 0.0.0.0 --port 8100 --disable-host-check --poll 1000",
+    "install:frontend": "cd ionic-frontend && npm install",
+    "serve:frontend": "cd ionic-frontend && cross-env NG_CLI_ANALYTICS=false npx ng serve --host 0.0.0.0 --port 8100 --disable-host-check --poll 1000"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1",
+    "cross-env": "^10.0.0"
+  }
+}

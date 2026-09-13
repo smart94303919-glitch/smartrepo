@@ -1,0 +1,99 @@
+.archive-content {
+  --background: #f5f7fb;
+}
+
+.archive-toolbar-title {
+  color: var(--ion-toolbar-color, #ffffff);
+  font-size: 1.1rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.archive-list {
+  display: grid;
+  gap: 16px;
+  margin: 0 auto;
+  max-width: 900px;
+}
+
+.archive-card {
+  margin: 0;
+  border: 1px solid #dce5f2;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.archive-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.archive-card-heading ion-checkbox {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.archive-card-heading ion-card-title {
+  color: #11213d;
+  font-size: 1.05rem;
+}
+
+.archive-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  span {
+    color: var(--ion-color-medium);
+    font-size: 0.75rem;
+  }
+
+  strong {
+    color: #11213d;
+    font-size: 0.9rem;
+  }
+}
+
+.archive-card-action {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+@media (max-width: 600px) {
+  .archive-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.error-state {
+  color: var(--ion-color-danger);
+}
+
+.archive-empty-state {
+  padding: 72px 16px;
+  color: var(--ion-color-medium);
+  text-align: center;
+
+  ion-icon {
+    font-size: 48px;
+    color: var(--ion-color-primary);
+  }
+
+  h1 {
+    color: var(--ion-color-dark);
+    margin: 16px 0 8px;
+  }
+
+  p {
+    margin: 0;
+  }
+}

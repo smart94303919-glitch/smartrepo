@@ -1,0 +1,81 @@
+ion-content {
+  --padding-top: 100px;
+  --padding-bottom: 0;
+  --padding-start: 0;
+  --padding-end: 0;
+}
+
+.logo {
+  width: 220px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.login-container {
+  margin: 24px auto 0;
+  width: 90%;
+  max-width: 420px;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+ion-item {
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 15px;
+}
+
+ion-item.error {
+  --border-color: #ff0000;
+  border: 2px solid #ff0000;
+  border-radius: 4px;
+}
+
+.error-text {
+  color: #ff0000;
+  font-size: 12px;
+  margin-top: -10px;
+  margin-bottom: 10px;
+}
+
+.buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.forgot-password {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
+.forgot-link {
+  background: transparent;
+  border: none;
+  color: #3880ff;
+  font-size: 0.875rem;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.forgot-link:hover {
+  color: #2c6ad6;
+}
+
+ion-button {
+  border-radius: 25px;
+  font-weight: bold;
+}
+
+@media (max-width: 600px) {
+  .login-container {
+    width: 100%;
+    padding: 16px;
+  }
+}

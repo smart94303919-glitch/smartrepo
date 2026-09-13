@@ -1,0 +1,63 @@
+/* student.page.scss */
+ion-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #1f2a44;
+}
+
+.page-card {
+  width: 100%;
+  max-width: 680px;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 22px 55px rgba(33, 50, 90, 0.1);
+  padding: 36px;
+  border: 1px solid rgba(98, 116, 191, 0.12);
+  text-align: center;
+}
+
+.page-card h1 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  letter-spacing: 0.02em;
+}
+
+.page-card p {
+  color: #556080;
+  margin-bottom: 30px;
+  line-height: 1.7;
+  font-size: 1rem;
+}
+
+.buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+ion-button {
+  min-width: 160px;
+  font-weight: 600;
+  border-radius: 10px;
+}
+
+@media (max-width: 560px) {
+  .page-card {
+    padding: 28px;
+  }
+
+  .buttons {
+    flex-direction: column;
+  }
+
+  ion-button {
+    width: 100%;
+    min-width: auto;
+  }
+}

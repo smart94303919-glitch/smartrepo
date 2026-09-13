@@ -1,0 +1,14 @@
+{
+  "total_questions": 1,
+  "options_per_question": 4,
+  "columns": 1,
+  "title": "T26",
+  "subject": "IT-NET01",
+  "quiz_type": "Multiple Choice",
+  "student_id_digits": 13,
+  "embed_qr": true,
+  "section_id": 126,
+  "SubjectID": 42,
+  "prof_id": null,
+  "saved_at": "2026-09-07T00:33:34"
+}
