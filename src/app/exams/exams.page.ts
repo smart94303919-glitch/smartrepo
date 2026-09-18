@@ -1,6 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { SupabaseService } from '../services/supabase.service';
+import { Capacitor } from '@capacitor/core';
+import { Directory, Filesystem } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -12,9 +15,15 @@ import * as XLSX from 'xlsx';
 export class ExamsPage implements OnInit {
   showGrades = false;
   grades: any[] = [];
-  gradeTabs: { key: string; subjectName: string; sectionName: string }[] = [];
-  selectedGradeTab = 'all';
+  sections: { id: number; name: string }[] = [];
+  subjectsBySection = new Map<number, { id: number; name: string }[]>();
+  assessmentsBySubject = new Map<string, any[]>();
+  selectedSectionId: number | null = null;
+  selectedSubjectId: number | null = null;
+  selectedAssessment: any | null = null;
   loadingGrades = false;
+  loadingAssessments = false;
+  loadingAssessmentGrades = false;
   gradesError = '';
 
   constructor(private router: Router, private supabaseService: SupabaseService) {}
@@ -55,32 +64,117 @@ export class ExamsPage implements OnInit {
       }
 
       const assignments = await this.supabaseService.getProfessorSubjectSectionAssignments(Number(professorId));
-      const tabMap = new Map<string, { key: string; subjectName: string; sectionName: string }>();
+      const sectionMap = new Map<number, { id: number; name: string }>();
+      const subjectMap = new Map<number, { id: number; name: string }[]>();
 
       (assignments || []).forEach((assignment: any) => {
         const subject = Array.isArray(assignment.subject_tbl) ? assignment.subject_tbl[0] : assignment.subject_tbl;
         const section = Array.isArray(assignment.section_tbl) ? assignment.section_tbl[0] : assignment.section_tbl;
-        const key = `${assignment.subj_id}:${assignment.section_id}`;
-        if (!tabMap.has(key)) {
-          tabMap.set(key, {
-            key,
-            subjectName: subject?.subject ?? 'Unknown Subject',
-            sectionName: section?.section ?? 'Unknown Section'
-          });
+        const sectionId = Number(assignment.section_id);
+        const subjectId = Number(assignment.subj_id);
+        sectionMap.set(sectionId, { id: sectionId, name: section?.section ?? 'Unknown Section' });
+        const sectionSubjects = subjectMap.get(sectionId) || [];
+        if (!sectionSubjects.some((item) => item.id === subjectId)) {
+          sectionSubjects.push({ id: subjectId, name: subject?.subject ?? 'Unknown Subject' });
         }
       });
 
-      this.grades = await this.supabaseService.getProfessorStudentScores(Number(professorId));
-      const gradedClassKeys = new Set(
-        this.grades.map((grade) => `${grade.subj_id}:${grade.section_id}`)
-      );
-      this.gradeTabs = Array.from(tabMap.values()).filter((tab) => gradedClassKeys.has(tab.key));
-      this.selectedGradeTab = 'all';
+      this.sections = Array.from(sectionMap.values());
+      this.subjectsBySection = subjectMap;
+      this.assessmentsBySubject.clear();
+      this.grades = [];
+      this.selectedSectionId = null;
+      this.selectedSubjectId = null;
+      this.selectedAssessment = null;
+      this.loadingAssessments = true;
+      const assessments = await this.supabaseService.getProfessorGradeAssessments(Number(professorId));
+      assessments.forEach((assessment: any) => {
+        const key = this.assessmentKey(assessment.section_id, assessment.subj_id);
+        const subjectAssessments = this.assessmentsBySubject.get(key) || [];
+        subjectAssessments.push(assessment);
+        this.assessmentsBySubject.set(key, subjectAssessments);
+      });
     } catch (error) {
       console.error('Failed to load student grades:', error);
       this.gradesError = 'Failed to load student grades.';
     } finally {
+      this.loadingAssessments = false;
       this.loadingGrades = false;
+    }
+  }
+
+  private assessmentKey(sectionId: number, subjectId: number): string {
+    return `${sectionId}:${subjectId}`;
+  }
+
+  get selectedSubjects(): { id: number; name: string }[] {
+    return this.selectedSectionId === null ? [] : this.subjectsBySection.get(this.selectedSectionId) || [];
+  }
+
+  get selectedAssessments(): any[] {
+    return this.selectedSectionId === null || this.selectedSubjectId === null
+      ? []
+      : this.assessmentsBySubject.get(this.assessmentKey(this.selectedSectionId, this.selectedSubjectId)) || [];
+  }
+
+  onSectionSelected(sectionId: number | string | undefined): void {
+    if (sectionId === undefined) {
+      return;
+    }
+
+    this.selectedSectionId = Number(sectionId);
+    this.selectedSubjectId = null;
+    this.selectedAssessment = null;
+    this.grades = [];
+
+    const currentUser = localStorage.getItem('currentUser');
+    const professorId = currentUser ? JSON.parse(currentUser)?.prof_id : null;
+    if (professorId) {
+      void this.loadSubjectsForSection(Number(professorId), this.selectedSectionId);
+    }
+  }
+
+  private async loadSubjectsForSection(professorId: number, sectionId: number): Promise<void> {
+    try {
+      const subjects = await this.supabaseService.getProfessorSubjectsForSection(professorId, sectionId);
+      this.subjectsBySection.set(sectionId, subjects);
+    } catch (error) {
+      console.error('Failed to load subjects for section:', error);
+      this.gradesError = 'Failed to load subjects for the selected section.';
+    }
+  }
+
+  onSubjectSelected(subjectId: number): void {
+    this.selectedSubjectId = Number(subjectId);
+    this.selectedAssessment = null;
+    this.grades = [];
+  }
+
+  async onAssessmentSelected(assessment: any): Promise<void> {
+    this.selectedAssessment = assessment;
+    this.grades = [];
+    this.loadingAssessmentGrades = true;
+    this.gradesError = '';
+
+    try {
+      const currentUser = localStorage.getItem('currentUser');
+      const professorId = currentUser ? JSON.parse(currentUser)?.prof_id : null;
+      if (!professorId) {
+        this.gradesError = 'Professor ID is missing.';
+        return;
+      }
+
+      this.grades = await this.supabaseService.getProfessorGradesForAssessment(
+        Number(professorId),
+        Number(assessment.section_id),
+        Number(assessment.subj_id),
+        String(assessment.sheet_id)
+      );
+    } catch (error) {
+      console.error('Failed to load assessment grades:', error);
+      this.gradesError = 'Failed to load grades for this assessment.';
+    } finally {
+      this.loadingAssessmentGrades = false;
     }
   }
 
@@ -94,11 +188,7 @@ export class ExamsPage implements OnInit {
   }
 
   get filteredGrades(): any[] {
-    if (this.selectedGradeTab === 'all') {
-      return this.grades;
-    }
-
-    return this.grades.filter((grade) => `${grade.subj_id}:${grade.section_id}` === this.selectedGradeTab);
+    return this.grades;
   }
 
   async exportGrades(): Promise<void> {
@@ -140,7 +230,27 @@ export class ExamsPage implements OnInit {
     const worksheet = XLSX.utils.json_to_sheet(exportRows);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Student Grades');
-    XLSX.writeFile(workbook, `student-grades-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    const filename = `student-grades-${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+    if (Capacitor.isNativePlatform()) {
+      const fileData = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
+      const savedFile = await Filesystem.writeFile({
+        path: filename,
+        data: fileData,
+        directory: Directory.Documents,
+        recursive: true
+      });
+
+      await Share.share({
+        title: 'Student grades export',
+        text: 'Student grades Excel file',
+        url: savedFile.uri,
+        dialogTitle: 'Open or share student grades'
+      });
+      return;
+    }
+
+    XLSX.writeFile(workbook, filename);
   }
 
   /**

@@ -31,6 +31,7 @@ export class StudentInfoPage implements OnInit {
   sections: { section_id: number; section: string }[] = [];
   subjects: { SubjectID: number; subject: string }[] = [];
   selectedSubject = '';
+  selectedSubjectIds: number[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -56,6 +57,9 @@ export class StudentInfoPage implements OnInit {
     this.originalStudentId = this.student.student_id;
 
     this.selectedSubject = this.student.subject;
+    if (this.student.subjectId) {
+      this.selectedSubjectIds = [this.student.subjectId];
+    }
 
     void this.loadSections();
   }
@@ -89,6 +93,7 @@ export class StudentInfoPage implements OnInit {
       this.subjects = [];
       this.student.subject = '';
       this.student.subjectId = null;
+      this.selectedSubjectIds = [];
       this.selectedSubject = '';
       return;
     }
@@ -100,25 +105,39 @@ export class StudentInfoPage implements OnInit {
       selectedSection.section_id
     );
 
-    const matchedSubject = this.subjects.find((subject) => subject.subject === this.student.subject);
-    if (matchedSubject) {
-      this.student.subjectId = matchedSubject.SubjectID;
-      this.selectedSubject = matchedSubject.subject;
-    }
+    const selectedNames = this.student.subject
+      .split(',')
+      .map((subject: string) => subject.trim())
+      .filter(Boolean);
+    const selectedSubjects = this.subjects.filter((subject) =>
+      this.selectedSubjectIds.includes(subject.SubjectID) || selectedNames.includes(subject.subject)
+    );
+    this.selectedSubjectIds = selectedSubjects.map((subject) => subject.SubjectID);
 
-    if (!matchedSubject) {
+    if (!selectedSubjects.length) {
       this.student.subject = '';
       this.student.subjectId = null;
       this.selectedSubject = '';
+      return;
     }
+
+    this.updateSelectedSubjects();
   }
 
   onSubjectChange(event: any): void {
-    const selectedSubject = event?.detail?.value;
-    const matchedSubject = this.subjects.find((subject) => subject.subject === selectedSubject);
+    const selectedIds = event?.detail?.value ?? this.selectedSubjectIds;
+    this.selectedSubjectIds = (Array.isArray(selectedIds) ? selectedIds : [selectedIds])
+      .map((subjectId) => Number(subjectId))
+      .filter((subjectId) => Number.isFinite(subjectId));
+    this.updateSelectedSubjects();
+  }
 
-    this.student.subject = matchedSubject?.subject ?? selectedSubject ?? '';
-    this.student.subjectId = matchedSubject?.SubjectID ?? null;
+  private updateSelectedSubjects(): void {
+    const selectedSubjects = this.subjects.filter((subject) => this.selectedSubjectIds.includes(subject.SubjectID));
+    const selectedNames = selectedSubjects.map((subject) => subject.subject);
+
+    this.student.subject = selectedNames.join(', ');
+    this.student.subjectId = selectedSubjects[0]?.SubjectID ?? null;
     this.selectedSubject = this.student.subject;
   }
 
@@ -157,6 +176,7 @@ export class StudentInfoPage implements OnInit {
         section: this.student.section,
         subject: this.student.subject,
         subjectId: this.student.subjectId ?? null,
+        subjectIds: this.selectedSubjectIds,
         professorId: user?.prof_id ?? null
       });
 

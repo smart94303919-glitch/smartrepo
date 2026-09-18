@@ -161,6 +161,41 @@ def _get_supabase_client() -> Client:
     return create_client(url, key)
 
 
+def _link_sheet_to_professor(supabase: Client, sheet_id: str, prof_id: Optional[int]) -> None:
+    """Create the sheet_prof link without making PDF generation fail."""
+    if prof_id is None:
+        print(f"[PDF Gen] Warning: No prof_id supplied; sheet_prof link skipped for '{sheet_id}'")
+        return
+
+    try:
+        active_prof_id = int(prof_id)
+    except (TypeError, ValueError):
+        print(f"[PDF Gen] Warning: Invalid prof_id '{prof_id}'; sheet_prof link skipped for '{sheet_id}'")
+        return
+
+    if active_prof_id <= 0:
+        print(f"[PDF Gen] Warning: Invalid prof_id '{prof_id}'; sheet_prof link skipped for '{sheet_id}'")
+        return
+
+    existing_mapping = (
+        supabase.table("sheet_prof")
+        .select("assignment_id")
+        .eq("sheet_id", str(sheet_id))
+        .eq("prof_id", active_prof_id)
+        .limit(1)
+        .execute()
+    )
+
+    if existing_mapping.data:
+        return
+
+    supabase.table("sheet_prof").insert({
+        "sheet_id": str(sheet_id),
+        "prof_id": active_prof_id,
+    }).execute()
+    print(f"[PDF Gen] Linked sheet '{sheet_id}' to professor {active_prof_id}")
+
+
 def fetch_assigned_students(section_id, subject_id, prof_id=None):
     """Fetch students enrolled in a section and subject from the current schema."""
     supabase = _get_supabase_client()
@@ -709,8 +744,10 @@ def generate_pdf(payload: SheetConfigRequest):
 
             supabase.table("sheet_tbl").upsert(mapping_payload, on_conflict="sheet_id").execute()
             print(f"[PDF Gen] Saved sheet_tbl record for '{cfg.sheet_id}'")
+
+            _link_sheet_to_professor(supabase, str(cfg.sheet_id), payload.prof_id)
         except Exception as db_err:
-            print(f"[PDF Gen] Warning: Failed to save sheet_tbl mapping: {db_err}")
+            print(f"[PDF Gen] Warning: Failed to save sheet metadata or professor mapping: {db_err}")
 
     try:
         generate_omr_sheets(

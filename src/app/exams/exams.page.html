@@ -78,7 +78,7 @@
           class="export-button"
           fill="solid"
           color="primary"
-          [disabled]="loadingGrades || !filteredGrades.length"
+          [disabled]="loadingGrades || loadingAssessmentGrades || !filteredGrades.length"
           (click)="exportGrades()"
           aria-label="Export student grades"
         >
@@ -93,31 +93,79 @@
       <p>Loading student grades...</p>
     </div>
 
-    <div *ngIf="!loadingGrades && gradeTabs.length" class="grade-filter-group">
+    <div *ngIf="!loadingGrades && sections.length" class="grade-filter-group">
       <div class="grade-filter-label">
-        <ion-icon name="filter-outline" color="primary"></ion-icon>
-        <span>Filter by class</span>
+        <ion-icon name="layers-outline" color="primary"></ion-icon>
+        <span>Select a section</span>
       </div>
-      <ion-segment [(ngModel)]="selectedGradeTab" [scrollable]="true" class="grade-tabs">
-      <ion-segment-button value="all">
-        <ion-icon name="layers-outline"></ion-icon>
-        <ion-label>All Classes</ion-label>
-      </ion-segment-button>
-      <ion-segment-button *ngFor="let tab of gradeTabs" [value]="tab.key">
-        <ion-icon name="school-outline"></ion-icon>
-        <ion-label>{{ tab.subjectName }} | {{ tab.sectionName }}</ion-label>
-      </ion-segment-button>
+      <ion-segment [value]="selectedSectionId" (ionChange)="onSectionSelected($event.detail.value)" [scrollable]="true" class="grade-tabs">
+        <ion-segment-button *ngFor="let section of sections" [value]="section.id">
+          <ion-icon name="school-outline"></ion-icon>
+          <ion-label>{{ section.name }}</ion-label>
+        </ion-segment-button>
       </ion-segment>
     </div>
 
-    <ion-card *ngIf="!loadingGrades && filteredGrades.length" class="grades-card">
+    <div *ngIf="!loadingGrades && !selectedSectionId && sections.length" class="grades-state">
+      <ion-icon name="hand-left-outline"></ion-icon>
+      <p>Select a section to view its assigned subjects.</p>
+    </div>
+
+    <div *ngIf="!loadingGrades && selectedSectionId !== null" class="assessment-layout">
+      <ion-card class="subject-card">
+        <ion-card-header><ion-card-title>Subjects</ion-card-title></ion-card-header>
+        <ion-list lines="none" class="assessment-list">
+          <ion-item *ngFor="let subject of selectedSubjects" button [detail]="true" [class.selected-item]="selectedSubjectId === subject.id" (click)="onSubjectSelected(subject.id)">
+            <ion-icon name="book-outline" slot="start" color="primary"></ion-icon>
+            <ion-label>{{ subject.name }}</ion-label>
+          </ion-item>
+        </ion-list>
+        <div *ngIf="!selectedSubjects.length" class="grades-state compact-state">
+          <p>No subjects are assigned to this professor in the selected section.</p>
+        </div>
+      </ion-card>
+
+      <ion-card class="subject-card" *ngIf="selectedSubjectId !== null">
+        <ion-card-header>
+          <ion-card-title>Exams and quizzes</ion-card-title>
+          <ion-card-subtitle>Select an assessment to view students and grades</ion-card-subtitle>
+        </ion-card-header>
+        <ion-list lines="none" class="assessment-list" *ngIf="!loadingAssessments && selectedAssessments.length">
+          <ion-item *ngFor="let assessment of selectedAssessments" button [detail]="true" [class.selected-item]="selectedAssessment?.sheet_id === assessment.sheet_id" (click)="onAssessmentSelected(assessment)">
+            <ion-icon name="document-text-outline" slot="start" color="primary"></ion-icon>
+            <ion-label>
+              <h2>{{ assessment.sheet_title || assessment.sheet_id }}</h2>
+              <p>{{ assessment.quiz_type || 'Assessment' }}</p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+        <div *ngIf="!loadingAssessments && !selectedAssessments.length" class="grades-state compact-state">
+          <p>No exams or quizzes are available for this subject.</p>
+        </div>
+      </ion-card>
+    </div>
+
+    <div *ngIf="selectedAssessment && loadingAssessmentGrades" class="grades-state">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Loading student grades...</p>
+    </div>
+
+    <div *ngIf="selectedAssessment" class="selected-assessment-heading">
+      <ion-icon name="document-text-outline" color="primary"></ion-icon>
+      <div>
+        <span>Selected exam or quiz</span>
+        <h2>{{ selectedAssessment.sheet_title || selectedAssessment.sheet_id }}</h2>
+      </div>
+    </div>
+
+    <ion-card *ngIf="selectedAssessment && !loadingAssessmentGrades && filteredGrades.length" class="grades-card">
       <ion-list>
         <ion-item *ngFor="let grade of filteredGrades">
           <ion-icon name="person-circle-outline" slot="start" color="primary"></ion-icon>
           <ion-label>
             <h2>{{ grade.student_name }}</h2>
-            <p>{{ grade.student_id }} | {{ grade.subject_name }} | {{ grade.section_name }}</p>
-            <p>Sheet: {{ grade.sheet_id }}</p>
+            <p>{{ grade.student_id }} | {{ selectedAssessment.sheet_title || selectedAssessment.sheet_id }}</p>
+            <p>{{ selectedAssessment.quiz_type || 'Assessment' }}</p>
           </ion-label>
           <div slot="end" class="grade-result">
             <strong>{{ grade.percentage | number:'1.0-2' }}%</strong>
@@ -130,9 +178,9 @@
       </ion-list>
     </ion-card>
 
-    <div *ngIf="!loadingGrades && !filteredGrades.length && !gradesError" class="grades-state">
+    <div *ngIf="selectedAssessment && !loadingAssessmentGrades && !filteredGrades.length && !gradesError" class="grades-state">
       <ion-icon name="document-text-outline"></ion-icon>
-      <p>{{ grades.length ? 'No grades recorded for this class yet.' : 'No student grades have been recorded yet.' }}</p>
+      <p>No grades recorded for this assessment yet.</p>
     </div>
     <div *ngIf="gradesError" class="grades-state error-state">{{ gradesError }}</div>
   </div>

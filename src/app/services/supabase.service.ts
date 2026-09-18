@@ -274,17 +274,91 @@ export class SupabaseService {
   }
 
 async getProfessorSubjectSectionAssignments(profId: number) {
-  const { data, error } = await this.supabase
+  const { data: assignments, error: assignmentError } = await this.supabase
     .from(this.professorSectionSubjectTable)
-    .select('prof_id, section_id, subj_id, section_tbl(section_id, section), subject_tbl(subj_id, subject)')
+    .select('prof_id, section_id, subj_id')
     .eq('prof_id', profId);
 
-  if (error) {
-    console.error('Error fetching professor subject section assignments:', error);
-    throw error;
+  if (assignmentError) {
+    console.error('Error fetching professor subject section assignments:', assignmentError);
+    throw assignmentError;
   }
 
-  return data;
+  const validAssignments = (assignments || []).filter((assignment: any) =>
+    assignment.section_id !== null && assignment.subj_id !== null
+  );
+  if (!validAssignments.length) {
+    return [];
+  }
+
+  const sectionIds = Array.from(new Set(validAssignments.map((assignment: any) => Number(assignment.section_id))));
+  const subjectIds = Array.from(new Set(validAssignments.map((assignment: any) => Number(assignment.subj_id))));
+  const [sectionsResult, subjectsResult] = await Promise.all([
+    this.supabase
+      .from(this.sectionTable)
+      .select('section_id, section')
+      .in('section_id', sectionIds),
+    this.supabase
+      .from(this.subjectTable)
+      .select('subj_id, subject')
+      .in('subj_id', subjectIds)
+  ]);
+
+  if (sectionsResult.error) {
+    throw sectionsResult.error;
+  }
+  if (subjectsResult.error) {
+    throw subjectsResult.error;
+  }
+
+  const sectionMap = new Map((sectionsResult.data || []).map((section: any) => [
+    Number(section.section_id),
+    section
+  ]));
+  const subjectMap = new Map((subjectsResult.data || []).map((subject: any) => [
+    Number(subject.subj_id),
+    subject
+  ]));
+
+  return validAssignments.map((assignment: any) => ({
+    ...assignment,
+    section_tbl: sectionMap.get(Number(assignment.section_id)) ?? null,
+    subject_tbl: subjectMap.get(Number(assignment.subj_id)) ?? null
+  }));
+}
+
+async getProfessorSubjectsForSection(profId: number, sectionId: number): Promise<Array<{ id: number; name: string }>> {
+  const { data: assignments, error: assignmentError } = await this.supabase
+    .from(this.professorSectionSubjectTable)
+    .select('subj_id')
+    .eq('prof_id', Number(profId))
+    .eq('section_id', Number(sectionId));
+
+  if (assignmentError) {
+    throw assignmentError;
+  }
+
+  const subjectIds = Array.from(new Set((assignments || [])
+    .map((assignment: any) => Number(assignment.subj_id))
+    .filter((subjectId: number) => Number.isFinite(subjectId))));
+
+  if (!subjectIds.length) {
+    return [];
+  }
+
+  const { data: subjects, error: subjectError } = await this.supabase
+    .from(this.subjectTable)
+    .select('subj_id, subject')
+    .in('subj_id', subjectIds);
+
+  if (subjectError) {
+    throw subjectError;
+  }
+
+  return (subjects || []).map((subject: any) => ({
+    id: Number(subject.subj_id),
+    name: subject.subject
+  }));
 }
 
 async getProfessorStudentScores(profId: number): Promise<any[]> {
@@ -344,6 +418,97 @@ async getProfessorStudentScores(profId: number): Promise<any[]> {
   }));
 }
 
+async getProfessorGradeAssessments(profId: number): Promise<any[]> {
+  const assignments = await this.getProfessorSubjectSectionAssignments(profId);
+  const assignmentKeys = new Set(
+    (assignments || []).map((assignment: any) => `${assignment.subj_id}:${assignment.section_id}`)
+  );
+
+  if (!assignmentKeys.size) {
+    return [];
+  }
+
+  const sectionIds = Array.from(new Set((assignments || []).map((assignment: any) => Number(assignment.section_id))));
+  const subjectIds = Array.from(new Set((assignments || []).map((assignment: any) => Number(assignment.subj_id))));
+  const { data, error } = await this.supabase
+    .from('sheet_tbl')
+    .select('sheet_id, sheet_title, quiz_type, section_id, subj_id')
+    .in('section_id', sectionIds)
+    .in('subj_id', subjectIds);
+
+  if (error) {
+    throw error;
+  }
+
+  const subjectNames = new Map<number, string>();
+  const sectionNames = new Map<number, string>();
+  (assignments || []).forEach((assignment: any) => {
+    const subject = Array.isArray(assignment.subject_tbl) ? assignment.subject_tbl[0] : assignment.subject_tbl;
+    const section = Array.isArray(assignment.section_tbl) ? assignment.section_tbl[0] : assignment.section_tbl;
+    subjectNames.set(Number(assignment.subj_id), subject?.subject ?? 'Unknown Subject');
+    sectionNames.set(Number(assignment.section_id), section?.section ?? 'Unknown Section');
+  });
+
+  return (data || [])
+    .filter((sheet: any) => assignmentKeys.has(`${sheet.subj_id}:${sheet.section_id}`))
+    .map((sheet: any) => ({
+      ...sheet,
+      subject_name: subjectNames.get(Number(sheet.subj_id)) ?? 'Unknown Subject',
+      section_name: sectionNames.get(Number(sheet.section_id)) ?? 'Unknown Section'
+    }));
+}
+
+async getProfessorGradesForAssessment(
+  profId: number,
+  sectionId: number,
+  subjectId: number,
+  sheetId: string
+): Promise<any[]> {
+  const assignments = await this.getProfessorSubjectSectionAssignments(profId);
+  const isAssigned = (assignments || []).some((assignment: any) =>
+    Number(assignment.section_id) === Number(sectionId) && Number(assignment.subj_id) === Number(subjectId)
+  );
+
+  if (!isAssigned) {
+    return [];
+  }
+
+  const { data: scoreRows, error: scoreError } = await this.supabase
+    .from('student_score')
+    .select('student_id, sheet_id, score_value, percentage, subj_id, section_id')
+    .eq('sheet_id', sheetId)
+    .eq('subj_id', Number(subjectId))
+    .eq('section_id', Number(sectionId));
+
+  if (scoreError) {
+    throw scoreError;
+  }
+
+  if (!scoreRows?.length) {
+    return [];
+  }
+
+  const studentIds = Array.from(new Set(scoreRows.map((score: any) => score.student_id)));
+  const { data: students, error: studentError } = await this.supabase
+    .from('student_tbl')
+    .select('student_id, s_firstname, s_middlename, s_lastname')
+    .in('student_id', studentIds);
+
+  if (studentError) {
+    throw studentError;
+  }
+
+  const studentMap = new Map((students || []).map((student: any) => [
+    String(student.student_id),
+    [student.s_firstname, student.s_middlename, student.s_lastname].filter(Boolean).join(' ')
+  ]));
+
+  return scoreRows.map((score: any) => ({
+    ...score,
+    student_name: studentMap.get(String(score.student_id)) ?? 'Unknown Student'
+  }));
+}
+
 async getSheetAssignments(sheetIds: string[]): Promise<any[]> {
   const normalizedSheetIds = Array.from(new Set(
     sheetIds.map((sheetId) => String(sheetId ?? '').trim()).filter(Boolean)
@@ -367,9 +532,13 @@ async getSheetAssignments(sheetIds: string[]): Promise<any[]> {
   return data || [];
 }
 
-async archiveStudents(studentIds: string[], subjectId: number, sectionName?: string | null, profId?: number): Promise<void> {
+async archiveStudents(studentIds: string[], subjectId: number | number[], sectionName?: string | null, profId?: number): Promise<void> {
   const normalizedIds = Array.from(new Set(studentIds.map((id) => id.trim()).filter(Boolean)));
-  if (!normalizedIds.length || !subjectId || !sectionName?.trim()) {
+  const normalizedSubjectIds = Array.from(new Set((Array.isArray(subjectId) ? subjectId : [subjectId])
+    .map((id) => Number(id))
+    .filter((id) => Number.isFinite(id) && id > 0)));
+
+  if (!normalizedIds.length || !normalizedSubjectIds.length || !sectionName?.trim()) {
     return;
   }
 
@@ -389,9 +558,9 @@ async archiveStudents(studentIds: string[], subjectId: number, sectionName?: str
 
   const { data: scores, error: scoreError } = await this.supabase
     .from('student_score')
-    .select('student_id, "Score_id"')
+    .select('student_id, subj_id, "Score_id"')
     .in('student_id', normalizedIds)
-    .eq('subj_id', Number(subjectId))
+    .in('subj_id', normalizedSubjectIds)
     .eq('section_id', Number(section.section_id));
 
   if (scoreError) {
@@ -411,23 +580,26 @@ async archiveStudents(studentIds: string[], subjectId: number, sectionName?: str
     (departments || []).map((department: any) => [String(department.student_id), department.dept_id])
   );
 
-  const scoreRowsByStudent = new Map<string, any[]>();
+  const scoreRowsByStudentSubject = new Map<string, any[]>();
   (scores || []).forEach((score: any) => {
-    const studentScores = scoreRowsByStudent.get(String(score.student_id)) || [];
+    const key = `${score.student_id}:${score.subj_id}`;
+    const studentScores = scoreRowsByStudentSubject.get(key) || [];
     studentScores.push(score);
-    scoreRowsByStudent.set(String(score.student_id), studentScores);
+    scoreRowsByStudentSubject.set(key, studentScores);
   });
 
   const archiveRows: any[] = [];
   normalizedIds.forEach((studentId) => {
-    const studentScores = scoreRowsByStudent.get(studentId) || [];
-    (studentScores.length ? studentScores : [{ 'Score_id': null }]).forEach((score) => archiveRows.push({
-      student_id: studentId,
-      dept_id: departmentByStudent.get(studentId) ?? null,
-      section_id: Number(section.section_id),
-      subj_id: Number(subjectId),
-      'Score_id': score['Score_id'] ?? null
-    }));
+    normalizedSubjectIds.forEach((selectedSubjectId) => {
+      const studentScores = scoreRowsByStudentSubject.get(`${studentId}:${selectedSubjectId}`) || [];
+      (studentScores.length ? studentScores : [{ 'Score_id': null }]).forEach((score) => archiveRows.push({
+        student_id: studentId,
+        dept_id: departmentByStudent.get(studentId) ?? null,
+        section_id: Number(section.section_id),
+        subj_id: selectedSubjectId,
+        'Score_id': score['Score_id'] ?? null
+      }));
+    });
   });
 
   const { error: archiveError } = await this.supabase
@@ -442,7 +614,7 @@ async archiveStudents(studentIds: string[], subjectId: number, sectionName?: str
     .from('stud_section_subj')
     .delete()
     .in('student_id', normalizedIds)
-    .eq('subj_id', Number(subjectId))
+    .in('subj_id', normalizedSubjectIds)
     .eq('section_id', Number(section.section_id));
   const { error: studentAssignmentError } = await studentAssignmentDelete;
 
@@ -644,7 +816,7 @@ async saveSheetMetadata(metadata: {
   columns: number;
   section_id: number;
   subj_id: number;
-}): Promise<void> {
+}, profId?: number | null): Promise<void> {
   const { error } = await this.supabase
     .from('sheet_tbl')
     .insert([metadata]);
@@ -652,6 +824,34 @@ async saveSheetMetadata(metadata: {
   if (error) {
     console.error('Error saving sheet metadata:', error);
     throw error;
+  }
+
+  const activeProfessorId = Number(profId);
+  if (!Number.isFinite(activeProfessorId) || activeProfessorId <= 0) {
+    console.warn('Sheet metadata saved without a valid professor ID; sheet_prof link skipped.');
+    return;
+  }
+
+  const { data: existingMapping, error: mappingLookupError } = await this.supabase
+    .from('sheet_prof')
+    .select('assignment_id')
+    .eq('sheet_id', metadata.sheet_id)
+    .eq('prof_id', activeProfessorId)
+    .limit(1);
+
+  if (mappingLookupError) {
+    console.error('Sheet metadata saved, but sheet_prof lookup failed:', mappingLookupError);
+    return;
+  }
+
+  if (!existingMapping?.length) {
+    const { error: mappingInsertError } = await this.supabase
+      .from('sheet_prof')
+      .insert({ sheet_id: metadata.sheet_id, prof_id: activeProfessorId });
+
+    if (mappingInsertError) {
+      console.error('Sheet metadata saved, but sheet_prof insertion failed:', mappingInsertError);
+    }
   }
 }
 
@@ -1111,6 +1311,9 @@ async updateStudent(studentIdentifier: string | number, updates: any) {
 
   const sectionName = updates.section?.toString().trim();
   const subjectId = updates.subjectId ?? updates.subj_id ?? updates.SubjectID ?? null;
+  const subjectIds = (updates.subjectIds ?? [subjectId])
+    .map((value: number | string | null) => Number(value))
+    .filter((value: number) => Number.isFinite(value));
   const professorId = updates.professorId ?? updates.profId ?? this.getCurrentProfessorIdFromStorage();
 
   const { error: enrollmentDeleteError } = await this.supabase
@@ -1120,7 +1323,7 @@ async updateStudent(studentIdentifier: string | number, updates: any) {
 
   if (enrollmentDeleteError) return { error: enrollmentDeleteError };
 
-  if (subjectId === undefined || subjectId === null || subjectId === '') {
+  if (!subjectIds.length) {
     return { error: null };
   }
 
@@ -1167,11 +1370,11 @@ async updateStudent(studentIdentifier: string | number, updates: any) {
 
   const { error: enrollmentInsertError } = await this.supabase
     .from('stud_section_subj')
-    .insert([{
+    .insert(subjectIds.map((selectedSubjectId: number) => ({
       student_id: savedStudent.student_id,
       section_id: sectionId,
-      subj_id: Number(subjectId)
-    }]);
+      subj_id: selectedSubjectId
+    })));
 
   if (enrollmentInsertError) return { error: enrollmentInsertError };
 

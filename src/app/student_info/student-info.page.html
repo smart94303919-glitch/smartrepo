@@ -68,9 +68,16 @@
             </ion-item>
 
             <ion-item class="form-field">
-              <ion-label position="stacked">Subject</ion-label>
-              <ion-select [(ngModel)]="student.subject" name="subject" interface="popover" (ionChange)="onSubjectChange($event)" required>
-                <ion-select-option *ngFor="let subject of subjects" [value]="subject.subject">
+              <ion-label position="stacked">Subjects</ion-label>
+              <ion-select
+                [(ngModel)]="selectedSubjectIds"
+                name="subjects"
+                interface="popover"
+                [multiple]="true"
+                (ionChange)="onSubjectChange($event)"
+                required
+              >
+                <ion-select-option *ngFor="let subject of subjects" [value]="subject.SubjectID">
                   {{ subject.subject }}
                 </ion-select-option>
               </ion-select>

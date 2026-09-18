@@ -95,6 +95,10 @@ export class ImagePickerComponent implements AfterViewInit, OnChanges, OnDestroy
       return;
     }
 
+    if (!await this.requestCameraPermission()) {
+      return;
+    }
+
     this.isCameraActive = true;
     this.isCameraReady = false;
 
@@ -186,6 +190,10 @@ export class ImagePickerComponent implements AfterViewInit, OnChanges, OnDestroy
 
   /** Opens the native photo gallery / file picker. */
   async importFromGallery() {
+    if (!await this.requestPhotoPermission()) {
+      return;
+    }
+
     if (this.scanMode === 'grade') {
       this.previewDataUrl = null;
       // Student Sheet mode: batch import of 1 to 5 images.
@@ -199,6 +207,46 @@ export class ImagePickerComponent implements AfterViewInit, OnChanges, OnDestroy
       if (file) {
         this.imageCaptured.emit(file);
       }
+    }
+  }
+
+  private async requestCameraPermission(): Promise<boolean> {
+    try {
+      const permission = await Camera.checkPermissions();
+      if (permission.camera === 'granted') {
+        return true;
+      }
+
+      const requested = await Camera.requestPermissions({ permissions: ['camera'] });
+      if (requested.camera !== 'granted') {
+        await this.showToast('Camera permission is required to scan answer sheets.', 'danger');
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.warn('Native camera permission request unavailable:', error);
+      return true;
+    }
+  }
+
+  private async requestPhotoPermission(): Promise<boolean> {
+    try {
+      const permission = await Camera.checkPermissions();
+      if (permission.photos === 'granted' || permission.photos === 'limited') {
+        return true;
+      }
+
+      const requested = await Camera.requestPermissions({ permissions: ['photos'] });
+      if (requested.photos !== 'granted' && requested.photos !== 'limited') {
+        await this.showToast('Photo library permission is required to upload answer sheets.', 'danger');
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.warn('Native photo permission request unavailable:', error);
+      return true;
     }
   }
 

@@ -189,6 +189,15 @@ export class TemplateFormComponent implements OnInit {
     await loading.present();
 
     try {
+      let activeProfessorId: number | null = null;
+      try {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const parsedProfessorId = Number(currentUser.prof_id);
+        activeProfessorId = Number.isFinite(parsedProfessorId) ? parsedProfessorId : null;
+      } catch {
+        console.error('Professor session metadata could not be read.');
+      }
+
       await this.supabaseService.saveSheetMetadata({
         sheet_id: this.model.sheet_id.trim(),
         sheet_title: this.model.title.trim(),
@@ -197,7 +206,7 @@ export class TemplateFormComponent implements OnInit {
         columns: Number(this.model.columns),
         section_id: Number(this.model.section_id),
         subj_id: Number(this.model.SubjectID),
-      });
+      }, activeProfessorId);
     } catch (error) {
       console.error('Sheet metadata could not be saved; continuing generation:', error);
       await this.showToast('Sheet metadata could not be saved. Continuing generation.', 'danger');

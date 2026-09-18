@@ -18,6 +18,7 @@ export class StudentregPage implements OnInit {
 
   student = this.getEmptyStudent();
   selectedSubject = '';
+  selectedSubjectIds: number[] = [];
   sections: { section_id: number; section: string }[] = [];
   subjects: { SubjectID: number; subject: string }[] = [];
   registeringStudent = false;
@@ -120,6 +121,7 @@ export class StudentregPage implements OnInit {
       this.subjects = [];
       this.student.subject = '';
       this.student.subjectId = null;
+      this.selectedSubjectIds = [];
       this.selectedSubject = '';
       return;
     }
@@ -131,24 +133,43 @@ export class StudentregPage implements OnInit {
       selectedSection.section_id
     );
 
-    if (!this.subjects.some((subject) => subject.subject === this.student.subject)) {
+    const selectedNames = this.student.subject
+      .split(',')
+      .map((subject) => subject.trim())
+      .filter(Boolean);
+    this.selectedSubjectIds = this.subjects
+      .filter((subject) => selectedNames.includes(subject.subject))
+      .map((subject) => subject.SubjectID);
+
+    if (!this.selectedSubjectIds.length) {
       this.student.subject = '';
       this.student.subjectId = null;
       this.selectedSubject = '';
+      return;
     }
+
+    this.updateSelectedSubjects();
   }
 
   onSubjectChange(event: any) {
-    const selectedSubject = event?.detail?.value;
-    const matchedSubject = this.subjects.find((subject) => subject.subject === selectedSubject);
+    const selectedIds = event?.detail?.value ?? this.selectedSubjectIds;
+    this.selectedSubjectIds = (Array.isArray(selectedIds) ? selectedIds : [selectedIds])
+      .map((subjectId) => Number(subjectId))
+      .filter((subjectId) => Number.isFinite(subjectId));
+    this.updateSelectedSubjects();
+  }
 
-    this.student.subject = matchedSubject?.subject ?? selectedSubject ?? '';
-    this.student.subjectId = matchedSubject?.SubjectID ?? null;
+  private updateSelectedSubjects() {
+    const selectedSubjects = this.subjects.filter((subject) => this.selectedSubjectIds.includes(subject.SubjectID));
+    const selectedNames = selectedSubjects.map((subject) => subject.subject);
+
+    this.student.subject = selectedNames.join(', ');
+    this.student.subjectId = selectedSubjects[0]?.SubjectID ?? null;
     this.selectedSubject = this.student.subject;
   }
 
   async onSubmit() {
-    if (!this.student.student_id || !this.student.first_name || !this.student.last_name) {
+    if (!this.student.student_id || !this.student.first_name || !this.student.last_name || !this.selectedSubjectIds.length) {
       const validationAlert = await this.alertCtrl.create({
         header: 'Missing information',
         message: 'Please fill all required fields before registering the student.',
@@ -190,11 +211,21 @@ export class StudentregPage implements OnInit {
     this.registeringStudent = true;
 
     try {
-      const result = await this.supabaseService.registerStudent({
-        ...this.student,
-        subjectId: this.student.subjectId ?? null,
-        professorId: this.getCurrentProfessorId()
-      });
+      const selectedSubjects = this.subjects.filter((subject) => this.selectedSubjectIds.includes(subject.SubjectID));
+      let result: Awaited<ReturnType<SupabaseService['registerStudent']>> = { success: true, data: [] };
+
+      for (const subject of selectedSubjects) {
+        result = await this.supabaseService.registerStudent({
+          ...this.student,
+          subject: subject.subject,
+          subjectId: subject.SubjectID,
+          professorId: this.getCurrentProfessorId()
+        });
+
+        if (!result.success) {
+          break;
+        }
+      }
 
       if (result.success) {
         const successAlert = await this.alertCtrl.create({

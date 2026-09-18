@@ -14,39 +14,65 @@
     <p>A SMART-based tool for fast grading and record management.</p>
   </div>
 
-  <section class="performance-section" aria-labelledby="performance-heading">
-    <div class="performance-heading">
+  <section class="analytics-section">
+    <div class="analytics-heading">
       <div>
-        <p class="section-kicker">Results overview</p>
-        <h2 id="performance-heading">High Performers by Section</h2>
+        <span>Performance overview</span>
+        <h2>Pass rate by exam or quiz</h2>
       </div>
-      <ion-icon name="podium-outline" aria-hidden="true"></ion-icon>
+      <ion-spinner *ngIf="loadingAnalytics" name="crescent"></ion-spinner>
     </div>
 
-    <div *ngIf="performanceLoading" class="performance-state">
-      <ion-spinner name="crescent"></ion-spinner>
-      <p>Loading performance...</p>
+    <div *ngIf="!loadingAnalytics && sections.length" class="analytics-tabs">
+      <ion-segment [value]="selectedSectionId" (ionChange)="onSectionSelected($event.detail.value)" [scrollable]="true">
+        <ion-segment-button *ngFor="let section of sections" [value]="section.id">
+          <ion-label>{{ section.name }}</ion-label>
+        </ion-segment-button>
+      </ion-segment>
     </div>
 
-    <div *ngIf="!performanceLoading && sectionPerformance.length" class="section-chart-list">
-      <article *ngFor="let section of sectionPerformance" class="section-chart-card">
-        <h3>{{ section.sectionName }}</h3>
-        <div *ngFor="let student of section.students" class="performance-row">
-          <div class="performance-label">
-            <span>{{ student.name }}</span>
-            <strong>{{ student.percentage }}%</strong>
-          </div>
-          <div class="performance-track">
-            <span class="performance-bar" [style.width.%]="student.percentage"></span>
-          </div>
+    <div *ngIf="!loadingAnalytics && !selectedSectionId && sections.length" class="analytics-empty">
+      Select a section to view subjects.
+    </div>
+
+    <div *ngIf="!loadingAnalytics && selectedSectionId !== null" class="analytics-selectors">
+      <ion-list lines="none" class="analytics-list">
+        <ion-item *ngFor="let subject of selectedSubjects" button [class.analytics-selected]="selectedSubjectId === subject.id" (click)="onSubjectSelected(subject.id)">
+          <ion-icon name="book-outline" slot="start"></ion-icon>
+          <ion-label>{{ subject.name }}</ion-label>
+        </ion-item>
+      </ion-list>
+
+      <ion-list *ngIf="selectedSubjectId !== null" lines="none" class="analytics-list">
+        <ion-item *ngFor="let assessment of selectedAssessments" button [class.analytics-selected]="selectedAssessment?.sheet_id === assessment.sheet_id" (click)="onAssessmentSelected(assessment)">
+          <ion-icon name="document-text-outline" slot="start"></ion-icon>
+          <ion-label>
+            <h3>{{ assessment.sheet_title || assessment.sheet_id }}</h3>
+            <p>{{ assessment.quiz_type || 'Assessment' }}</p>
+          </ion-label>
+        </ion-item>
+      </ion-list>
+    </div>
+
+    <div *ngIf="selectedAssessment && !loadingGrades" class="analytics-result">
+      <h3>{{ selectedAssessment.sheet_title || selectedAssessment.sheet_id }}</h3>
+      <p>Passing score: 70% or higher · {{ passRate }}% pass rate</p>
+      <div class="bar-chart" *ngIf="assessmentGrades.length">
+        <div class="bar-row">
+          <span>Passed</span>
+          <div class="bar-track"><div class="bar-fill passed" [style.width.%]="(passedCount / assessmentGrades.length) * 100"></div></div>
+          <strong>{{ passedCount }}</strong>
         </div>
-      </article>
+        <div class="bar-row">
+          <span>Below 70%</span>
+          <div class="bar-track"><div class="bar-fill failed" [style.width.%]="(failedCount / assessmentGrades.length) * 100"></div></div>
+          <strong>{{ failedCount }}</strong>
+        </div>
+      </div>
+      <div *ngIf="!assessmentGrades.length" class="analytics-empty">No student scores recorded for this assessment.</div>
     </div>
 
-    <p *ngIf="!performanceLoading && !sectionPerformance.length && !performanceError" class="performance-state">
-      No graded students are available yet.
-    </p>
-    <p *ngIf="performanceError" class="performance-state performance-error">{{ performanceError }}</p>
+    <div *ngIf="analyticsError" class="analytics-error">{{ analyticsError }}</div>
   </section>
 
 </ion-content>
