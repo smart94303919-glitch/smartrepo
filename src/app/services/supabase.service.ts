@@ -777,29 +777,71 @@ async registerStudent(studentData: any): Promise<{
       gender: studentData.gender ?? null
     };
 
-    const { data: studentRow, error: studentError } = await this.supabase
+    const { data: existingStudent, error: studentCheckError } = await this.supabase
       .from('student_tbl')
-      .insert([studentPayload])
       .select('student_id')
-      .single();
+      .eq('student_id', studentId)
+      .maybeSingle();
 
-    if (studentError) throw studentError;
+    if (studentCheckError) throw studentCheckError;
+
+    let studentRow: { student_id: string };
+    if (existingStudent) {
+      const { data: updatedStudent, error: studentUpdateError } = await this.supabase
+        .from('student_tbl')
+        .update(studentPayload)
+        .eq('student_id', studentId)
+        .select('student_id')
+        .single();
+
+      if (studentUpdateError) throw studentUpdateError;
+      studentRow = updatedStudent;
+    } else {
+      const { data: insertedStudent, error: studentInsertError } = await this.supabase
+        .from('student_tbl')
+        .insert([studentPayload])
+        .select('student_id')
+        .single();
+
+      if (studentInsertError) throw studentInsertError;
+      studentRow = insertedStudent;
+    }
 
     const professorId = studentData.professorId ?? studentData.profId ?? null;
     if (professorId !== null && professorId !== undefined) {
-      const { error: professorStudentError } = await this.supabase
+      const { data: existingProfessorStudent, error: professorStudentCheckError } = await this.supabase
         .from('prof_stud')
-        .insert([{ prof_id: Number(professorId), student_id: studentRow.student_id }]);
+        .select('prof_id, student_id')
+        .eq('prof_id', Number(professorId))
+        .eq('student_id', studentRow.student_id)
+        .maybeSingle();
 
-      if (professorStudentError) throw professorStudentError;
+      if (professorStudentCheckError) throw professorStudentCheckError;
+      if (!existingProfessorStudent) {
+        const { error: professorStudentInsertError } = await this.supabase
+          .from('prof_stud')
+          .insert([{ prof_id: Number(professorId), student_id: studentRow.student_id }]);
+
+        if (professorStudentInsertError) throw professorStudentInsertError;
+      }
 
       const departmentId = await this.getProfessorDepartmentId(Number(professorId));
       if (departmentId !== null) {
-        const { error: studentDepartmentError } = await this.supabase
+        const { data: existingStudentDepartment, error: studentDepartmentCheckError } = await this.supabase
           .from(this.studentDepartmentTable)
-          .insert([{ student_id: studentRow.student_id, dept_id: departmentId }]);
+          .select('student_id, dept_id')
+          .eq('student_id', studentRow.student_id)
+          .eq('dept_id', departmentId)
+          .maybeSingle();
 
-        if (studentDepartmentError) throw studentDepartmentError;
+        if (studentDepartmentCheckError) throw studentDepartmentCheckError;
+        if (!existingStudentDepartment) {
+          const { error: studentDepartmentInsertError } = await this.supabase
+            .from(this.studentDepartmentTable)
+            .insert([{ student_id: studentRow.student_id, dept_id: departmentId }]);
+
+          if (studentDepartmentInsertError) throw studentDepartmentInsertError;
+        }
       }
     }
 
@@ -825,19 +867,35 @@ async registerStudent(studentData: any): Promise<{
       }
 
       if (sectionId !== null && Number.isFinite(sectionId)) {
-        const { error: studSectionSubjError } = await this.supabase
+        const { data: existingEnrollment, error: enrollmentCheckError } = await this.supabase
           .from('stud_section_subj')
-          .insert([{ student_id: studentRow.student_id, section_id: sectionId, subj_id: normalizedSubjectId }]);
+          .select('student_id, section_id, subj_id')
+          .eq('student_id', studentRow.student_id)
+          .eq('section_id', sectionId)
+          .eq('subj_id', normalizedSubjectId)
+          .maybeSingle();
 
-        if (studSectionSubjError) throw studSectionSubjError;
+        if (enrollmentCheckError) throw enrollmentCheckError;
+        if (!existingEnrollment) {
+          const { error: enrollmentInsertError } = await this.supabase
+            .from('stud_section_subj')
+            .insert([{
+              student_id: studentRow.student_id,
+              section_id: sectionId,
+              subj_id: normalizedSubjectId,
+            }]);
+
+          if (enrollmentInsertError) throw enrollmentInsertError;
+        }
       }
     }
 
     return { success: true, data: [studentRow] };
 
   } catch (error: any) {
+    const rowError = `Student ${studentData.student_id ?? 'unknown'}: ${error.message}`;
     console.error('Error registering student:', error);
-    return { success: false, error: error.message, data: [] };
+    return { success: false, error: rowError, data: [] };
   }
 }
 

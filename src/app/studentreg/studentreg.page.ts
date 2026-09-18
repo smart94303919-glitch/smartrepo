@@ -46,6 +46,25 @@ export class StudentregPage implements OnInit {
     this.loadSections();
   }
 
+  downloadStudentFormat(): void {
+    const headers = [[
+      'student_id',
+      'first_name',
+      'middle_name',
+      'last_name',
+      'age',
+      'gender',
+      'department',
+      'year',
+      'section',
+      'subject',
+    ]];
+    const worksheet = XLSX.utils.aoa_to_sheet(headers);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Students');
+    XLSX.writeFile(workbook, 'STUDENT FORMAT.xlsx');
+  }
+
   getEmptyStudent() {
     return {
       student_id: '',
