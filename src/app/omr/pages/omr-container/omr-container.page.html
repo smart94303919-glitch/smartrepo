@@ -43,11 +43,11 @@
         <ion-item class="control-item">
           <ion-icon name="key-outline" slot="start" color="primary"></ion-icon>
           <ion-label position="stacked">Sheet ID</ion-label>
-          <ion-input
-            [(ngModel)]="activeSheetId"
-            placeholder="e.g. BIO101-MID"
-            [value]="activeSheetId"
-          ></ion-input>
+          <ion-select [(ngModel)]="activeSheetId" interface="popover" placeholder="Select an assigned sheet">
+            <ion-select-option *ngFor="let sheetId of professorSheetIds" [value]="sheetId">
+              {{ sheetId }}
+            </ion-select-option>
+          </ion-select>
         </ion-item>
 
         <div class="mode-heading">

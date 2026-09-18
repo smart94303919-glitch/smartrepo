@@ -419,6 +419,7 @@ class GradeSheetResponse(BaseModel):
     mode: str
     sheet_id: str
     student_id: Optional[str] = ""
+    qr_prof_id: Optional[str] = None
     student_found: bool = False
     student_name: Optional[str] = None
     full_name: Optional[str] = None
@@ -558,22 +559,22 @@ def _as_metadata_id(value: object) -> Optional[int]:
         return None
 
 
-def extract_sheet_identity(header_image: np.ndarray) -> tuple[str, str]:
+def extract_sheet_identity(header_image: np.ndarray) -> tuple[str, str, str]:
     height, width = header_image.shape[:2]
     header_roi = header_image[:min(353, height), :min(1000, width)]
     if header_roi.size == 0:
-        return "UNKNOWN", "UNKNOWN"
+        return "UNKNOWN", "UNKNOWN", ""
 
     detector = cv2.QRCodeDetector()
     raw_payload, _, _ = detector.detectAndDecode(header_roi)
     raw_payload = str(raw_payload or "").strip()
     if not raw_payload:
-        return "UNKNOWN", "UNKNOWN"
+        return "UNKNOWN", "UNKNOWN", ""
 
     return parse_qr_payload(raw_payload)
 
 
-def parse_qr_payload(raw_payload: str) -> tuple[str, str]:
+def parse_qr_payload(raw_payload: str) -> tuple[str, str, str]:
     cleaned = str(raw_payload or "").strip()
 
     try:
@@ -581,21 +582,21 @@ def parse_qr_payload(raw_payload: str) -> tuple[str, str]:
         if isinstance(parsed, dict):
             student_id = str(parsed.get("student_id") or parsed.get("studentId") or "").strip()
             sheet_id = str(parsed.get("sheet_id") or parsed.get("sheetId") or "UNKNOWN").strip()
-            return student_id, sheet_id or "UNKNOWN"
+            return student_id, sheet_id or "UNKNOWN", str(parsed.get("prof_id") or parsed.get("profId") or "").strip()
     except (TypeError, json.JSONDecodeError):
         pass
 
     if "|" in cleaned:
         parts = cleaned.split("|", 1)
-        return parts[0].strip(), parts[1].strip() or "UNKNOWN"
+        return parts[0].strip(), parts[1].strip() or "UNKNOWN", parts[2].strip() if len(parts) > 2 else ""
 
     if "_" in cleaned:
         parts = cleaned.split("_", 1)
         if parts[0].startswith("T") or "SHEET" in parts[0].upper():
-            return parts[1].strip() or "UNKNOWN", parts[0].strip()
-        return parts[0].strip(), parts[1].strip() or "UNKNOWN"
+            return parts[1].strip() or "UNKNOWN", parts[0].strip(), ""
+        return parts[0].strip(), parts[1].strip() or "UNKNOWN", ""
 
-    return cleaned, "UNKNOWN"
+    return cleaned, "UNKNOWN", ""
 
 
 # --------------------------------------------------------------------------
@@ -719,7 +720,7 @@ def generate_pdf(payload: SheetConfigRequest):
             print(f"[PDF GEN] Warning: Student names unavailable; using IDs: {db_err}")
     student_names = [names_by_id.get(student_id, student_id) for student_id in enrolled_students]
     page_qr_payloads = [
-        encode_student_qr_payload(student_id, cfg.sheet_id)
+        encode_student_qr_payload(student_id, cfg.sheet_id, payload.prof_id)
         for student_id in enrolled_students
     ]
     try:
@@ -796,6 +797,7 @@ def grade_sheet(
     total_questions: Optional[int] = Form(None),
     options_per_question: Optional[int] = Form(None),
     columns: Optional[int] = Form(None),
+    prof_id: Optional[int] = Form(None),
     sheet_id_query: Optional[str] = Query(None, alias="sheet_id"),
     subject_id: Optional[int] = Query(None),
     section_id: Optional[int] = Query(None),
@@ -803,6 +805,24 @@ def grade_sheet(
     sheet_id = sheet_id or sheet_id_query
     if not sheet_id:
         raise HTTPException(status_code=400, detail="sheet_id is required")
+
+    if prof_id is None or int(prof_id) <= 0:
+        raise HTTPException(status_code=400, detail="A valid professor ID is required")
+
+    supabase = _get_supabase_client()
+    ownership = (
+        supabase.table("sheet_prof")
+        .select("assignment_id")
+        .eq("sheet_id", str(sheet_id).strip())
+        .eq("prof_id", int(prof_id))
+        .limit(1)
+        .execute()
+    )
+    if not ownership.data:
+        raise HTTPException(
+            status_code=403,
+            detail="Unauthorized: This sheet layout belongs to another professor",
+        )
 
     cfg = _load_sheet_config_for_scan(sheet_id, total_questions, options_per_question, columns)
     image = _decode_upload_to_bgr(file)
@@ -843,7 +863,12 @@ def grade_sheet(
     student_id_missing = False
     student_id_note = None
 
-    resolved_student_id, response_sheet_id = extract_sheet_identity(warped)
+    resolved_student_id, response_sheet_id, qr_prof_id = extract_sheet_identity(warped)
+    if qr_prof_id and str(qr_prof_id) != str(prof_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Unauthorized: The scanned QR code belongs to another professor",
+        )
     qr_identity_found = (
         resolved_student_id not in {"", "UNKNOWN", "UNASSIGNED"}
         and response_sheet_id not in {"", "UNKNOWN"}
@@ -912,6 +937,7 @@ def grade_sheet(
         mode="grade",
         sheet_id=response_sheet_id,
         student_id=resolved_student_id,
+        qr_prof_id=qr_prof_id or None,
         student_found=qr_identity_found and not student_id_missing,
         student_name=metadata["student_name"],
         full_name=metadata["student_name"],

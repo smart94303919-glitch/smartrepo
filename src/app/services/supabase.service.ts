@@ -532,6 +532,36 @@ async getSheetAssignments(sheetIds: string[]): Promise<any[]> {
   return data || [];
 }
 
+async getProfessorSheetIds(profId: number): Promise<string[]> {
+  const { data, error } = await this.supabase
+    .from('sheet_prof')
+    .select('sheet_id')
+    .eq('prof_id', Number(profId));
+
+  if (error) {
+    throw error;
+  }
+
+  return Array.from(new Set((data || [])
+    .map((row: any) => String(row.sheet_id ?? '').trim())
+    .filter(Boolean)));
+}
+
+async professorOwnsSheet(profId: number, sheetId: string): Promise<boolean> {
+  const { data, error } = await this.supabase
+    .from('sheet_prof')
+    .select('assignment_id')
+    .eq('prof_id', Number(profId))
+    .eq('sheet_id', sheetId.trim())
+    .limit(1);
+
+  if (error) {
+    throw error;
+  }
+
+  return Boolean(data?.length);
+}
+
 async archiveStudents(studentIds: string[], subjectId: number | number[], sectionName?: string | null, profId?: number): Promise<void> {
   const normalizedIds = Array.from(new Set(studentIds.map((id) => id.trim()).filter(Boolean)));
   const normalizedSubjectIds = Array.from(new Set((Array.isArray(subjectId) ? subjectId : [subjectId])

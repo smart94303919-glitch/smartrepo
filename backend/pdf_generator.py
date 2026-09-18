@@ -119,9 +119,13 @@ def build_qr_image(
 def encode_student_qr_payload(
     student_id: str,
     sheet_id: str,
+    prof_id: str | int | None = None,
 ) -> str:
     """Return the short identity payload embedded in each page QR code."""
-    return f"{str(student_id).strip()}|{str(sheet_id).strip()}"
+    payload = f"{str(student_id).strip()}|{str(sheet_id).strip()}"
+    if prof_id is not None and str(prof_id).strip():
+        payload += f"|{str(prof_id).strip()}"
+    return payload
 
 
 def format_student_name(
@@ -311,7 +315,7 @@ def generate_omr_sheets(
         cfg,
         professor_id,
         professor_name or "MASTER ANSWER KEY",
-        encode_student_qr_payload(professor_id, cfg.sheet_id),
+        encode_student_qr_payload(professor_id, cfg.sheet_id, professor_id),
     )
     draw_instructions(c)
     draw_bubbles(c, cfg)

@@ -46,6 +46,8 @@ export class OmrContainerPage implements OnInit {
 
   // Populated once a sheet has been generated
   activeSheetId = '';
+  professorSheetIds: string[] = [];
+  activeProfessorId: number | null = null;
   activeTotalQuestions: number | null = null;
   activeOptionsPerQuestion: number | null = null;
   activeColumns: number | null = null;
@@ -78,6 +80,7 @@ export class OmrContainerPage implements OnInit {
   ) {}
 
   ngOnInit() {
+    void this.loadProfessorSheets();
     this.route.queryParams.subscribe((params) => {
       const mode = params['mode'];
       if (mode === 'metadata' || mode === 'scanner' || mode === 'results') {
@@ -88,6 +91,23 @@ export class OmrContainerPage implements OnInit {
     });
   }
 
+  private async loadProfessorSheets(): Promise<void> {
+    try {
+      const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+      const professorId = Number(currentUser.prof_id);
+      if (!Number.isFinite(professorId) || professorId <= 0) {
+        this.scanError = 'Professor ID is missing. Sign in again to load assigned sheets.';
+        return;
+      }
+
+      this.activeProfessorId = professorId;
+      this.professorSheetIds = await this.supabaseService.getProfessorSheetIds(professorId);
+    } catch (error) {
+      console.error('Failed to load professor sheet assignments:', error);
+      this.scanError = 'Unable to load your assigned sheet IDs.';
+    }
+  }
+
   goBack() {
     this.router.navigate(['/exams']);
   }
@@ -95,6 +115,9 @@ export class OmrContainerPage implements OnInit {
   /** Called when TemplateFormComponent finishes generating a sheet. */
   onSheetGenerated(cfg: SheetConfigRequest) {
     this.activeSheetId = cfg.sheet_id;
+    if (this.activeSheetId && !this.professorSheetIds.includes(this.activeSheetId)) {
+      this.professorSheetIds = [...this.professorSheetIds, this.activeSheetId];
+    }
     this.activeTotalQuestions = cfg.total_questions;
     this.activeOptionsPerQuestion = cfg.options_per_question;
     this.activeColumns = cfg.columns;
@@ -132,6 +155,11 @@ export class OmrContainerPage implements OnInit {
       return;
     }
 
+    if (!this.activeProfessorId || !this.professorSheetIds.includes(this.activeSheetId.trim())) {
+      await this.showToast('Unauthorized: This sheet layout is not assigned to this professor.', 'danger');
+      return;
+    }
+
     // Batch mode: Student Sheet gallery import (1-5 images).
     if (this.scanMode === 'grade' && this.studentImages.length > 0) {
       await this.processBatch();
@@ -156,6 +184,7 @@ export class OmrContainerPage implements OnInit {
         totalQuestions: this.activeTotalQuestions ?? undefined,
         optionsPerQuestion: this.activeOptionsPerQuestion ?? undefined,
         columns: this.activeColumns ?? undefined,
+        profId: this.activeProfessorId,
       })
       .subscribe({
         next: async (res) => {
@@ -187,6 +216,11 @@ export class OmrContainerPage implements OnInit {
       return;
     }
 
+    if (!this.activeProfessorId || !this.professorSheetIds.includes(this.activeSheetId.trim())) {
+      await this.showToast('Unauthorized: This sheet layout is not assigned to this professor.', 'danger');
+      return;
+    }
+
     this.isProcessing = true;
     this.studentBatchResults = [];
     this.scanError = null;
@@ -206,6 +240,7 @@ export class OmrContainerPage implements OnInit {
             totalQuestions: this.activeTotalQuestions ?? undefined,
             optionsPerQuestion: this.activeOptionsPerQuestion ?? undefined,
             columns: this.activeColumns ?? undefined,
+            profId: this.activeProfessorId,
           })
           .toPromise();
 
@@ -231,7 +266,8 @@ export class OmrContainerPage implements OnInit {
   }
 
   private async normalizeResult(result: GradeSheetResponse): Promise<GradeSheetResponse> {
-    const { studentId, sheetId } = this.parseBarcodePayload(result.student_id ?? '');
+    const { studentId, sheetId, profId: parsedProfId } = this.parseBarcodePayload(result.student_id ?? '');
+    const profId = result.qr_prof_id || parsedProfId;
     const resolvedStudentId = result.student_id?.trim() || studentId;
     const missingId =
       !resolvedStudentId ||
@@ -242,6 +278,9 @@ export class OmrContainerPage implements OnInit {
     const studentName = result.student_name?.trim() || 'Student';
     const scannedSheetId = (sheetId !== 'N/A' ? sheetId : result.sheet_id || '').trim();
     const selectedSheetId = this.activeSheetId.trim();
+    if (profId && this.activeProfessorId && profId !== String(this.activeProfessorId)) {
+      throw new Error('Unauthorized: This sheet layout belongs to another professor');
+    }
 
     return {
       ...result,
@@ -254,12 +293,13 @@ export class OmrContainerPage implements OnInit {
       selected_sheet_id: selectedSheetId,
       scanned_sheet_id: scannedSheetId || 'N/A',
       sheet_id_matches: Boolean(selectedSheetId) && selectedSheetId === scannedSheetId,
+      qr_prof_id: profId || result.qr_prof_id,
     };
   }
 
-  private parseBarcodePayload(rawPayload: string): { studentId: string; sheetId: string } {
+  private parseBarcodePayload(rawPayload: string): { studentId: string; sheetId: string; profId: string } {
     if (!rawPayload || rawPayload === 'Unassigned') {
-      return { studentId: '', sheetId: 'N/A' };
+      return { studentId: '', sheetId: 'N/A', profId: '' };
     }
 
     const cleanedPayload = rawPayload.trim();
@@ -269,6 +309,7 @@ export class OmrContainerPage implements OnInit {
         return {
           studentId: String(parsed.student_id ?? parsed.studentId ?? '').trim(),
           sheetId: String(parsed.sheet_id ?? parsed.sheetId ?? 'N/A').trim() || 'N/A',
+          profId: String(parsed.prof_id ?? parsed.profId ?? '').trim(),
         };
       }
     } catch {
@@ -279,6 +320,7 @@ export class OmrContainerPage implements OnInit {
     return {
       studentId: parts[0] ? parts[0].trim() : cleanedPayload,
       sheetId: parts[1] ? parts[1].trim() : 'N/A',
+      profId: parts[2] ? parts[2].trim() : '',
     };
   }
 

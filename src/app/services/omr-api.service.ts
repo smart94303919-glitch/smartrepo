@@ -51,6 +51,7 @@ export interface GradeSheetResponse {
   mode: 'key' | 'grade';
   sheet_id: string;
   student_id?: string;
+  qr_prof_id?: string;
   student_found?: boolean;
   student_id_missing?: boolean;
   clean_student_id?: string;
@@ -138,6 +139,7 @@ export class OmrApiService {
       optionsPerQuestion?: number;
       columns?: number;
       filename?: string;
+      profId?: number;
     }
   ): Observable<GradeSheetResponse> {
     const form = new FormData();
@@ -148,6 +150,7 @@ export class OmrApiService {
     if (opts?.totalQuestions != null) form.append('total_questions', String(opts.totalQuestions));
     if (opts?.optionsPerQuestion != null) form.append('options_per_question', String(opts.optionsPerQuestion));
     if (opts?.columns != null) form.append('columns', String(opts.columns));
+    if (opts?.profId != null) form.append('prof_id', String(opts.profId));
 
     return this.http
       .post<GradeSheetResponse>(`${this.baseUrl}/grade-sheet`, form)
