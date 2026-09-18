@@ -29,6 +29,10 @@ export interface SheetConfigRequest {
   sheet_id: string;
   output_name: string;
   student_ids?: string[];
+  student_metadata?: Array<{
+    student_id: string;
+    student_name: string;
+  }>;
   student_id_digits?: number;
   embed_qr?: boolean;
 }

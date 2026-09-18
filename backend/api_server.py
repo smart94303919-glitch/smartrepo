@@ -67,7 +67,11 @@ from pydantic import BaseModel, Field
 from PIL import Image, ImageOps
 
 from config import SheetConfig, OUTPUT_DIR, DEBUG_DIR
-from pdf_generator import generate_omr_sheets, encode_student_qr_payload
+from pdf_generator import (
+    encode_student_qr_payload,
+    format_student_name,
+    generate_omr_sheets,
+)
 from omr_engine import process_sheet_image, draw_debug_overlay, OMRProcessingError
 
 # Configure Tesseract OCR binary path dynamically (Cross-Platform / Cloud Ready)
@@ -171,50 +175,63 @@ def fetch_assigned_students(section_id, subject_id, prof_id=None):
 
     enrollment_response = (
         supabase.table("stud_section_subj")
-        .select("student_id")
+        .select("student_id, student_tbl(s_firstname, s_middlename, s_lastname)")
         .eq("section_id", sec_id)
         .eq("subj_id", subj_id)
         .execute()
     )
 
-    student_ids = list(dict.fromkeys(
-        str(row.get("student_id", "")).strip()
-        for row in (enrollment_response.data or [])
-        if row.get("student_id")
-    ))
-    if not student_ids:
+    enrollment_rows = enrollment_response.data or []
+    if not enrollment_rows:
         print("[PDF GEN] No students found in stud_section_subj")
         return []
 
+    students = []
+    seen_ids = set()
+    for row in enrollment_rows:
+        student_id = str(row.get("student_id", "")).strip()
+        student_record = row.get("student_tbl") or {}
+        if isinstance(student_record, list):
+            student_record = student_record[0] if student_record else {}
+        if not student_id or student_id in seen_ids:
+            continue
+        seen_ids.add(student_id)
+        students.append({
+            "student_id": student_id,
+            "student_name": format_student_name(
+                student_record.get("s_firstname"),
+                student_record.get("s_middlename"),
+                student_record.get("s_lastname"),
+                student_id,
+            ),
+        })
+
+    print(f"[PDF GEN] Retrieved {len(students)} student(s): {students}")
+    return students
+
+
+def fetch_student_names(student_ids: list[str]) -> dict[str, str]:
+    """Fetch printable names for IDs already selected for sheet generation."""
+    if not student_ids:
+        return {}
+
     students_response = (
-        supabase.table("student_tbl")
+        _get_supabase_client()
+        .table("student_tbl")
         .select("student_id, s_firstname, s_middlename, s_lastname")
         .in_("student_id", student_ids)
         .execute()
     )
-
-    students_by_id = {
-        str(row.get("student_id", "")).strip(): row
+    return {
+        str(row.get("student_id", "")).strip(): format_student_name(
+            row.get("s_firstname"),
+            row.get("s_middlename"),
+            row.get("s_lastname"),
+            str(row.get("student_id", "")).strip(),
+        )
         for row in (students_response.data or [])
+        if row.get("student_id")
     }
-    students = [
-        {
-            "student_id": student_id,
-            "student_name": " ".join(
-                value for value in (
-                    students_by_id.get(student_id, {}).get("s_firstname"),
-                    students_by_id.get(student_id, {}).get("s_middlename"),
-                    students_by_id.get(student_id, {}).get("s_lastname"),
-                )
-                if value
-            ).strip(),
-        }
-        for student_id in student_ids
-        if student_id in students_by_id
-    ]
-
-    print(f"[PDF GEN] Retrieved {len(students)} student(s): {students}")
-    return students
 
 
 def _get_enrolled_student_ids(
@@ -657,7 +674,13 @@ def generate_pdf(payload: SheetConfigRequest):
         for entry in payload.student_metadata
         if entry.get("student_id")
     }
-    student_names = [names_by_id.get(student_id, "") for student_id in enrolled_students]
+    missing_name_ids = [student_id for student_id in enrolled_students if not names_by_id.get(student_id)]
+    if missing_name_ids:
+        try:
+            names_by_id.update(fetch_student_names(missing_name_ids))
+        except Exception as db_err:
+            print(f"[PDF GEN] Warning: Student names unavailable; using IDs: {db_err}")
+    student_names = [names_by_id.get(student_id, student_id) for student_id in enrolled_students]
     page_qr_payloads = [
         encode_student_qr_payload(student_id, cfg.sheet_id)
         for student_id in enrolled_students

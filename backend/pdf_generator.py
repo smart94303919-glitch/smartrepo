@@ -22,6 +22,7 @@ import os
 
 import qrcode
 from reportlab.pdfgen import canvas
+from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.lib.utils import ImageReader
 
 from config import (
@@ -123,6 +124,23 @@ def encode_student_qr_payload(
     return f"{str(student_id).strip()}|{str(sheet_id).strip()}"
 
 
+def format_student_name(
+    first_name: object,
+    middle_name: object,
+    last_name: object,
+    fallback_id: str = "",
+) -> str:
+    """Format a complete student record for the printed name line."""
+    first = str(first_name).strip() if first_name is not None else ""
+    middle = str(middle_name).strip() if middle_name is not None else ""
+    last = str(last_name).strip() if last_name is not None else ""
+    if not first or not last:
+        return str(fallback_id).strip()
+    formatted_first = first.title()
+    formatted_middle = f" {middle.title()}" if middle else ""
+    return f"{last.title()}, {formatted_first}{formatted_middle}"
+
+
 def draw_header(
     c: canvas.Canvas,
     cfg: SheetConfig,
@@ -161,7 +179,14 @@ def draw_header(
     name_label_y = top_y - 58
     c.drawString(x0, name_label_y, "Name:")
     c.line(x0 + 38, name_label_y - 2, x0 + 260, name_label_y - 2)
+    if student_name:
+        name_width = 220
+        rendered_width = stringWidth(student_name, "Helvetica", 9)
+        name_font_size = min(9, name_width * 9 / max(rendered_width, 1))
+        c.setFont("Helvetica", name_font_size)
+        c.drawString(x0 + 40, name_label_y, student_name)
 
+    c.setFont("Helvetica", 9)
     c.drawString(x0, name_label_y - 20, "Date:")
     c.line(x0 + 38, name_label_y - 22, x0 + 180, name_label_y - 22)
 

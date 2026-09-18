@@ -197,7 +197,13 @@ export class TemplateFormComponent implements OnInit {
     }
 
     const studentIds = await this.getAssignedStudentIdsForGeneration();
-    const generationModel = { ...this.model, student_ids: studentIds };
+    let studentMetadata: Array<{ student_id: string; student_name: string }> = [];
+    try {
+      studentMetadata = await this.supabaseService.getStudentMetadata(studentIds);
+    } catch (error) {
+      console.error('Student names could not be loaded; generating with student IDs:', error);
+    }
+    const generationModel = { ...this.model, student_ids: studentIds, student_metadata: studentMetadata };
 
     this.api.generatePdf(generationModel).subscribe({
       next: async (pdfBlob: Blob) => {

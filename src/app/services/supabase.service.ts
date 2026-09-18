@@ -720,6 +720,30 @@ async getAssignedStudentIds(profId: number, sectionId: number, subjectId: number
   ));
 }
 
+async getStudentMetadata(studentIds: string[]): Promise<Array<{ student_id: string; student_name: string }>> {
+  const ids = Array.from(new Set(studentIds.map((studentId) => String(studentId).trim()).filter(Boolean)));
+  if (!ids.length) {
+    return [];
+  }
+
+  const { data, error } = await this.supabase
+    .from('student_tbl')
+    .select('student_id, s_firstname, s_middlename, s_lastname')
+    .in('student_id', ids);
+
+  if (error) {
+    throw error;
+  }
+
+  return (data || []).map((student: any) => ({
+    student_id: String(student.student_id).trim(),
+    student_name: [student.s_firstname, student.s_middlename, student.s_lastname]
+      .filter((namePart) => namePart != null && String(namePart).trim())
+      .map((namePart) => String(namePart).trim())
+      .join(' '),
+  }));
+}
+
 
 
 //////////////////////////////
