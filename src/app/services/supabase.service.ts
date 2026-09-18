@@ -547,6 +547,20 @@ async getProfessorSheetIds(profId: number): Promise<string[]> {
     .filter(Boolean)));
 }
 
+async sheetIdExists(sheetId: string): Promise<boolean> {
+  const { data, error } = await this.supabase
+    .from('sheet_tbl')
+    .select('sheet_id')
+    .eq('sheet_id', sheetId.trim())
+    .limit(1);
+
+  if (error) {
+    throw error;
+  }
+
+  return Boolean(data?.length);
+}
+
 async professorOwnsSheet(profId: number, sheetId: string): Promise<boolean> {
   const { data, error } = await this.supabase
     .from('sheet_prof')

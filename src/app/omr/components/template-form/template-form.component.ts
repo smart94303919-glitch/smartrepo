@@ -13,7 +13,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IonicModule, ToastController, LoadingController } from '@ionic/angular';
+import { IonicModule, ToastController, LoadingController, NavController } from '@ionic/angular';
 import { OmrApiService, SheetConfigRequest } from '../../../services/omr-api.service';
 import { SupabaseService } from '../../../services/supabase.service';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -38,7 +38,7 @@ export class TemplateFormComponent implements OnInit {
     total_questions: 60,
     options_per_question: 4,
     columns: 3,
-    sheet_id: 'SHEET-0001',
+    sheet_id: '',
     output_name: 'Midterm Examination.pdf',
     student_id_digits: 13,
   };
@@ -64,10 +64,18 @@ export class TemplateFormComponent implements OnInit {
     private api: OmrApiService,
     private supabaseService: SupabaseService,
     private toastCtrl: ToastController,
-    private loadingCtrl: LoadingController
+    private loadingCtrl: LoadingController,
+    private navCtrl: NavController
   ) {}
 
   async ngOnInit(): Promise<void> {
+    try {
+      this.model.sheet_id = await this.generateUniqueSheetId();
+    } catch (error) {
+      console.error('Error generating unique sheet ID:', error);
+      await this.showToast('Unable to generate a unique Sheet ID. Please try again.', 'danger');
+    }
+
     const currentUser = localStorage.getItem('currentUser');
     let professorId = NaN;
     try {
@@ -90,6 +98,20 @@ export class TemplateFormComponent implements OnInit {
     } finally {
       this.isLoadingSections = false;
     }
+  }
+
+  async generateUniqueSheetId(): Promise<string> {
+    const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const randomPart = Math.floor(1000 + Math.random() * 9000).toString();
+      const candidate = `SHT-${datePart}-${randomPart}`;
+      if (!await this.supabaseService.sheetIdExists(candidate)) {
+        return candidate;
+      }
+    }
+
+    throw new Error('Unable to find an unused Sheet ID.');
   }
 
   onSectionChange(sectionId: number | string | null): void {
@@ -264,7 +286,8 @@ export class TemplateFormComponent implements OnInit {
         }
 
         this.sheetGenerated.emit(this.model);
-        await this.showToast('Sheet generated successfully!', 'success');
+        await this.showToast('Answer Sheet generated and saved successfully!', 'success');
+        await this.navCtrl.navigateBack('/exams');
       },
       error: async (err) => {
         await loading.dismiss();

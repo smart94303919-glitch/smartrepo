@@ -99,7 +99,11 @@
           <ion-item>
             <ion-icon name="key-outline" slot="start" color="primary"></ion-icon>
             <ion-label position="stacked">Sheet ID</ion-label>
-            <ion-input [(ngModel)]="model.sheet_id" placeholder="e.g. BIO101-MID"></ion-input>
+            <ion-input [(ngModel)]="model.sheet_id" readonly="true" aria-label="Auto-generated Sheet ID"></ion-input>
+            <ion-note slot="helper">
+              <ion-icon name="lock-closed-outline"></ion-icon>
+              Auto-generated unique Sheet ID
+            </ion-note>
           </ion-item>
         </ion-col>
       </ion-row>

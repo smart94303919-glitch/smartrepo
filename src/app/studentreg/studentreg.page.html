@@ -12,7 +12,7 @@
         Download Format
       </ion-button>
       <ion-label class="format-label">Format of student master list</ion-label>
-      <ion-button fill="solid" color="light" size="small" aria-label="Import CSV or Excel" (click)="onImportCsvClick()" [disabled]="importingStudents || registeringStudent">
+      <ion-button fill="solid" color="light" size="small" aria-label="Import CSV or Excel" (click)="onImportCsvClick()" [disabled]="isUploading">
         <ion-spinner *ngIf="importingStudents" name="crescent"></ion-spinner>
         <ion-icon *ngIf="!importingStudents" name="cloud-upload-outline"></ion-icon>
       </ion-button>
@@ -116,7 +116,7 @@
               </ion-select>
             </ion-item>
 
-          <ion-button expand="block" type="submit" class="submit-button" [disabled]="registeringStudent || importingStudents">
+          <ion-button expand="block" type="submit" class="submit-button" [disabled]="isUploading">
             <ion-spinner *ngIf="registeringStudent" name="crescent"></ion-spinner>
             <ion-icon *ngIf="!registeringStudent" slot="start" name="person-add-outline"></ion-icon>
             {{ registeringStudent ? 'Registering Student...' : 'Register Student' }}

@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { SupabaseService } from '../services/supabase.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AlertController, IonicModule } from '@ionic/angular';
+import { AlertController, IonicModule, LoadingController, ToastController } from '@ionic/angular';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -23,12 +23,15 @@ export class StudentregPage implements OnInit {
   subjects: { SubjectID: number; subject: string }[] = [];
   registeringStudent = false;
   importingStudents = false;
+  isUploading = false;
 
   constructor(
     private supabaseService: SupabaseService,
     private router: Router,
     private route: ActivatedRoute,
-    private alertCtrl: AlertController
+    private alertCtrl: AlertController,
+    private loadingCtrl: LoadingController,
+    private toastCtrl: ToastController
   ) {}
 
   ngOnInit() {
@@ -177,6 +180,10 @@ export class StudentregPage implements OnInit {
   }
 
   async onSubmit() {
+    if (this.isUploading) {
+      return;
+    }
+
     if (!this.student.student_id || !this.student.first_name || !this.student.last_name || !this.selectedSubjectIds.length) {
       const validationAlert = await this.alertCtrl.create({
         header: 'Missing information',
@@ -217,6 +224,13 @@ export class StudentregPage implements OnInit {
 
   private async submitRegistration() {
     this.registeringStudent = true;
+    this.isUploading = true;
+    const loading = await this.loadingCtrl.create({
+      message: 'Saving student record...',
+      spinner: 'circles',
+      backdropDismiss: false
+    });
+    await loading.present();
 
     try {
       const selectedSubjects = this.subjects.filter((subject) => this.selectedSubjectIds.includes(subject.SubjectID));
@@ -236,6 +250,7 @@ export class StudentregPage implements OnInit {
       }
 
       if (result.success) {
+        await this.showToast('Student record added successfully!', 'success');
         const successAlert = await this.alertCtrl.create({
           header: 'Registration complete',
           message: 'Student registered successfully.',
@@ -250,6 +265,7 @@ export class StudentregPage implements OnInit {
 
         await successAlert.present();
       } else {
+        await this.showToast(`Upload failed: ${result.error || 'Student registration failed.'}`, 'danger');
         const errorAlert = await this.alertCtrl.create({
           header: 'Registration failed',
           message: 'Registration failed: ' + (result.error || 'Unknown error'),
@@ -260,6 +276,8 @@ export class StudentregPage implements OnInit {
       }
     } catch (error) {
       console.error('Student registration failed:', error);
+      const message = error instanceof Error ? error.message : 'Unable to register the student.';
+      await this.showToast(`Upload failed: ${message}`, 'danger');
       const errorAlert = await this.alertCtrl.create({
         header: 'Registration failed',
         message: 'Unable to register the student. Please try again.',
@@ -269,7 +287,19 @@ export class StudentregPage implements OnInit {
       await errorAlert.present();
     } finally {
       this.registeringStudent = false;
+      this.isUploading = false;
+      await loading.dismiss();
     }
+  }
+
+  private async showToast(message: string, color: 'success' | 'danger' | 'warning'): Promise<void> {
+    const toast = await this.toastCtrl.create({
+      message,
+      duration: 3000,
+      position: 'bottom',
+      color
+    });
+    await toast.present();
   }
 
   private normalizeCsvHeader(header: string): string {
@@ -328,7 +358,19 @@ export class StudentregPage implements OnInit {
       return;
     }
 
+    if (this.isUploading) {
+      input.value = '';
+      return;
+    }
+
     this.importingStudents = true;
+    this.isUploading = true;
+    const loading = await this.loadingCtrl.create({
+      message: 'Uploading student list, please wait...',
+      spinner: 'crescent',
+      backdropDismiss: false
+    });
+    await loading.present();
 
     try {
       let rows: any[][];
@@ -396,16 +438,25 @@ export class StudentregPage implements OnInit {
       }
 
       const failed = results.filter((result) => !result.success);
+      const importedCount = importedStudents.length - failed.length;
       if (failed.length) {
         const firstError = failed[0]?.error ? ` First error: ${failed[0].error}` : '';
         alert(`Imported ${importedStudents.length - failed.length} student(s), but ${failed.length} failed.${firstError}`);
+        await this.showToast(`Upload failed: ${failed[0]?.error || `${failed.length} student record(s) failed.`}`, 'danger');
       } else {
         alert(`Successfully imported ${importedStudents.length} student(s).`);
+        await this.showToast(`Successfully imported ${importedCount} student records!`, 'success');
       }
 
       input.value = '';
+    } catch (error) {
+      console.error('Student list upload failed:', error);
+      const message = error instanceof Error ? error.message : 'Unable to import the student list.';
+      await this.showToast(`Upload failed: ${message}`, 'danger');
     } finally {
       this.importingStudents = false;
+      this.isUploading = false;
+      await loading.dismiss();
     }
   }
 
