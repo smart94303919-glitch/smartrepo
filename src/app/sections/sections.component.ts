@@ -25,6 +25,14 @@ export class SectionsComponent implements OnInit {
     this.loadAssignedSubjects();
   }
 
+  async handleRefresh(event: any): Promise<void> {
+    try {
+      await this.loadAssignedSubjects();
+    } finally {
+      event.target.complete();
+    }
+  }
+
   private async loadAssignedSubjects() {
     const currentUser = localStorage.getItem('currentUser');
     if (!currentUser) {

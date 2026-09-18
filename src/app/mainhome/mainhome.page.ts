@@ -35,6 +35,15 @@ export class MainhomePage implements OnInit {
     void this.loadGradeAnalytics();
   }
 
+  async handleRefresh(event: any): Promise<void> {
+    try {
+      this.loadCurrentUser();
+      await this.loadGradeAnalytics();
+    } finally {
+      event.target.complete();
+    }
+  }
+
   async loadGradeAnalytics(): Promise<void> {
     this.loadingAnalytics = true;
     this.analyticsError = '';

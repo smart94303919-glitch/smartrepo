@@ -13,6 +13,14 @@ import { Router } from '@angular/router';   // ✅ import Router
 export class CmbtpPage {
   constructor(private router: Router) {}
 
+  async handleRefresh(event: any): Promise<void> {
+    try {
+      await Promise.resolve();
+    } finally {
+      event.target.complete();
+    }
+  }
+
   onGoto() {
     this.router.navigate(['/classes']);   
   }

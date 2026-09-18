@@ -47,6 +47,14 @@ export class StudentDashboardComponent implements OnInit {
     }
   }
 
+  async handleRefresh(event: any): Promise<void> {
+    try {
+      await this.loadSubjectTabsForSection();
+    } finally {
+      event.target.complete();
+    }
+  }
+
   private async loadSubjectTabsForSection(): Promise<void> {
     try {
       this.loading = true;

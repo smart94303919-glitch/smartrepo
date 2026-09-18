@@ -10,4 +10,12 @@ export class StudentsPage {
 
   constructor() {}
 
+  async handleRefresh(event: any): Promise<void> {
+    try {
+      await Promise.resolve();
+    } finally {
+      event.target.complete();
+    }
+  }
+
 }

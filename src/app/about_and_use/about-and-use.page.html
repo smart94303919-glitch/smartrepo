@@ -11,6 +11,9 @@
 </ion-header>
 
 <ion-content class="about-use-page ion-padding">
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content pullingIcon="chevron-down-circle-outline" pullingText="Pull down to refresh" refreshingSpinner="circles" refreshingText="Refreshing data..."></ion-refresher-content>
+  </ion-refresher>
   <div class="card">
     <h2>About SMART</h2>
     <p>

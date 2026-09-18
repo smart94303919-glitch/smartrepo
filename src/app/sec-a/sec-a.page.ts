@@ -13,6 +13,14 @@ import { Router } from '@angular/router';
 export class SecAPage {
   constructor(private router: Router) {}
 
+  async handleRefresh(event: any): Promise<void> {
+    try {
+      await Promise.resolve();
+    } finally {
+      event.target.complete();
+    }
+  }
+
 onGoto() {
     this.router.navigate(['/cictfirst']);
   }

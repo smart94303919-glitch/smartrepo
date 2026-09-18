@@ -91,6 +91,14 @@ export class OmrContainerPage implements OnInit {
     });
   }
 
+  async handleRefresh(event: any): Promise<void> {
+    try {
+      await this.loadProfessorSheets();
+    } finally {
+      event.target.complete();
+    }
+  }
+
   private async loadProfessorSheets(): Promise<void> {
     try {
       const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');

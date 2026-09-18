@@ -18,6 +18,9 @@
 </ion-header>
 
 <ion-content class="omr-shell">
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content pullingIcon="chevron-down-circle-outline" pullingText="Pull down to refresh" refreshingSpinner="circles" refreshingText="Refreshing data..."></ion-refresher-content>
+  </ion-refresher>
   <!-- METADATA / CREATE ANSWER SHEETS MODE -->
   <div *ngIf="displayMode === 'metadata' || displayMode === 'full'" class="section">
     <div class="section-header" *ngIf="displayMode === 'full'">

@@ -24,6 +24,14 @@ export class RegisterPage {
     this.initializeForm();
   }
 
+  async handleRefresh(event: any): Promise<void> {
+    try {
+      await Promise.resolve();
+    } finally {
+      event.target.complete();
+    }
+  }
+
   initializeForm() {
     this.registrationForm = this.fb.group({
       p_log: ['', [Validators.required, Validators.minLength(2)]],

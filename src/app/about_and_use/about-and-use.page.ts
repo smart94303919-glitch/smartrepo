@@ -13,6 +13,14 @@ import { Router } from '@angular/router';
 export class AboutAndUsePage {
   constructor(private router: Router) {}
 
+  async handleRefresh(event: any): Promise<void> {
+    try {
+      await Promise.resolve();
+    } finally {
+      event.target.complete();
+    }
+  }
+
   goBack() {
     this.router.navigate(['/morebtn']);
   }

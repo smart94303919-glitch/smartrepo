@@ -21,6 +21,9 @@
 </ion-header>
 
 <ion-content class="ion-padding archive-content">
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content pullingIcon="chevron-down-circle-outline" pullingText="Pull down to refresh" refreshingSpinner="circles" refreshingText="Refreshing data..."></ion-refresher-content>
+  </ion-refresher>
   <div *ngIf="loading" class="archive-empty-state">
     <ion-spinner name="crescent"></ion-spinner>
     <p>Loading archived students...</p>

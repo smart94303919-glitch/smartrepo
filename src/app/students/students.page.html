@@ -1,5 +1,8 @@
 <!-- student.page.html -->
 <ion-content class="ion-padding ion-text-center">
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content pullingIcon="chevron-down-circle-outline" pullingText="Pull down to refresh" refreshingSpinner="circles" refreshingText="Refreshing data..."></ion-refresher-content>
+  </ion-refresher>
   <div class="page-card">
     <h1>Student Management</h1>
 

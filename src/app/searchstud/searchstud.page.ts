@@ -29,6 +29,14 @@ export class SearchstudPage implements OnInit {
     await this.loadStudents();
   }
 
+  async handleRefresh(event: any): Promise<void> {
+    try {
+      await this.loadStudents();
+    } finally {
+      event.target.complete();
+    }
+  }
+
   async loadStudents() {
     const { data, error } = await this.supabaseService.getAllStudents();
     if (error) {

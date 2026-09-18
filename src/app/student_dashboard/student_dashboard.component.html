@@ -15,6 +15,9 @@
 </ion-header>
 
 <ion-content class="student-dashboard-content">
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content pullingIcon="chevron-down-circle-outline" pullingText="Pull down to refresh" refreshingSpinner="circles" refreshingText="Refreshing data..."></ion-refresher-content>
+  </ion-refresher>
   <div class="student-dashboard-body">
     <div *ngIf="loading" class="loading-state" aria-label="Loading student dashboard">
       <ion-spinner name="crescent"></ion-spinner>

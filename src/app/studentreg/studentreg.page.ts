@@ -47,6 +47,14 @@ export class StudentregPage implements OnInit {
     this.loadSections();
   }
 
+  async handleRefresh(event: any): Promise<void> {
+    try {
+      await this.loadSections();
+    } finally {
+      event.target.complete();
+    }
+  }
+
   downloadStudentFormat(): void {
     const headers = [[
       'student_id',

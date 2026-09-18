@@ -64,6 +64,14 @@ export class StudentInfoPage implements OnInit {
     void this.loadSections();
   }
 
+  async handleRefresh(event: any): Promise<void> {
+    try {
+      await this.loadSections();
+    } finally {
+      event.target.complete();
+    }
+  }
+
   private async loadSections(): Promise<void> {
     try {
       const currentUser = localStorage.getItem('currentUser');

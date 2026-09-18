@@ -1,5 +1,8 @@
 <!-- forgot.page.html -->
 <ion-content class="ion-text-center ion-padding">
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content pullingIcon="chevron-down-circle-outline" pullingText="Pull down to refresh" refreshingSpinner="circles" refreshingText="Refreshing data..."></ion-refresher-content>
+  </ion-refresher>
   <div class="box">
     <h2>Forgot Password</h2>
 

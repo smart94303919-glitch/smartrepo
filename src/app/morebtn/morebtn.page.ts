@@ -32,6 +32,15 @@ export class MorebtnPage implements OnInit {
     void this.loadProfessorDetails();
   }
 
+  async handleRefresh(event: any): Promise<void> {
+    try {
+      this.loadCurrentUser();
+      await this.loadProfessorDetails();
+    } finally {
+      event.target.complete();
+    }
+  }
+
   async loadProfessorDetails(): Promise<void> {
     const professorId = Number(this.currentUser?.prof_id);
     if (!Number.isFinite(professorId)) {

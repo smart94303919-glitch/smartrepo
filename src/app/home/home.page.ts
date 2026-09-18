@@ -23,6 +23,14 @@ export class HomePage {
     this.initializeForm();
   }
 
+  async handleRefresh(event: any): Promise<void> {
+    try {
+      await Promise.resolve();
+    } finally {
+      event.target.complete();
+    }
+  }
+
   initializeForm() {
     this.loginForm = this.fb.group({
       p_log: ['', [Validators.required, Validators.minLength(1)]],

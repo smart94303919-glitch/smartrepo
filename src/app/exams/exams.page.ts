@@ -30,6 +30,16 @@ export class ExamsPage implements OnInit {
 
   ngOnInit(): void {}
 
+  async handleRefresh(event: any): Promise<void> {
+    try {
+      if (this.showGrades) {
+        await this.openStudentGrades();
+      }
+    } finally {
+      event.target.complete();
+    }
+  }
+
   /**
    * Navigate to OMR system in "metadata" mode to create answer sheets
    * This displays the Sheet Metadata & Layout Configuration form

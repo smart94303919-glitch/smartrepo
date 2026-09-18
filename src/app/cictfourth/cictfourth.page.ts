@@ -14,6 +14,14 @@ import { FormsModule } from '@angular/forms';
 export class CictfourthPage {
   constructor(private router: Router) {}
 
+  async handleRefresh(event: any): Promise<void> {
+    try {
+      await Promise.resolve();
+    } finally {
+      event.target.complete();
+    }
+  }
+
   onGoto() {
     this.router.navigate(['/cictp']);
   }

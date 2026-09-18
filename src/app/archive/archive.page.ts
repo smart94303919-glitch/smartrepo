@@ -37,6 +37,14 @@ export class ArchivePage {
     }
   }
 
+  async handleRefresh(event: any): Promise<void> {
+    try {
+      await this.ngOnInit();
+    } finally {
+      event.target.complete();
+    }
+  }
+
   goBack(): void {
     this.router.navigate(['/student_dashboard']);
   }

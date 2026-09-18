@@ -12,6 +12,9 @@
 </ion-header>
 
 <ion-content class="ion-padding ion-text-center simple-text-page">
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content pullingIcon="chevron-down-circle-outline" pullingText="Pull down to refresh" refreshingSpinner="circles" refreshingText="Refreshing data..."></ion-refresher-content>
+  </ion-refresher>
   <div class="page-header">
     <div class="professor-info">
       <ion-icon name="person-circle-outline" class="profile-icon"></ion-icon>
