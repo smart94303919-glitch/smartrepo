@@ -24,7 +24,11 @@
           <ion-item>
             <ion-icon name="text-outline" slot="start" color="primary"></ion-icon>
             <ion-label position="stacked">Title</ion-label>
-            <ion-input [(ngModel)]="model.title" placeholder="e.g. Midterm Examination"></ion-input>
+            <ion-input
+              [(ngModel)]="model.title"
+              (ngModelChange)="onTitleChange($event)"
+              placeholder="e.g. Midterm Examination"
+            ></ion-input>
           </ion-item>
         </ion-col>
 
@@ -143,7 +147,11 @@
     <ion-item>
       <ion-icon name="folder-open-outline" slot="start" color="primary"></ion-icon>
       <ion-label position="stacked">Output PDF Name</ion-label>
-      <ion-input [(ngModel)]="model.output_name" placeholder="e.g. sheet.pdf"></ion-input>
+      <ion-input
+        [(ngModel)]="model.output_name"
+        [readonly]="true"
+        placeholder="e.g. sheet.pdf"
+      ></ion-input>
     </ion-item>
 
     <ion-button

@@ -39,7 +39,7 @@ export class TemplateFormComponent implements OnInit {
     options_per_question: 4,
     columns: 3,
     sheet_id: 'SHEET-0001',
-    output_name: 'sheet.pdf',
+    output_name: 'Midterm Examination.pdf',
     student_id_digits: 13,
   };
 
@@ -145,6 +145,13 @@ export class TemplateFormComponent implements OnInit {
     }
   }
 
+  onTitleChange(title: string): void {
+    const outputTitle = String(title ?? '').trim();
+    this.model.output_name = outputTitle
+      ? (outputTitle.toLowerCase().endsWith('.pdf') ? outputTitle : `${outputTitle}.pdf`)
+      : '';
+  }
+
   /** Basic client-side validation before hitting the network -- mirrors
    * the constraints enforced server-side in config.SheetConfig.__post_init__. */
   private validate(): string | null {
@@ -197,13 +204,31 @@ export class TemplateFormComponent implements OnInit {
     }
 
     const studentIds = await this.getAssignedStudentIdsForGeneration();
+    let currentUser: any = {};
+    try {
+      currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    } catch {
+      console.error('Professor session metadata could not be read.');
+    }
     let studentMetadata: Array<{ student_id: string; student_name: string }> = [];
     try {
       studentMetadata = await this.supabaseService.getStudentMetadata(studentIds);
     } catch (error) {
       console.error('Student names could not be loaded; generating with student IDs:', error);
     }
-    const generationModel = { ...this.model, student_ids: studentIds, student_metadata: studentMetadata };
+    const professorName = [
+      currentUser.p_firstname,
+      currentUser.p_middlename,
+      currentUser.p_lastname,
+    ].filter(Boolean).join(' ');
+    const generationModel = {
+      ...this.model,
+      student_ids: studentIds,
+      student_metadata: studentMetadata,
+      prof_id: Number.isFinite(Number(currentUser.prof_id)) ? Number(currentUser.prof_id) : undefined,
+      professor_id: String(currentUser.prof_number || currentUser.prof_id || '').trim(),
+      professor_name: professorName || 'MASTER ANSWER KEY',
+    };
 
     this.api.generatePdf(generationModel).subscribe({
       next: async (pdfBlob: Blob) => {

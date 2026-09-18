@@ -33,6 +33,9 @@ export interface SheetConfigRequest {
     student_id: string;
     student_name: string;
   }>;
+  prof_id?: number;
+  professor_id?: string;
+  professor_name?: string;
   student_id_digits?: number;
   embed_qr?: boolean;
 }

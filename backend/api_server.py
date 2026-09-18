@@ -347,6 +347,8 @@ class SheetConfigRequest(BaseModel):
     section_id: Optional[int] = None
     SubjectID: Optional[int] = None
     prof_id: Optional[int] = None
+    professor_id: str = ""
+    professor_name: str = "MASTER ANSWER KEY"
 
     @property
     def normalized_quiz_type(self) -> str:
@@ -711,7 +713,15 @@ def generate_pdf(payload: SheetConfigRequest):
             print(f"[PDF Gen] Warning: Failed to save sheet_tbl mapping: {db_err}")
 
     try:
-        generate_omr_sheets(cfg, out_path, enrolled_students, student_names, page_qr_payloads)
+        generate_omr_sheets(
+            cfg,
+            out_path,
+            enrolled_students,
+            student_names,
+            page_qr_payloads,
+            payload.professor_id or (str(payload.prof_id) if payload.prof_id is not None else ""),
+            payload.professor_name,
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {e}")
 
