@@ -291,7 +291,7 @@ export class OmrContainerPage implements OnInit {
     const sheetId = parsedPayload?.sheetId || 'N/A';
     const parsedProfId = parsedPayload?.type === 'TEACHER_KEY' ? parsedPayload.profId : '';
     const profId = result.qr_prof_id || parsedProfId;
-    const resolvedStudentId = result.student_id?.trim() || studentId;
+    const resolvedStudentId = studentId || result.student_id?.trim() || '';
     const missingId =
       !resolvedStudentId ||
       result.student_id_missing === true ||

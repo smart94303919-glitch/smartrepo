@@ -695,6 +695,24 @@ def parse_qr_payload(raw_payload: str) -> dict[str, str]:
             "sheet_id": parts[1] or "UNKNOWN",
         }
 
+    embedded_sheet_match = re.search(r"(?:^|-)(SHT-\d{8}-\d{4})(?:-|$)", cleaned)
+    if embedded_sheet_match:
+        sheet_id = embedded_sheet_match.group(1).strip()
+        prefix = cleaned[:embedded_sheet_match.start(1)].rstrip("-").strip()
+        suffix = cleaned[embedded_sheet_match.end(1):].lstrip("-").strip()
+        if prefix and not suffix:
+            return {
+                "type": "TEACHER_KEY",
+                "prof_id": prefix,
+                "sheet_id": sheet_id,
+                "prof_name": "",
+            }
+        return {
+            "type": "STUDENT_SHEET",
+            "student_id": suffix or prefix,
+            "sheet_id": sheet_id,
+        }
+
     teacher_hyphen_match = re.match(r"^(\d+)-(.+)$", cleaned)
     if teacher_hyphen_match:
         return {
