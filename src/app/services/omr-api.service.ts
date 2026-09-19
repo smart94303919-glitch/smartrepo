@@ -78,7 +78,8 @@ export type QrPayload =
   | { type: 'TEACHER_KEY'; profId: string; sheetId: string; profName: string };
 
 export function parseQrPayload(rawPayload: string): QrPayload | null {
-  const parts = String(rawPayload ?? '').trim().split(':').map((part) => part.trim());
+  const cleaned = String(rawPayload ?? '').trim();
+  const parts = cleaned.split(':').map((part) => part.trim());
   if (parts.length === 2 && parts[0] && parts[1]) {
     return { type: 'STUDENT_SHEET', studentId: parts[0], sheetId: parts[1] };
   }
@@ -90,6 +91,25 @@ export function parseQrPayload(rawPayload: string): QrPayload | null {
       profName: parts.slice(2).join(':').trim(),
     };
   }
+
+  const generatedSheetMatch = cleaned.match(/^(SHT-\d{8}-\d{4})-(.+)$/);
+  if (generatedSheetMatch?.[1] && generatedSheetMatch[2]) {
+    return {
+      type: 'STUDENT_SHEET',
+      sheetId: generatedSheetMatch[1].trim(),
+      studentId: generatedSheetMatch[2].trim(),
+    };
+  }
+
+  const legacyHyphenParts = cleaned.split('-');
+  if (legacyHyphenParts.length === 2 && legacyHyphenParts[0] && legacyHyphenParts[1]) {
+    return {
+      type: 'STUDENT_SHEET',
+      sheetId: legacyHyphenParts[0].trim(),
+      studentId: legacyHyphenParts[1].trim(),
+    };
+  }
+
   return null;
 }
 

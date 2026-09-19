@@ -105,7 +105,7 @@ def build_qr_image(
         version=None,
         error_correction=qrcode.constants.ERROR_CORRECT_M,
         box_size=6,
-        border=2,
+        border=4,
     )
     qr.add_data(payload)
     qr.make(fit=True)
@@ -120,8 +120,8 @@ def encode_student_qr_payload(
     student_id: str,
     sheet_id: str,
 ) -> str:
-    """Return the short identity payload embedded in each page QR code."""
-    return f"{str(student_id).strip()}:{str(sheet_id).strip()}"
+    """Return the camera-friendly sheet-first identity payload."""
+    return f"{str(sheet_id).strip()}-{str(student_id).strip()}"
 
 
 def encode_teacher_qr_payload(

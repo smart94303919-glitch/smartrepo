@@ -602,12 +602,6 @@ def extract_sheet_identity(header_image: np.ndarray) -> tuple[str, str, str]:
 def parse_qr_payload(raw_payload: str) -> dict[str, str]:
     cleaned = str(raw_payload or "").strip()
     parts = [part.strip() for part in cleaned.split(":")]
-    if len(parts) == 2:
-        return {
-            "type": "STUDENT_SHEET",
-            "student_id": parts[0],
-            "sheet_id": parts[1] or "UNKNOWN",
-        }
     if len(parts) >= 3:
         return {
             "type": "TEACHER_KEY",
@@ -615,6 +609,29 @@ def parse_qr_payload(raw_payload: str) -> dict[str, str]:
             "sheet_id": parts[1] or "UNKNOWN",
             "prof_name": ":".join(parts[2:]).strip(),
         }
+    if len(parts) == 2:
+        return {
+            "type": "STUDENT_SHEET",
+            "student_id": parts[0],
+            "sheet_id": parts[1] or "UNKNOWN",
+        }
+
+    generated_sheet_match = re.match(r"^(SHT-\d{8}-\d{4})-(.+)$", cleaned)
+    if generated_sheet_match:
+        return {
+            "type": "STUDENT_SHEET",
+            "sheet_id": generated_sheet_match.group(1).strip(),
+            "student_id": generated_sheet_match.group(2).strip(),
+        }
+
+    legacy_hyphen_parts = cleaned.split("-")
+    if len(legacy_hyphen_parts) == 2 and all(legacy_hyphen_parts):
+        return {
+            "type": "STUDENT_SHEET",
+            "sheet_id": legacy_hyphen_parts[0].strip(),
+            "student_id": legacy_hyphen_parts[1].strip(),
+        }
+
     return {"type": "INVALID"}
 
 
