@@ -10,8 +10,8 @@
       <h2 *ngIf="displayResult.mode === 'grade'">{{ displayResult.student_name || 'Student' }}</h2>
       <h2 *ngIf="displayResult.mode === 'key'">Teacher Answer Key</h2>
       <p *ngIf="displayResult.mode === 'grade'">
-        Student ID: {{ displayResult.clean_student_id || displayResult.student_id || 'No ID' }} &middot;
         Sheet ID: {{ displayResult.display_sheet_id || displayResult.sheet_id || 'N/A' }} &middot;
+        Student ID: {{ displayResult.clean_student_id || displayResult.student_id || 'No ID' }} &middot;
         Score: {{ displayResult.score ?? 0 }}/{{ displayResult.total_questions ?? 0 }}
         ({{ displayResult.percentage ?? 0 }}%)
       </p>
@@ -31,8 +31,8 @@
       {{ displayResult.mode === 'key' ? 'Answer Key Captured' : (displayResult.student_name || 'Grading Result') }}
     </ion-card-title>
     <ion-card-subtitle *ngIf="displayResult.mode === 'grade'">
-      Student ID: {{ displayResult.clean_student_id || displayResult.student_id || 'No ID' }} &mdash;
       Sheet ID: {{ displayResult.display_sheet_id || displayResult.sheet_id || 'N/A' }} &mdash;
+      Student ID: {{ displayResult.clean_student_id || displayResult.student_id || 'No ID' }} &mdash;
       Score: {{ displayResult.score ?? 0 }} / {{ displayResult.total_questions ?? 0 }} ({{ displayResult.percentage ?? 0 }}%)
     </ion-card-subtitle>
   </ion-card-header>

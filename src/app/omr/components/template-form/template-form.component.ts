@@ -230,8 +230,11 @@ export class TemplateFormComponent implements OnInit {
         subj_id: Number(this.model.SubjectID),
       }, activeProfessorId);
     } catch (error) {
-      console.error('Sheet metadata could not be saved; continuing generation:', error);
-      await this.showToast('Sheet metadata could not be saved. Continuing generation.', 'danger');
+      console.error('Sheet metadata could not be saved; generation aborted:', error);
+      await loading.dismiss();
+      this.isGenerating = false;
+      await this.showToast('Sheet could not be saved. PDF generation was cancelled.', 'danger');
+      return;
     }
 
     const studentIds = await this.getAssignedStudentIdsForGeneration();

@@ -46,7 +46,13 @@
         <ion-item class="control-item">
           <ion-icon name="key-outline" slot="start" color="primary"></ion-icon>
           <ion-label position="stacked">Sheet ID</ion-label>
-          <ion-select [(ngModel)]="activeSheetId" interface="popover" placeholder="Select an assigned sheet">
+          <ion-select
+            [(ngModel)]="activeSheetId"
+            interface="popover"
+            [interfaceOptions]="sheetSelectOptions"
+            class="sheet-id-dropdown"
+            placeholder="Select an assigned sheet"
+          >
             <ion-select-option *ngFor="let sheetId of professorSheetIds" [value]="sheetId">
               {{ sheetId }}
             </ion-select-option>

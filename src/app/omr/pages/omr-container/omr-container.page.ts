@@ -51,6 +51,7 @@ export class OmrContainerPage implements OnInit {
   activeTotalQuestions: number | null = null;
   activeOptionsPerQuestion: number | null = null;
   activeColumns: number | null = null;
+  sheetSelectOptions = { cssClass: 'sheet-id-popover' };
 
   scanMode: ScanMode = 'key';
   studentId = '';
@@ -109,11 +110,22 @@ export class OmrContainerPage implements OnInit {
       }
 
       this.activeProfessorId = professorId;
-      this.professorSheetIds = await this.supabaseService.getProfessorSheetIds(professorId);
+      this.professorSheetIds = this.sortSheetIds(
+        await this.supabaseService.getProfessorSheetIds(professorId),
+      );
+      if (!this.professorSheetIds.includes(this.activeSheetId.trim())) {
+        this.activeSheetId = this.professorSheetIds[0] ?? '';
+      }
     } catch (error) {
       console.error('Failed to load professor sheet assignments:', error);
       this.scanError = 'Unable to load your assigned sheet IDs.';
     }
+  }
+
+  private sortSheetIds(sheetIds: string[]): string[] {
+    return Array.from(new Set(
+      sheetIds.map((sheetId) => String(sheetId ?? '').trim()).filter(Boolean),
+    )).sort((first, second) => second.localeCompare(first));
   }
 
   goBack() {
@@ -123,9 +135,7 @@ export class OmrContainerPage implements OnInit {
   /** Called when TemplateFormComponent finishes generating a sheet. */
   onSheetGenerated(cfg: SheetConfigRequest) {
     this.activeSheetId = cfg.sheet_id;
-    if (this.activeSheetId && !this.professorSheetIds.includes(this.activeSheetId)) {
-      this.professorSheetIds = [...this.professorSheetIds, this.activeSheetId];
-    }
+    this.professorSheetIds = this.sortSheetIds([...this.professorSheetIds, this.activeSheetId]);
     this.activeTotalQuestions = cfg.total_questions;
     this.activeOptionsPerQuestion = cfg.options_per_question;
     this.activeColumns = cfg.columns;

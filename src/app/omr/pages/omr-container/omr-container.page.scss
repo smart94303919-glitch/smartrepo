@@ -38,6 +38,29 @@
   font-size: 20px;
 }
 
+.sheet-id-dropdown {
+  min-width: 0;
+}
+
+::ng-deep .sheet-id-popover {
+  --max-height: 240px;
+}
+
+::ng-deep .sheet-id-popover .popover-content {
+  max-height: 240px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+::ng-deep .sheet-id-popover .popover-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+::ng-deep .sheet-id-popover .popover-content::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
 .mode-heading,
 .capture-heading {
   display: flex;
