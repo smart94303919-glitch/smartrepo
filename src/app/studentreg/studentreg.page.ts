@@ -5,6 +5,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AlertController, IonicModule, LoadingController, ToastController } from '@ionic/angular';
 import * as XLSX from 'xlsx';
+import { Capacitor } from '@capacitor/core';
+import { Directory, Filesystem } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 @Component({
   selector: 'app-studentreg',
@@ -58,7 +61,7 @@ export class StudentregPage implements OnInit {
     }
   }
 
-  downloadStudentFormat(): void {
+  async downloadStudentFormat(): Promise<void> {
     const headers = [[
       'student_id',
       'first_name',
@@ -74,7 +77,39 @@ export class StudentregPage implements OnInit {
     const worksheet = XLSX.utils.aoa_to_sheet(headers);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Students');
-    XLSX.writeFile(workbook, 'STUDENT FORMAT.xlsx');
+    const fileName = 'student_registration_template.xlsx';
+
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const base64Data = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
+        const savedFile = await Filesystem.writeFile({
+          path: fileName,
+          data: base64Data,
+          directory: Directory.Cache,
+        });
+
+        await Share.share({
+          title: 'Download Student Registration Template',
+          url: savedFile.uri,
+          dialogTitle: 'Save or Open Excel Template',
+        });
+        return;
+      }
+
+      const workbookData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([workbookData], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = fileName;
+      anchor.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download student registration template:', error);
+      await this.showToast('Unable to download the student registration template.', 'danger');
+    }
   }
 
   getEmptyStudent() {
