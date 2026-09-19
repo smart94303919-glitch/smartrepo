@@ -610,10 +610,26 @@ def parse_qr_payload(raw_payload: str) -> dict[str, str]:
             "prof_name": ":".join(parts[2:]).strip(),
         }
     if len(parts) == 2:
+        if re.fullmatch(r"\d+", parts[0]):
+            return {
+                "type": "TEACHER_KEY",
+                "prof_id": parts[0],
+                "sheet_id": parts[1] or "UNKNOWN",
+                "prof_name": "",
+            }
         return {
             "type": "STUDENT_SHEET",
             "student_id": parts[0],
             "sheet_id": parts[1] or "UNKNOWN",
+        }
+
+    teacher_hyphen_match = re.match(r"^(\d+)-(.+)$", cleaned)
+    if teacher_hyphen_match:
+        return {
+            "type": "TEACHER_KEY",
+            "prof_id": teacher_hyphen_match.group(1).strip(),
+            "sheet_id": teacher_hyphen_match.group(2).strip(),
+            "prof_name": "",
         }
 
     generated_sheet_match = re.match(r"^(SHT-\d{8}-\d{4})-(.+)$", cleaned)
@@ -626,6 +642,13 @@ def parse_qr_payload(raw_payload: str) -> dict[str, str]:
 
     legacy_hyphen_parts = cleaned.split("-")
     if len(legacy_hyphen_parts) == 2 and all(legacy_hyphen_parts):
+        if re.fullmatch(r"\d+", legacy_hyphen_parts[0].strip()):
+            return {
+                "type": "TEACHER_KEY",
+                "prof_id": legacy_hyphen_parts[0].strip(),
+                "sheet_id": legacy_hyphen_parts[1].strip(),
+                "prof_name": "",
+            }
         return {
             "type": "STUDENT_SHEET",
             "sheet_id": legacy_hyphen_parts[0].strip(),

@@ -129,8 +129,8 @@ def encode_teacher_qr_payload(
     sheet_id: str,
     prof_name: str,
 ) -> str:
-    """Return the teacher key payload, including display and audit metadata."""
-    return f"{str(prof_id).strip()}:{str(sheet_id).strip()}:{str(prof_name).strip()}"
+    """Return the compact teacher key payload used by mobile cameras."""
+    return f"{str(prof_id).strip()}-{str(sheet_id).strip()}"
 
 
 def format_student_name(

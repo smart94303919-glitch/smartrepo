@@ -81,6 +81,9 @@ export function parseQrPayload(rawPayload: string): QrPayload | null {
   const cleaned = String(rawPayload ?? '').trim();
   const parts = cleaned.split(':').map((part) => part.trim());
   if (parts.length === 2 && parts[0] && parts[1]) {
+    if (/^\d+$/.test(parts[0])) {
+      return { type: 'TEACHER_KEY', profId: parts[0], sheetId: parts[1], profName: '' };
+    }
     return { type: 'STUDENT_SHEET', studentId: parts[0], sheetId: parts[1] };
   }
   if (parts.length >= 3 && parts[0] && parts[1]) {
@@ -89,6 +92,16 @@ export function parseQrPayload(rawPayload: string): QrPayload | null {
       profId: parts[0],
       sheetId: parts[1],
       profName: parts.slice(2).join(':').trim(),
+    };
+  }
+
+  const teacherHyphenMatch = cleaned.match(/^(\d+)-(.+)$/);
+  if (teacherHyphenMatch?.[1] && teacherHyphenMatch[2]) {
+    return {
+      type: 'TEACHER_KEY',
+      profId: teacherHyphenMatch[1].trim(),
+      sheetId: teacherHyphenMatch[2].trim(),
+      profName: '',
     };
   }
 
@@ -103,6 +116,14 @@ export function parseQrPayload(rawPayload: string): QrPayload | null {
 
   const legacyHyphenParts = cleaned.split('-');
   if (legacyHyphenParts.length === 2 && legacyHyphenParts[0] && legacyHyphenParts[1]) {
+    if (/^\d+$/.test(legacyHyphenParts[0].trim())) {
+      return {
+        type: 'TEACHER_KEY',
+        profId: legacyHyphenParts[0].trim(),
+        sheetId: legacyHyphenParts[1].trim(),
+        profName: '',
+      };
+    }
     return {
       type: 'STUDENT_SHEET',
       sheetId: legacyHyphenParts[0].trim(),
