@@ -16,7 +16,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { IonicModule, ToastController, LoadingController, AlertController } from '@ionic/angular';
-import { OmrApiService, GradeSheetResponse, QrPayload, SheetConfigRequest, parseQrPayload } from '../../../services/omr-api.service';
+import { OmrApiService, GradeSheetResponse, SheetConfigRequest } from '../../../services/omr-api.service';
 import { SupabaseService } from '../../../services/supabase.service';
 import { TemplateFormComponent } from '../../components/template-form/template-form.component';
 import { ImagePickerComponent, MAX_BATCH_IMAGES } from '../../components/image-picker/image-picker.component';
@@ -285,34 +285,37 @@ export class OmrContainerPage implements OnInit {
     this.studentImages = [];
   }
 
-  private parseScannedPayload(rawPayload: string): QrPayload | null {
+  private parseStudentQrPayload(rawPayload: string): { sheetId: string; studentId: string } {
     const cleaned = String(rawPayload ?? '').trim();
-    const sheetMatch = cleaned.match(/SHT-\d{8}-\d{4}/);
-    if (sheetMatch?.index !== undefined) {
-      const sheetId = sheetMatch[0].trim();
-      const prefix = cleaned.slice(0, sheetMatch.index).replace(/[:-]+$/, '').trim();
-      const suffix = cleaned.slice(sheetMatch.index + sheetId.length).replace(/^[:-]+/, '').trim();
+    if (!cleaned) {
+      return { sheetId: '', studentId: '' };
+    }
 
-      if (/^\d+$/.test(prefix)) {
-        return { type: 'TEACHER_KEY', profId: prefix, sheetId, profName: '' };
-      }
-
-      const studentId = prefix || suffix;
-      if (studentId) {
-        return { type: 'STUDENT_SHEET', studentId, sheetId };
+    let hyphenCount = 0;
+    let splitIndex = -1;
+    for (let index = 0; index < cleaned.length; index += 1) {
+      if (cleaned[index] === '-') {
+        hyphenCount += 1;
+        if (hyphenCount === 3) {
+          splitIndex = index;
+          break;
+        }
       }
     }
 
-    return parseQrPayload(cleaned);
+    if (splitIndex !== -1) {
+      return {
+        sheetId: cleaned.substring(0, splitIndex).trim(),
+        studentId: cleaned.substring(splitIndex + 1).trim(),
+      };
+    }
+
+    return { sheetId: cleaned, studentId: '' };
   }
 
   private async normalizeResult(result: GradeSheetResponse): Promise<GradeSheetResponse> {
-    const parsedPayload = this.parseScannedPayload(result.student_id ?? '');
-    const studentId = parsedPayload?.type === 'STUDENT_SHEET' ? parsedPayload.studentId : '';
-    const sheetId = parsedPayload?.sheetId || 'N/A';
-    const parsedProfId = parsedPayload?.type === 'TEACHER_KEY' ? parsedPayload.profId : '';
-    const profId = result.qr_prof_id || parsedProfId;
-    const resolvedStudentId = result.student_id?.trim() || studentId;
+    const parsedPayload = this.parseStudentQrPayload(result.student_id ?? '');
+    const resolvedStudentId = parsedPayload.studentId || result.student_id?.trim() || '';
     const missingId =
       !resolvedStudentId ||
       result.student_id_missing === true ||
@@ -320,11 +323,8 @@ export class OmrContainerPage implements OnInit {
       resolvedStudentId.toLowerCase().includes('unassigned');
 
     const studentName = result.student_name?.trim() || 'Student';
-    const scannedSheetId = (sheetId !== 'N/A' ? sheetId : result.sheet_id || '').trim();
+    const scannedSheetId = (parsedPayload.studentId ? parsedPayload.sheetId : result.sheet_id || '').trim();
     const selectedSheetId = this.activeSheetId.trim();
-    if (profId && this.activeProfessorId && profId !== String(this.activeProfessorId)) {
-      throw new Error('Unauthorized: This sheet layout belongs to another professor');
-    }
 
     return {
       ...result,
@@ -337,7 +337,7 @@ export class OmrContainerPage implements OnInit {
       selected_sheet_id: selectedSheetId,
       scanned_sheet_id: scannedSheetId || 'N/A',
       sheet_id_matches: Boolean(selectedSheetId) && selectedSheetId === scannedSheetId,
-      qr_prof_id: profId || result.qr_prof_id,
+      qr_prof_id: result.qr_prof_id,
     };
   }
 
