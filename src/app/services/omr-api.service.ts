@@ -97,26 +97,6 @@ export function parseQrPayload(rawPayload: string): QrPayload | null {
     };
   }
 
-  const embeddedSheetMatch = cleaned.match(/(?:^|-)(SHT-\d{8}-\d{4})(?:-|$)/);
-  if (embeddedSheetMatch?.[1] && embeddedSheetMatch.index !== undefined) {
-    const sheetId = embeddedSheetMatch[1].trim();
-    const prefix = cleaned.slice(0, embeddedSheetMatch.index).replace(/-+$/, '').trim();
-    const suffix = cleaned.slice(embeddedSheetMatch.index + embeddedSheetMatch[0].length).trim();
-    if (prefix && !suffix) {
-      return {
-        type: 'TEACHER_KEY',
-        profId: prefix,
-        sheetId,
-        profName: '',
-      };
-    }
-    return {
-      type: 'STUDENT_SHEET',
-      sheetId,
-      studentId: (suffix || prefix).trim(),
-    };
-  }
-
   const teacherHyphenMatch = cleaned.match(/^(\d+)-(.+)$/);
   if (teacherHyphenMatch?.[1] && teacherHyphenMatch[2]) {
     return {
