@@ -287,21 +287,19 @@ export class OmrContainerPage implements OnInit {
 
   private parseScannedPayload(rawPayload: string): QrPayload | null {
     const cleaned = String(rawPayload ?? '').trim();
-    const segments = cleaned.split('-').map((segment) => segment.trim()).filter(Boolean);
-    const sheetPrefixIndex = segments.findIndex((segment) => /^SHT$/i.test(segment));
-    if (sheetPrefixIndex >= 0 && sheetPrefixIndex + 2 < segments.length) {
-      const sheetId = segments.slice(sheetPrefixIndex, sheetPrefixIndex + 3).join('-');
-      const remainingSegments = [
-        ...segments.slice(0, sheetPrefixIndex),
-        ...segments.slice(sheetPrefixIndex + 3),
-      ];
-      const remainingId = remainingSegments.join('-').trim();
+    const sheetMatch = cleaned.match(/SHT-\d{8}-\d{4}/);
+    if (sheetMatch?.index !== undefined) {
+      const sheetId = sheetMatch[0].trim();
+      const prefix = cleaned.slice(0, sheetMatch.index).replace(/[:-]+$/, '').trim();
+      const suffix = cleaned.slice(sheetMatch.index + sheetId.length).replace(/^[:-]+/, '').trim();
 
-      if (/^\d+$/.test(remainingId)) {
-        return { type: 'TEACHER_KEY', profId: remainingId, sheetId, profName: '' };
+      if (/^\d+$/.test(prefix)) {
+        return { type: 'TEACHER_KEY', profId: prefix, sheetId, profName: '' };
       }
-      if (remainingId) {
-        return { type: 'STUDENT_SHEET', studentId: remainingId, sheetId };
+
+      const studentId = prefix || suffix;
+      if (studentId) {
+        return { type: 'STUDENT_SHEET', studentId, sheetId };
       }
     }
 
@@ -314,7 +312,7 @@ export class OmrContainerPage implements OnInit {
     const sheetId = parsedPayload?.sheetId || 'N/A';
     const parsedProfId = parsedPayload?.type === 'TEACHER_KEY' ? parsedPayload.profId : '';
     const profId = result.qr_prof_id || parsedProfId;
-    const resolvedStudentId = studentId || result.student_id?.trim() || '';
+    const resolvedStudentId = result.student_id?.trim() || studentId;
     const missingId =
       !resolvedStudentId ||
       result.student_id_missing === true ||
