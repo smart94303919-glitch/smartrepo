@@ -16,7 +16,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { IonicModule, ToastController, LoadingController, AlertController } from '@ionic/angular';
-import { OmrApiService, GradeSheetResponse, SheetConfigRequest, parseQrPayload } from '../../../services/omr-api.service';
+import { OmrApiService, GradeSheetResponse, QrPayload, SheetConfigRequest, parseQrPayload } from '../../../services/omr-api.service';
 import { SupabaseService } from '../../../services/supabase.service';
 import { TemplateFormComponent } from '../../components/template-form/template-form.component';
 import { ImagePickerComponent, MAX_BATCH_IMAGES } from '../../components/image-picker/image-picker.component';
@@ -285,8 +285,29 @@ export class OmrContainerPage implements OnInit {
     this.studentImages = [];
   }
 
+  private parseScannedPayload(rawPayload: string): QrPayload | null {
+    const cleaned = String(rawPayload ?? '').trim();
+    const sheetMatch = cleaned.match(/SHT-\d{8}-\d{4}/);
+    if (sheetMatch?.index !== undefined) {
+      const sheetId = sheetMatch[0].trim();
+      const prefix = cleaned.slice(0, sheetMatch.index).replace(/[:-]+$/, '').trim();
+      const suffix = cleaned.slice(sheetMatch.index + sheetId.length).replace(/^[:-]+/, '').trim();
+
+      if (/^\d+$/.test(prefix)) {
+        return { type: 'TEACHER_KEY', profId: prefix, sheetId, profName: '' };
+      }
+
+      const studentId = prefix || suffix;
+      if (studentId) {
+        return { type: 'STUDENT_SHEET', studentId, sheetId };
+      }
+    }
+
+    return parseQrPayload(cleaned);
+  }
+
   private async normalizeResult(result: GradeSheetResponse): Promise<GradeSheetResponse> {
-    const parsedPayload = parseQrPayload(result.student_id ?? '');
+    const parsedPayload = this.parseScannedPayload(result.student_id ?? '');
     const studentId = parsedPayload?.type === 'STUDENT_SHEET' ? parsedPayload.studentId : '';
     const sheetId = parsedPayload?.sheetId || 'N/A';
     const parsedProfId = parsedPayload?.type === 'TEACHER_KEY' ? parsedPayload.profId : '';
