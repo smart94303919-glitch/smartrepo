@@ -73,6 +73,26 @@ export interface GradeSheetResponse {
   overlay_image_base64: string; // raw base64 PNG bytes, no data: prefix
 }
 
+export type QrPayload =
+  | { type: 'STUDENT_SHEET'; studentId: string; sheetId: string }
+  | { type: 'TEACHER_KEY'; profId: string; sheetId: string; profName: string };
+
+export function parseQrPayload(rawPayload: string): QrPayload | null {
+  const parts = String(rawPayload ?? '').trim().split(':').map((part) => part.trim());
+  if (parts.length === 2 && parts[0] && parts[1]) {
+    return { type: 'STUDENT_SHEET', studentId: parts[0], sheetId: parts[1] };
+  }
+  if (parts.length >= 3 && parts[0] && parts[1]) {
+    return {
+      type: 'TEACHER_KEY',
+      profId: parts[0],
+      sheetId: parts[1],
+      profName: parts.slice(2).join(':').trim(),
+    };
+  }
+  return null;
+}
+
 /** Response from POST /api/scan-student-id */
 export interface StudentIdScanResponse {
   /** The extracted and validated Student ID (e.g. "SIC2026-0001"), or null if OCR failed. */
@@ -89,6 +109,7 @@ export interface SaveStudentScoreRequest {
   student_id: string;
   sheet_id: string;
   expected_sheet_id?: string;
+  prof_id?: number;
   score_value?: number;
   percentage?: number;
 }

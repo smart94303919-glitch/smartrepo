@@ -363,6 +363,10 @@ async getProfessorSubjectsForSection(profId: number, sectionId: number): Promise
 
 async getProfessorStudentScores(profId: number): Promise<any[]> {
   const assignments = await this.getProfessorSubjectSectionAssignments(profId);
+  const ownedSheetIds = await this.getProfessorSheetIds(profId);
+  if (!ownedSheetIds.length) {
+    return [];
+  }
   const assignmentKeys = new Set(
     (assignments || []).map((assignment: any) => `${assignment.subj_id}:${assignment.section_id}`)
   );
@@ -380,6 +384,7 @@ async getProfessorStudentScores(profId: number): Promise<any[]> {
   }
 
   const visibleScores = (scoreRows || []).filter((score: any) =>
+    ownedSheetIds.includes(String(score.sheet_id ?? '').trim()) &&
     assignmentKeys.has(`${score.subj_id}:${score.section_id}`)
   );
 
@@ -428,13 +433,28 @@ async getProfessorGradeAssessments(profId: number): Promise<any[]> {
     return [];
   }
 
-  const sectionIds = Array.from(new Set((assignments || []).map((assignment: any) => Number(assignment.section_id))));
-  const subjectIds = Array.from(new Set((assignments || []).map((assignment: any) => Number(assignment.subj_id))));
+  const { data: ownedSheets, error: ownershipError } = await this.supabase
+    .from('sheet_prof')
+    .select('sheet_id')
+    .eq('prof_id', Number(profId));
+
+  if (ownershipError) {
+    throw ownershipError;
+  }
+
+  const ownedSheetIds = Array.from(new Set(
+    (ownedSheets || [])
+      .map((sheet: any) => String(sheet.sheet_id ?? '').trim())
+      .filter(Boolean)
+  ));
+  if (!ownedSheetIds.length) {
+    return [];
+  }
+
   const { data, error } = await this.supabase
     .from('sheet_tbl')
     .select('sheet_id, sheet_title, quiz_type, section_id, subj_id')
-    .in('section_id', sectionIds)
-    .in('subj_id', subjectIds);
+    .in('sheet_id', ownedSheetIds);
 
   if (error) {
     throw error;
@@ -470,6 +490,11 @@ async getProfessorGradesForAssessment(
   );
 
   if (!isAssigned) {
+    return [];
+  }
+
+  const ownedSheetIds = await this.getProfessorSheetIds(profId);
+  if (!ownedSheetIds.includes(String(sheetId).trim())) {
     return [];
   }
 
