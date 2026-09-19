@@ -162,20 +162,17 @@ def _get_supabase_client() -> Client:
 
 
 def _link_sheet_to_professor(supabase: Client, sheet_id: str, prof_id: Optional[int]) -> None:
-    """Create the sheet_prof link without making PDF generation fail."""
+    """Create the durable sheet ownership link or raise a persistence error."""
     if prof_id is None:
-        print(f"[PDF Gen] Warning: No prof_id supplied; sheet_prof link skipped for '{sheet_id}'")
-        return
+        raise HTTPException(status_code=400, detail="prof_id is required to persist sheet ownership.")
 
     try:
         active_prof_id = int(prof_id)
     except (TypeError, ValueError):
-        print(f"[PDF Gen] Warning: Invalid prof_id '{prof_id}'; sheet_prof link skipped for '{sheet_id}'")
-        return
+        raise HTTPException(status_code=400, detail="prof_id must be a valid integer.")
 
     if active_prof_id <= 0:
-        print(f"[PDF Gen] Warning: Invalid prof_id '{prof_id}'; sheet_prof link skipped for '{sheet_id}'")
-        return
+        raise HTTPException(status_code=400, detail="prof_id must be a positive integer.")
 
     existing_mapping = (
         supabase.table("sheet_prof")
@@ -190,7 +187,7 @@ def _link_sheet_to_professor(supabase: Client, sheet_id: str, prof_id: Optional[
         return
 
     supabase.table("sheet_prof").insert({
-        "sheet_id": str(sheet_id),
+        "sheet_id": str(sheet_id).strip(),
         "prof_id": active_prof_id,
     }).execute()
     print(f"[PDF Gen] Linked sheet '{sheet_id}' to professor {active_prof_id}")
@@ -213,6 +210,50 @@ def _require_sheet_ownership(supabase: Client, sheet_id: str, prof_id: Optional[
     )
     if not ownership.data:
         raise HTTPException(status_code=403, detail="Unauthorized Sheet Ownership")
+
+
+def _save_answer_key(supabase: Client, sheet_id: str, prof_id: int, answer_key: dict) -> None:
+    """Persist a teacher key under the professor-owned sheet identity."""
+    supabase.table("sheet_anskey").upsert(
+        {
+            "sheet_id": str(sheet_id).strip(),
+            "prof_id": int(prof_id),
+            "answer_key": answer_key,
+        },
+        on_conflict="sheet_id,prof_id",
+    ).execute()
+
+
+def _load_answer_key(supabase: Client, sheet_id: str, prof_id: int) -> dict:
+    """Load the durable key, falling back only for legacy/network failures."""
+    try:
+        response = (
+            supabase.table("sheet_anskey")
+            .select("answer_key")
+            .eq("sheet_id", str(sheet_id).strip())
+            .eq("prof_id", int(prof_id))
+            .maybe_single()
+            .execute()
+        )
+        if response.data and isinstance(response.data.get("answer_key"), dict):
+            return response.data["answer_key"]
+    except Exception as db_err:
+        print(f"[KEY LOAD] Supabase answer key unavailable; trying legacy local key: {db_err}")
+
+    key_path = _key_path(sheet_id)
+    if os.path.exists(key_path):
+        try:
+            with open(key_path) as key_file:
+                payload = json.load(key_file)
+            if isinstance(payload.get("answer_key"), dict):
+                return payload["answer_key"]
+        except (OSError, json.JSONDecodeError, AttributeError) as local_err:
+            print(f"[KEY LOAD] Legacy local answer key could not be read: {local_err}")
+
+    raise HTTPException(
+        status_code=404,
+        detail=f"No answer key found for sheet_id '{sheet_id}'. Capture key first.",
+    )
 
 
 def fetch_assigned_students(section_id, subject_id, prof_id=None):
@@ -551,6 +592,37 @@ def _load_sheet_config_for_scan(
     if os.path.exists(cfg_path):
         with open(cfg_path) as f:
             base.update(json.load(f))
+    else:
+        try:
+            sheet_response = (
+                _get_supabase_client()
+                .table("sheet_tbl")
+                .select("sheet_id, sheet_title, quiz_type, questions, columns, section_id, subj_id")
+                .eq("sheet_id", str(sheet_id).strip())
+                .maybe_single()
+                .execute()
+            )
+        except Exception as db_err:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Could not load persisted sheet configuration: {db_err}",
+            ) from db_err
+
+        sheet_row = sheet_response.data
+        if not sheet_row:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No sheet metadata found for sheet_id '{sheet_id}'.",
+            )
+
+        base.update({
+            "title": sheet_row.get("sheet_title") or "OMR Answer Sheet",
+            "quiz_type": sheet_row.get("quiz_type") or "Multiple Choice",
+            "total_questions": sheet_row.get("questions"),
+            "columns": sheet_row.get("columns"),
+            "section_id": sheet_row.get("section_id") or "",
+            "SubjectID": sheet_row.get("subj_id") or "",
+        })
     if total_questions is not None:
         base["total_questions"] = total_questions
     if options_per_question is not None:
@@ -734,6 +806,8 @@ def save_student_score(payload: SaveStudentScoreRequest):
         }
         response = supabase.table("student_score").insert(insert_payload).execute()
         return {"status": "success", "message": "Score saved successfully!", "data": response.data}
+    except HTTPException:
+        raise
     except Exception as exc:
         print(f"[SCORE SAVE] Failed for sheet '{payload.sheet_id}': {exc}")
         return JSONResponse(
@@ -807,8 +881,15 @@ def generate_pdf(payload: SheetConfigRequest):
             print(f"[PDF Gen] Saved sheet_tbl record for '{cfg.sheet_id}'")
 
             _link_sheet_to_professor(supabase, str(cfg.sheet_id), payload.prof_id)
+        except HTTPException:
+            raise
         except Exception as db_err:
-            print(f"[PDF Gen] Warning: Failed to save sheet metadata or professor mapping: {db_err}")
+            raise HTTPException(
+                status_code=502,
+                detail=f"Sheet metadata or ownership could not be persisted: {db_err}",
+            ) from db_err
+    else:
+        raise HTTPException(status_code=502, detail="Supabase is unavailable; sheet was not persisted.")
 
     try:
         generate_omr_sheets(
@@ -891,22 +972,20 @@ def grade_sheet(
 
     if mode == "key":
         key = {str(question): result.selected for question, result in results.items()}
-        with open(_key_path(sheet_id), "w") as key_file:
-            json.dump({"answer_key": key}, key_file, indent=2)
+        try:
+            _save_answer_key(supabase, sheet_id, int(prof_id), key)
+        except Exception as db_err:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Teacher answer key could not be saved to Supabase: {db_err}",
+            ) from db_err
         return GradeSheetResponse(
             mode="key", sheet_id=sheet_id, questions_read=len(results),
             blank_count=n_blank, multi_marked_count=n_multi, answer_key=key,
             overlay_image_base64=_overlay_to_base64(overlay),
         )
 
-    if not os.path.exists(_key_path(sheet_id)):
-        raise HTTPException(
-            status_code=404,
-            detail=f"No answer key found for sheet_id '{sheet_id}'. Capture key first.",
-        )
-    with open(_key_path(sheet_id)) as f:
-        key_payload = json.load(f)
-    answer_key = {int(k): v for k, v in key_payload["answer_key"].items()}
+    answer_key = {int(k): v for k, v in _load_answer_key(supabase, sheet_id, int(prof_id)).items()}
 
     student_id_missing = False
     student_id_note = None

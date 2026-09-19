@@ -888,7 +888,7 @@ async saveSheetMetadata(metadata: {
 }, profId?: number | null): Promise<void> {
   const { error } = await this.supabase
     .from('sheet_tbl')
-    .insert([metadata]);
+    .upsert([metadata], { onConflict: 'sheet_id' });
 
   if (error) {
     console.error('Error saving sheet metadata:', error);
@@ -904,24 +904,62 @@ async saveSheetMetadata(metadata: {
   const { data: existingMapping, error: mappingLookupError } = await this.supabase
     .from('sheet_prof')
     .select('assignment_id')
-    .eq('sheet_id', metadata.sheet_id)
+    .eq('sheet_id', metadata.sheet_id.trim())
     .eq('prof_id', activeProfessorId)
     .limit(1);
 
   if (mappingLookupError) {
-    console.error('Sheet metadata saved, but sheet_prof lookup failed:', mappingLookupError);
-    return;
+    throw mappingLookupError;
   }
 
   if (!existingMapping?.length) {
     const { error: mappingInsertError } = await this.supabase
       .from('sheet_prof')
-      .insert({ sheet_id: metadata.sheet_id, prof_id: activeProfessorId });
+      .insert({ sheet_id: metadata.sheet_id.trim(), prof_id: activeProfessorId });
 
     if (mappingInsertError) {
-      console.error('Sheet metadata saved, but sheet_prof insertion failed:', mappingInsertError);
+      throw mappingInsertError;
     }
   }
+}
+
+async saveAnswerKey(
+  sheetId: string,
+  profId: number,
+  answerKey: Record<string, string | null>,
+): Promise<void> {
+  const normalizedSheetId = String(sheetId ?? '').trim();
+  const normalizedProfId = Number(profId);
+  if (!normalizedSheetId || !Number.isFinite(normalizedProfId) || normalizedProfId <= 0) {
+    throw new Error('A valid sheet ID and professor ID are required to save the answer key.');
+  }
+
+  const { error } = await this.supabase
+    .from('sheet_anskey')
+    .upsert({
+      sheet_id: normalizedSheetId,
+      prof_id: normalizedProfId,
+      answer_key: answerKey,
+    }, { onConflict: 'sheet_id,prof_id' });
+
+  if (error) {
+    throw error;
+  }
+}
+
+async getAnswerKey(sheetId: string, profId: number): Promise<Record<string, string | null> | null> {
+  const { data, error } = await this.supabase
+    .from('sheet_anskey')
+    .select('answer_key')
+    .eq('sheet_id', String(sheetId ?? '').trim())
+    .eq('prof_id', Number(profId))
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data?.answer_key ?? null;
 }
 
 async assignSheetToProfessor(sheetId: string, profId: number): Promise<void> {

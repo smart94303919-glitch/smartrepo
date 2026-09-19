@@ -201,6 +201,18 @@ export class OmrContainerPage implements OnInit {
           this.scanError = null;
           if (this.scanMode === 'key') {
             this.teacherKeyResult = res;
+            if (res.answer_key && this.activeProfessorId) {
+              try {
+                await this.supabaseService.saveAnswerKey(
+                  this.activeSheetId,
+                  this.activeProfessorId,
+                  res.answer_key,
+                );
+              } catch (error) {
+                console.error('Teacher answer key could not be mirrored to Supabase:', error);
+                await this.showToast('Answer key was processed but could not be saved to Supabase.', 'danger');
+              }
+            }
             this.teacherKeyImage = null;
           } else {
             this.studentResult = await this.normalizeResult(res);

@@ -47,6 +47,8 @@ export interface ItemizedRow {
   is_correct: boolean;
 }
 
+export type AnswerKey = Record<string, string | null>;
+
 export interface GradeSheetResponse {
   mode: 'key' | 'grade';
   sheet_id: string;
@@ -64,7 +66,7 @@ export interface GradeSheetResponse {
   questions_read: number;
   blank_count: number;
   multi_marked_count: number;
-  answer_key?: { [question: string]: string | null };
+  answer_key?: AnswerKey;
   score?: number;
   total_questions?: number;
   percentage?: number;
