@@ -48,9 +48,11 @@ export class ImagePickerComponent implements AfterViewInit, OnChanges, OnDestroy
   isCameraReady = false;
   isFlashing = false;
   isProcessingCapture = false;
+  focusRing: { x: number; y: number } | null = null;
   currentFacingMode: 'environment' | 'user' = 'environment';
   hasMultipleCameras = false;
   private mediaStream: MediaStream | null = null;
+  private focusRingTimer: ReturnType<typeof setTimeout> | null = null;
 
   @ViewChild('videoElement') private videoElement?: ElementRef<HTMLVideoElement>;
 
@@ -69,6 +71,7 @@ export class ImagePickerComponent implements AfterViewInit, OnChanges, OnDestroy
   }
 
   ngOnDestroy() {
+    this.clearFocusRing();
     this.stopCamera();
   }
 
@@ -174,12 +177,50 @@ export class ImagePickerComponent implements AfterViewInit, OnChanges, OnDestroy
   }
 
   stopCamera() {
+    this.clearFocusRing();
     this.mediaStream?.getTracks().forEach((track) => track.stop());
     this.mediaStream = null;
     const video = this.videoElement?.nativeElement;
     if (video) video.srcObject = null;
     this.isCameraActive = false;
     this.isCameraReady = false;
+  }
+
+  async focusCamera(event: MouseEvent): Promise<void> {
+    const container = event.currentTarget as HTMLElement | null;
+    if (!container || !this.mediaStream) return;
+
+    const bounds = container.getBoundingClientRect();
+    this.focusRing = {
+      x: event.clientX - bounds.left,
+      y: event.clientY - bounds.top,
+    };
+    this.clearFocusRingTimer();
+    this.focusRingTimer = setTimeout(() => this.clearFocusRing(), 1000);
+
+    const videoTrack = this.mediaStream.getVideoTracks()[0];
+    if (!videoTrack?.applyConstraints) return;
+
+    try {
+      await videoTrack.applyConstraints({
+        advanced: [{ focusMode: 'continuous' }],
+      } as unknown as MediaTrackConstraints);
+    } catch (error) {
+      // Focus controls are optional and unsupported on some browsers/devices.
+      console.debug('Camera focus constraint is unavailable:', error);
+    }
+  }
+
+  private clearFocusRingTimer() {
+    if (this.focusRingTimer) {
+      clearTimeout(this.focusRingTimer);
+      this.focusRingTimer = null;
+    }
+  }
+
+  private clearFocusRing() {
+    this.clearFocusRingTimer();
+    this.focusRing = null;
   }
 
   /** Opens the native camera UI directly. */

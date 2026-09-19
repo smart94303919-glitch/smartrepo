@@ -77,18 +77,15 @@
         </ion-button>
       </div>
 
-      <div class="video-container">
+      <div class="video-container" (click)="focusCamera($event)">
         <video #videoElement autoplay playsinline muted class="camera-video-feed"></video>
         <div class="shutter-flash" [class.flash-active]="isFlashing"></div>
-        <div class="alignment-overlay">
-          <div class="viewfinder-box">
-            <div class="corner top-left"></div>
-            <div class="corner top-right"></div>
-            <div class="corner bottom-left"></div>
-            <div class="corner bottom-right"></div>
-            <p class="guide-text">Position answer sheet within frame</p>
-          </div>
-        </div>
+        <div
+          *ngIf="focusRing"
+          class="touch-focus-ring"
+          [style.left.px]="focusRing.x"
+          [style.top.px]="focusRing.y"
+        ></div>
       </div>
 
       <div class="camera-bottom-bar">

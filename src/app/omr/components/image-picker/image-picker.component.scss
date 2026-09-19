@@ -117,50 +117,17 @@
       }
     }
 
-    .alignment-overlay {
+    .touch-focus-ring {
       position: absolute;
-      inset: 0;
-      z-index: 5;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0, 0, 0, 0.28);
-
-      .viewfinder-box {
-        position: relative;
-        width: min(82vw, 520px);
-        height: min(68vh, 720px);
-        border: 2px dashed rgba(255, 255, 255, 0.65);
-        border-radius: 12px;
-        box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.38);
-        display: flex;
-        align-items: flex-end;
-        justify-content: center;
-        padding-bottom: 16px;
-
-        .guide-text {
-          margin: 0;
-          padding: 6px 14px;
-          border-radius: 20px;
-          background: rgba(0, 0, 0, 0.62);
-          color: rgba(255, 255, 255, 0.9);
-          font-size: 13px;
-        }
-
-        .corner {
-          position: absolute;
-          width: 24px;
-          height: 24px;
-          border-color: #10dc60;
-          border-style: solid;
-          filter: drop-shadow(0 0 3px rgba(16, 220, 96, 0.7));
-
-          &.top-left { top: -2px; left: -2px; border-width: 4px 0 0 4px; border-top-left-radius: 12px; }
-          &.top-right { top: -2px; right: -2px; border-width: 4px 4px 0 0; border-top-right-radius: 12px; }
-          &.bottom-left { bottom: -2px; left: -2px; border-width: 0 0 4px 4px; border-bottom-left-radius: 12px; }
-          &.bottom-right { right: -2px; bottom: -2px; border-width: 0 4px 4px 0; border-bottom-right-radius: 12px; }
-        }
-      }
+      z-index: 9;
+      width: 64px;
+      height: 64px;
+      margin: -32px 0 0 -32px;
+      border: 2px solid rgba(255, 255, 255, 0.95);
+      border-radius: 50%;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 0 12px rgba(255, 255, 255, 0.55);
+      pointer-events: none;
+      animation: touch-focus 1s ease-out forwards;
     }
   }
 
@@ -205,9 +172,11 @@
   100% { opacity: 0; }
 }
 
+@keyframes touch-focus {
+  0% { opacity: 1; transform: scale(0.8); }
+  35% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.18); }
+}
+
 @media (orientation: landscape) {
-  .camera-fullscreen-modal .viewfinder-box {
-    width: min(62vw, 760px);
-    height: min(78vh, 520px);
-  }
 }
