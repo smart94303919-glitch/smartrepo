@@ -39,25 +39,24 @@
             *ngIf="exportSelectionMode"
             [checked]="isArchiveSelected(student)"
             (ionChange)="toggleArchiveSelection(student)"
-            [attr.aria-label]="'Select archive record ' + student.archive_id + ' for export'"
+            aria-label="Select archived student for export"
           ></ion-checkbox>
           <div>
             <ion-card-title>
-              {{ student.student_tbl?.s_firstname }} {{ student.student_tbl?.s_middlename || '' }} {{ student.student_tbl?.s_lastname }}
+              {{ student.student_tbl?.s_firstname }}
+              {{ student.student_tbl?.s_middlename ? student.student_tbl.s_middlename + ' ' : '' }}
+              {{ student.student_tbl?.s_lastname }}
             </ion-card-title>
             <ion-card-subtitle>Student ID: {{ student.student_id }}</ion-card-subtitle>
           </div>
-          <ion-badge color="medium">Archive #{{ student.archive_id }}</ion-badge>
         </div>
       </ion-card-header>
       <ion-card-content>
         <div class="archive-details">
-          <div><span>Department ID</span><strong>{{ student.dept_id || 'N/A' }}</strong></div>
-          <div><span>Section ID</span><strong>{{ student.section_id }}</strong></div>
-          <div><span>Subject ID</span><strong>{{ student.subj_id }}</strong></div>
-          <div><span>Score ID</span><strong>{{ student.Score_id || 'N/A' }}</strong></div>
-          <div><span>Score</span><strong>{{ student.student_score?.score_value ?? 'N/A' }}</strong></div>
-          <div><span>Percentage</span><strong>{{ student.student_score?.percentage != null ? (student.student_score.percentage + '%') : 'N/A' }}</strong></div>
+          <div><span>Age</span><strong>{{ student.student_tbl?.age ?? 'N/A' }}</strong></div>
+          <div><span>Gender</span><strong>{{ student.student_tbl?.gender || 'N/A' }}</strong></div>
+          <div><span>Section</span><strong>{{ student.section_tbl?.section || 'N/A' }}</strong></div>
+          <div><span>Subject</span><strong>{{ student.subject_tbl?.subject || 'N/A' }}</strong></div>
         </div>
         <div class="archive-card-action">
         <ion-button
