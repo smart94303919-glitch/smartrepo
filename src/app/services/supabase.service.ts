@@ -755,29 +755,69 @@ async getArchivedStudents(): Promise<any[]> {
 async restoreArchivedStudent(archiveRow: any, profId: number): Promise<void> {
   const studentId = String(archiveRow?.student_id ?? '').trim();
   const sectionId = Number(archiveRow?.section_id);
-  const subjectId = Number(archiveRow?.subj_id);
+  const schoolYearId = Number(archiveRow?.sy_id);
   const archiveId = Number(archiveRow?.archive_id);
 
-  if (!studentId || !Number.isFinite(sectionId) || !Number.isFinite(subjectId) || !Number.isFinite(archiveId)) {
+  if (!studentId || !Number.isFinite(sectionId) || !Number.isFinite(schoolYearId) || !Number.isFinite(archiveId)) {
     throw new Error('Archive record is incomplete.');
   }
 
-  const { data: enrollment, error: enrollmentLookupError } = await this.supabase
-    .from('stud_section_subj')
+  const { data: studentRecord, error: studentError } = await this.supabase
+    .from('student_tbl')
+    .select('student_id')
+    .eq('student_id', studentId)
+    .maybeSingle();
+
+  if (studentError || !studentRecord) {
+    console.error('Validation failed: Student ID not found in student_tbl', studentError);
+    throw new Error('Student ID was not found in student_tbl.');
+  }
+
+  const { data: archiveRecord, error: archiveLookupError } = await this.supabase
+    .from('s_archive')
+    .select('archive_id, student_id')
+    .eq('archive_id', archiveId)
+    .eq('student_id', studentId)
+    .maybeSingle();
+
+  if (archiveLookupError || !archiveRecord) {
+    console.error('Validation failed: Archive record mismatch for student_id', archiveLookupError);
+    throw new Error('Archive record does not match the student ID.');
+  }
+
+  const { data: schoolYearEnrollment, error: schoolYearLookupError } = await this.supabase
+    .from('stud_sy')
+    .select('student_id')
+    .eq('student_id', studentId)
+    .eq('sy_id', schoolYearId)
+    .maybeSingle();
+
+  if (schoolYearLookupError) {
+    throw schoolYearLookupError;
+  }
+
+  if (!schoolYearEnrollment) {
+    const { error } = await this.supabase
+      .from('stud_sy')
+      .insert({ student_id: studentId, sy_id: schoolYearId });
+    if (error) throw error;
+  }
+
+  const { data: sectionEnrollment, error: sectionLookupError } = await this.supabase
+    .from('student_section_assignment')
     .select('student_id')
     .eq('student_id', studentId)
     .eq('section_id', sectionId)
-    .eq('subj_id', subjectId)
     .maybeSingle();
 
-  if (enrollmentLookupError) {
-    throw enrollmentLookupError;
+  if (sectionLookupError) {
+    throw sectionLookupError;
   }
 
-  if (!enrollment) {
+  if (!sectionEnrollment) {
     const { error } = await this.supabase
-      .from('stud_section_subj')
-      .insert({ student_id: studentId, section_id: sectionId, subj_id: subjectId });
+      .from('student_section_assignment')
+      .insert({ student_id: studentId, section_id: sectionId });
     if (error) throw error;
   }
 

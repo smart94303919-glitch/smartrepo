@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonicModule, ToastController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { SupabaseService } from '../services/supabase.service';
 import * as XLSX from 'xlsx';
@@ -22,7 +22,8 @@ export class ArchivePage {
 
   constructor(
     private router: Router,
-    private supabaseService: SupabaseService
+    private supabaseService: SupabaseService,
+    private toastCtrl: ToastController
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -129,6 +130,13 @@ export class ArchivePage {
     } catch (error) {
       console.error('Failed to restore archived student:', error);
       this.errorMessage = 'Failed to restore the student.';
+      const toast = await this.toastCtrl.create({
+        message: error instanceof Error ? error.message : 'Failed to restore the student.',
+        duration: 2500,
+        color: 'danger',
+        position: 'bottom'
+      });
+      await toast.present();
     } finally {
       this.restoringArchiveId = null;
     }
