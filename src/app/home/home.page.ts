@@ -18,6 +18,7 @@ export class HomePage implements OnDestroy {
   isLockedOut: boolean = false;
   lockoutRemainingSeconds: number = 0;
   lockoutTimer: any = null;
+  private lockoutUntil = 0;
 
   constructor(
     private fb: FormBuilder,
@@ -84,6 +85,10 @@ export class HomePage implements OnDestroy {
     this.showPassword = !this.showPassword;
   }
 
+  ionViewWillEnter() {
+    this.restoreLockoutState();
+  }
+
   get formattedLockoutTime(): string {
     const minutes = Math.floor(this.lockoutRemainingSeconds / 60);
     const seconds = this.lockoutRemainingSeconds % 60;
@@ -93,15 +98,44 @@ export class HomePage implements OnDestroy {
   startLockoutTimer() {
     this.clearLockoutTimer();
     this.lockoutTimer = setInterval(() => {
-      this.lockoutRemainingSeconds--;
+      this.lockoutRemainingSeconds = Math.ceil((this.lockoutUntil - Date.now()) / 1000);
 
       if (this.lockoutRemainingSeconds <= 0) {
         this.clearLockoutTimer();
         this.isLockedOut = false;
         this.lockoutRemainingSeconds = 0;
         this.failedAttempts = 0;
+        this.lockoutUntil = 0;
+        this.clearPersistedLockout();
       }
     }, 1000);
+  }
+
+  private restoreLockoutState() {
+    const storedLockoutUntil = localStorage.getItem('lockout_until');
+    const storedFailedAttempts = localStorage.getItem('failed_attempts');
+    const lockUntil = Number(storedLockoutUntil);
+    const remainingMs = lockUntil - Date.now();
+
+    if (storedLockoutUntil && Number.isFinite(lockUntil) && remainingMs > 0) {
+      this.lockoutUntil = lockUntil;
+      this.failedAttempts = Number(storedFailedAttempts) || 5;
+      this.isLockedOut = true;
+      this.lockoutRemainingSeconds = Math.ceil(remainingMs / 1000);
+      this.startLockoutTimer();
+      return;
+    }
+
+    this.isLockedOut = false;
+    this.lockoutRemainingSeconds = 0;
+    this.failedAttempts = 0;
+    this.lockoutUntil = 0;
+    this.clearPersistedLockout();
+  }
+
+  private clearPersistedLockout() {
+    localStorage.removeItem('lockout_until');
+    localStorage.removeItem('failed_attempts');
   }
 
   private clearLockoutTimer() {
@@ -134,11 +168,14 @@ export class HomePage implements OnDestroy {
       if (result.success) {
         this.failedAttempts = 0;
         this.clearLockoutTimer();
+        this.lockoutUntil = 0;
+        this.clearPersistedLockout();
         await this.showToast('Login successful!', 'success');
         localStorage.setItem('currentUser', JSON.stringify(result.user));
         this.router.navigate(['/mainhome']);
       } else {
         this.failedAttempts++;
+        localStorage.setItem('failed_attempts', this.failedAttempts.toString());
 
         if (this.failedAttempts < 5) {
           await this.showToast(
@@ -147,7 +184,10 @@ export class HomePage implements OnDestroy {
           );
         } else {
           this.isLockedOut = true;
-          this.lockoutRemainingSeconds = 300;
+          this.lockoutUntil = Date.now() + (5 * 60 * 1000);
+          localStorage.setItem('lockout_until', this.lockoutUntil.toString());
+          localStorage.setItem('failed_attempts', '5');
+          this.lockoutRemainingSeconds = Math.ceil((this.lockoutUntil - Date.now()) / 1000);
           this.startLockoutTimer();
           await this.showToast('Too many failed attempts. Login locked for 5 minutes.', 'danger');
         }
