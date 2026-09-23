@@ -113,6 +113,34 @@ export class ArchivePage {
   }
 
   async restoreStudent(archiveRow: any): Promise<void> {
+    const studentId = String(archiveRow?.student_id ?? '').trim();
+    const archiveId = Number(archiveRow?.archive_id);
+    if (!studentId) {
+      console.error('Restore step failed:', new Error('Missing student_id on archived item.'));
+      this.errorMessage = 'The archived student ID is missing.';
+      const toast = await this.toastCtrl.create({
+        message: 'Unable to restore: student ID is missing.',
+        duration: 2500,
+        color: 'warning',
+        position: 'bottom'
+      });
+      await toast.present();
+      return;
+    }
+
+    if (!Number.isFinite(archiveId)) {
+      console.error('Restore step failed:', new Error('Missing archive_id on archived item.'));
+      this.errorMessage = 'The archive record ID is missing.';
+      const toast = await this.toastCtrl.create({
+        message: 'Unable to restore: archive record ID is missing.',
+        duration: 2500,
+        color: 'warning',
+        position: 'bottom'
+      });
+      await toast.present();
+      return;
+    }
+
     const currentUser = localStorage.getItem('currentUser');
     const profId = currentUser ? JSON.parse(currentUser)?.prof_id : null;
     if (!profId) {
@@ -120,15 +148,18 @@ export class ArchivePage {
       return;
     }
 
-    this.restoringArchiveId = archiveRow.archive_id;
+    this.restoringArchiveId = archiveId;
     this.errorMessage = '';
     try {
-      await this.supabaseService.restoreArchivedStudent(archiveRow, Number(profId));
+      await this.supabaseService.restoreArchivedStudent(
+        { ...archiveRow, student_id: studentId, archive_id: archiveId },
+        Number(profId)
+      );
       this.archivedStudents = this.archivedStudents.filter(
-        (student) => student.archive_id !== archiveRow.archive_id
+        (student) => Number(student.archive_id) !== archiveId
       );
     } catch (error) {
-      console.error('Failed to restore archived student:', error);
+      console.error('Restore step failed:', error);
       this.errorMessage = 'Failed to restore the student.';
       const toast = await this.toastCtrl.create({
         message: error instanceof Error ? error.message : 'Failed to restore the student.',
