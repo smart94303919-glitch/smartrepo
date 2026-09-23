@@ -47,15 +47,23 @@ export class MorebtnPage implements OnInit {
   }
 
   async loadProfessorDetails(): Promise<void> {
-    const storedProfessorId = localStorage.getItem('prof_id') || sessionStorage.getItem('prof_id');
-    const professorId = Number(storedProfessorId || this.currentUser?.prof_id);
-    if (!Number.isFinite(professorId)) {
-      this.profileError = 'Professor ID is missing.';
-      return;
-    }
-
+    this.profileLoading = true;
     try {
-      this.profileLoading = true;
+      const storedProfessorId = localStorage.getItem('prof_id')
+        || sessionStorage.getItem('prof_id')
+        || this.currentUser?.prof_id;
+      const storedLoginId = localStorage.getItem('login_id') || sessionStorage.getItem('login_id');
+      let professorId = Number(storedProfessorId);
+
+      if (!Number.isFinite(professorId) && storedLoginId) {
+        professorId = Number(await this.supabaseService.getProfessorIdByLoginId(Number(storedLoginId)));
+      }
+
+      if (!Number.isFinite(professorId)) {
+        this.profileError = 'Professor ID is missing.';
+        return;
+      }
+
       const [details, schoolYear] = await Promise.all([
         this.supabaseService.getProfessorDetails(professorId),
         this.supabaseService.getProfessorSchoolYear(professorId)
