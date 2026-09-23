@@ -96,7 +96,12 @@ export class SupabaseService {
   constructor() {
     this.supabase = createClient(
       environment.supabase.url,
-      environment.supabase.anonKey
+      environment.supabase.anonKey,
+      {
+        auth: {
+          lock: async (_name, _acquireTimeout, fn) => await fn()
+        }
+      }
     );
   }
 
@@ -660,13 +665,21 @@ async archiveStudents(studentIds: string[], subjectId: number | number[], sectio
   normalizedIds.forEach((studentId) => {
     normalizedSubjectIds.forEach((selectedSubjectId) => {
       const studentScores = scoreRowsByStudentSubject.get(`${studentId}:${selectedSubjectId}`) || [];
-      (studentScores.length ? studentScores : [{ 'Score_id': null }]).forEach((score) => archiveRows.push({
-        student_id: studentId,
-        dept_id: departmentByStudent.get(studentId) ?? null,
-        section_id: Number(section.section_id),
-        subj_id: selectedSubjectId,
-        'Score_id': score['Score_id'] ?? null
-      }));
+      (studentScores.length ? studentScores : [{ 'Score_id': null }]).forEach((score) => {
+        const departmentId = departmentByStudent.get(studentId);
+        const scoreId = score['Score_id'];
+        archiveRows.push({
+          student_id: String(studentId),
+          dept_id: departmentId !== null && departmentId !== undefined && Number.isFinite(Number(departmentId))
+            ? Number(departmentId)
+            : null,
+          section_id: Number(section.section_id),
+          subj_id: Number(selectedSubjectId),
+          'Score_id': scoreId !== null && scoreId !== undefined && Number.isFinite(Number(scoreId))
+            ? Number(scoreId)
+            : null
+        });
+      });
     });
   });
 
@@ -675,6 +688,7 @@ async archiveStudents(studentIds: string[], subjectId: number | number[], sectio
     .insert(archiveRows);
 
   if (archiveError) {
+    console.error('Archive failed detailed error:', archiveError.message, archiveError.details, archiveError.hint);
     throw archiveError;
   }
 
