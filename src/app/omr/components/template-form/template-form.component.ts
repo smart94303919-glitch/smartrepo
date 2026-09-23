@@ -194,6 +194,21 @@ export class TemplateFormComponent implements OnInit {
     }
   }
 
+  sanitizeQuestionInput(event: any): void {
+    const value = event?.detail?.value ?? event?.target?.value;
+    if (value !== null && value !== undefined && value !== '') {
+      const parsedValue = Number.parseInt(String(value), 10);
+      if (Number.isFinite(parsedValue)) {
+        this.model.total_questions = Math.min(100, Math.max(1, parsedValue));
+        if (parsedValue > 100 && event?.target) {
+          event.target.value = 100;
+        }
+      }
+    }
+
+    this.onQuestionCountChange();
+  }
+
   onTitleChange(title: string): void {
     const outputTitle = String(title ?? '').trim();
     this.model.output_name = outputTitle

@@ -118,14 +118,16 @@
         <ion-col size="12" size-md="4">
           <ion-item>
             <ion-icon name="help-circle-outline" slot="start" color="primary"></ion-icon>
-            <ion-label position="stacked">Questions</ion-label>
+            <ion-label position="stacked">Total Questions (Max 100)</ion-label>
             <ion-input
               type="number"
               inputmode="numeric"
               [(ngModel)]="model.total_questions"
               min="1"
               max="100"
-              (ionInput)="onQuestionCountChange()"
+              (ionInput)="sanitizeQuestionInput($event)"
+              (keyup)="sanitizeQuestionInput($event)"
+              placeholder="Enter total questions (1-100)"
             ></ion-input>
           </ion-item>
         </ion-col>
