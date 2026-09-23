@@ -631,9 +631,8 @@ async archiveStudents(studentIds: string[], subjectId: number | number[], sectio
 
   const { data: professorAssignment, error: professorAssignmentError } = await this.supabase
     .from(this.professorDepartmentAssignmentTable)
-    .select('dept_id, sy_id')
+    .select('sy_id')
     .eq('prof_id', Number(profId))
-    .not('dept_id', 'is', null)
     .not('sy_id', 'is', null)
     .order('assignment_id', { ascending: false })
     .limit(1)
@@ -691,7 +690,7 @@ async archiveStudents(studentIds: string[], subjectId: number | number[], sectio
           sy_id: Number(professorAssignment.sy_id),
           dept_id: departmentId !== null && departmentId !== undefined && Number.isFinite(Number(departmentId))
             ? Number(departmentId)
-            : Number(professorAssignment.dept_id),
+            : null,
           section_id: Number(section.section_id),
           subj_id: Number(selectedSubjectId),
           'Score_id': scoreId !== null && scoreId !== undefined && Number.isFinite(Number(scoreId))
@@ -707,7 +706,7 @@ async archiveStudents(studentIds: string[], subjectId: number | number[], sectio
     .insert(archiveRows);
 
   if (archiveError) {
-    console.error('Archive failed detailed error:', archiveError.message, archiveError.details, archiveError.hint);
+    console.error('s_archive insert error:', archiveError);
     throw archiveError;
   }
 
@@ -728,9 +727,9 @@ async archiveStudents(studentIds: string[], subjectId: number | number[], sectio
 
 async getArchivedStudents(): Promise<any[]> {
   const { data, error } = await this.supabase
-    .from('s_archive')
-    .select('p_archive_id:archive_id, student_id, sy_id, dept_id, section_id, subj_id, "Score_id", student_tbl(s_firstname, s_middlename, s_lastname), section_tbl(section), subject_tbl(subject), student_score(score_value, percentage, sheet_id)')
-    .order('archive_id', { ascending: false });
+    .from('p_archive')
+    .select('p_archive_id, student_id, dept_id, section_id, subj_id, "Score_id", student_tbl(s_firstname, s_middlename, s_lastname), section_tbl(section), subject_tbl(subject), student_score(score_value, percentage, sheet_id)')
+    .order('p_archive_id', { ascending: false });
 
   if (error) {
     throw error;
@@ -809,9 +808,9 @@ async restoreArchivedStudent(archiveRow: any, profId: number): Promise<void> {
   }
 
   const { error: archiveDeleteError } = await this.supabase
-    .from('s_archive')
+    .from('p_archive')
     .delete()
-    .eq('archive_id', archiveId);
+    .eq('p_archive_id', archiveId);
 
   if (archiveDeleteError) {
     throw archiveDeleteError;
@@ -1571,7 +1570,7 @@ async updateStudent(studentIdentifier: string | number, updates: any) {
 
     if (newStudentError) return { error: newStudentError };
 
-    const linkedTables = ['student_score', 's_archive', 'prof_stud', 'stud_section_subj'];
+    const linkedTables = ['student_score', 'p_archive', 'prof_stud', 'stud_section_subj'];
     for (const table of linkedTables) {
       const { error } = await this.supabase
         .from(table)
