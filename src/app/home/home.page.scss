@@ -27,6 +27,12 @@ ion-item {
   margin-bottom: 15px;
 }
 
+ion-item ion-button {
+  --padding-start: 8px;
+  --padding-end: 8px;
+  margin: 0;
+}
+
 ion-item.error {
   --border-color: #ff0000;
   border: 2px solid #ff0000;
