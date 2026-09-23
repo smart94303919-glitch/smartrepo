@@ -38,14 +38,16 @@ export class StudentDashboardComponent implements OnInit {
     private toastCtrl: ToastController
   ) {}
 
-  async ngOnInit(): Promise<void> {
-    this.selectedSubject = this.route.snapshot.queryParamMap.get('subject');
-    this.selectedSectionName = this.route.snapshot.queryParamMap.get('section');
-    this.subjectId = this.route.snapshot.queryParamMap.get('subjectId');
+  ngOnInit(): void {
+    this.route.queryParams.subscribe((params) => {
+      this.selectedSubject = params['subject'] || null;
+      this.selectedSectionName = params['section'] || null;
+      this.subjectId = params['subjectId'] ? String(params['subjectId']) : null;
 
-    if (this.selectedSectionName || this.subjectId) {
-      await this.loadSubjectTabsForSection();
-    }
+      if (this.selectedSectionName && this.subjectId) {
+        void this.loadSubjectTabsForSection();
+      }
+    });
   }
 
   async handleRefresh(event: any): Promise<void> {
@@ -107,7 +109,11 @@ export class StudentDashboardComponent implements OnInit {
         this.errorMessage = 'No subjects assigned to this section.';
         this.students = [];
       } else {
-        this.selectedSubjectTab = 0;
+        const requestedSubjectId = Number(this.subjectId);
+        const requestedSubjectTab = this.subjectTabs.findIndex(
+          (subject) => subject.SubjectID === requestedSubjectId
+        );
+        this.selectedSubjectTab = requestedSubjectTab >= 0 ? requestedSubjectTab : 0;
         await this.loadStudentsForSelectedSubject();
       }
     } catch (error: any) {
