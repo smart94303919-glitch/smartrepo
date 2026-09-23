@@ -17,7 +17,7 @@ import { FormsModule } from '@angular/forms';
 import { Camera, CameraResultType, CameraSource, GalleryPhoto } from '@capacitor/camera';
 import { IonicModule, ToastController } from '@ionic/angular';
 
-export const MAX_BATCH_IMAGES = 5;
+export const MAX_BATCH_IMAGES = 10;
 const MAX_IMAGE_EDGE = 1920;
 const JPEG_QUALITY = 0.8;
 

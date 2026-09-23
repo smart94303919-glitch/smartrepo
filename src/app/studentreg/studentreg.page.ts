@@ -454,13 +454,13 @@ export class StudentregPage implements OnInit {
       }
 
       const professorId = this.getCurrentProfessorId();
-      const results = [] as Array<{ success: boolean; error?: string }>;
+      const registrationPayloads = [] as any[];
       for (const importedStudent of importedStudents) {
         const subjectId = await this.resolveImportedStudentSubjectId(importedStudent);
         const sectionValue = this.normalizeCsvValue(importedStudent.section) || this.student.section || '';
         const subjectValue = this.normalizeCsvValue(importedStudent.subject) || this.selectedSubject || '';
 
-        const result = await this.supabaseService.registerStudent({
+        registrationPayloads.push({
           ...this.getEmptyStudent(),
           ...importedStudent,
           subject: subjectValue,
@@ -468,19 +468,15 @@ export class StudentregPage implements OnInit {
           section: sectionValue,
           professorId
         });
-
-        results.push({ success: result.success, error: result.error });
       }
 
-      const failed = results.filter((result) => !result.success);
-      const importedCount = importedStudents.length - failed.length;
-      if (failed.length) {
-        const firstError = failed[0]?.error ? ` First error: ${failed[0].error}` : '';
-        alert(`Imported ${importedStudents.length - failed.length} student(s), but ${failed.length} failed.${firstError}`);
-        await this.showToast(`Upload failed: ${failed[0]?.error || `${failed.length} student record(s) failed.`}`, 'danger');
+      const result = await this.supabaseService.registerStudentsBatch(registrationPayloads);
+      if (!result.success) {
+        alert(`Student import failed. ${result.error || ''}`.trim());
+        await this.showToast(`Upload failed: ${result.error || 'Student registration failed.'}`, 'danger');
       } else {
-        alert(`Successfully imported ${importedStudents.length} student(s).`);
-        await this.showToast(`Successfully imported ${importedCount} student records!`, 'success');
+        alert(`Successfully imported ${result.data.length} student(s).`);
+        await this.showToast(`Successfully imported ${result.data.length} student records!`, 'success');
       }
 
       input.value = '';

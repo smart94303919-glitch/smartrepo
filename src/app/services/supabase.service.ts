@@ -1055,6 +1055,121 @@ async getStudentMetadata(studentIds: string[]): Promise<Array<{ student_id: stri
 //////////////////////////////
 
   // ---------------- STUDENT METHODS ----------------
+async registerStudentsBatch(studentDataList: any[]): Promise<{
+  success: boolean;
+  data: Array<{ student_id: string }>;
+  error?: string;
+}> {
+  const studentIds = studentDataList
+    .map((studentData) => String(studentData.student_id ?? '').trim())
+    .filter(Boolean);
+
+  if (!studentDataList.length || studentIds.length !== studentDataList.length) {
+    return { success: false, data: [], error: 'Every imported student must have a student ID.' };
+  }
+
+  const uniqueStudentIds = Array.from(new Set(studentIds));
+  if (uniqueStudentIds.length !== studentIds.length) {
+    return { success: false, data: [], error: 'Imported student IDs must be unique.' };
+  }
+
+  const professorId = studentDataList[0]?.professorId ?? studentDataList[0]?.profId ?? this.getCurrentProfessorIdFromStorage();
+  const normalizedProfessorId = professorId !== null && professorId !== undefined && professorId !== ''
+    ? Number(professorId)
+    : null;
+
+  if (normalizedProfessorId === null || !Number.isFinite(normalizedProfessorId)) {
+    return { success: false, data: [], error: 'Active school year not set for professor.' };
+  }
+
+  const existingStudentIdSet = new Set<string>();
+
+  try {
+    const { data: professorAssignment, error: assignmentError } = await this.supabase
+      .from(this.professorDepartmentAssignmentTable)
+      .select('sy_id')
+      .eq('prof_id', normalizedProfessorId)
+      .not('sy_id', 'is', null)
+      .order('assignment_id', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (assignmentError) throw assignmentError;
+    const currentProfessorSyId = professorAssignment?.sy_id ?? null;
+    if (currentProfessorSyId === null || currentProfessorSyId === undefined) {
+      return { success: false, data: [], error: 'Active school year not set for professor.' };
+    }
+
+    const { data: existingStudents, error: existingStudentsError } = await this.supabase
+      .from('student_tbl')
+      .select('student_id')
+      .in('student_id', uniqueStudentIds);
+
+    if (existingStudentsError) throw existingStudentsError;
+    (existingStudents ?? []).forEach((student) => existingStudentIdSet.add(String(student.student_id).trim()));
+    const studentPayloads = studentDataList.map((studentData, index) => ({
+      student_id: studentIds[index],
+      s_firstname: studentData.first_name ?? studentData.firstname ?? studentData.s_firstname ?? '',
+      s_middlename: studentData.middle_name ?? studentData.middlename ?? studentData.s_middlename ?? null,
+      s_lastname: studentData.last_name ?? studentData.lastname ?? studentData.s_lastname ?? '',
+      age: studentData.age !== '' && studentData.age !== null && studentData.age !== undefined ? Number(studentData.age) : null,
+      gender: studentData.gender ?? null
+    }));
+
+    const { data: savedStudents, error: studentUpsertError } = await this.supabase
+      .from('student_tbl')
+      .upsert(studentPayloads, { onConflict: 'student_id' })
+      .select('student_id');
+
+    if (studentUpsertError) throw studentUpsertError;
+    const savedStudentIds = (savedStudents ?? []).map((student) => String(student.student_id).trim());
+    if (savedStudentIds.length !== uniqueStudentIds.length) {
+      throw new Error('Some imported student records could not be saved.');
+    }
+
+    const { data: existingSchoolYearAssignments, error: schoolYearLookupError } = await this.supabase
+      .from('stud_sy')
+      .select('student_id')
+      .in('student_id', uniqueStudentIds)
+      .eq('sy_id', currentProfessorSyId);
+
+    if (schoolYearLookupError) throw schoolYearLookupError;
+    const assignedStudentIds = new Set((existingSchoolYearAssignments ?? []).map((assignment) => String(assignment.student_id).trim()));
+    const newSchoolYearAssignments = uniqueStudentIds
+      .filter((studentId) => !assignedStudentIds.has(studentId))
+      .map((studentId) => ({ student_id: studentId, sy_id: currentProfessorSyId }));
+
+    if (newSchoolYearAssignments.length) {
+      const { error: schoolYearInsertError } = await this.supabase
+        .from('stud_sy')
+        .insert(newSchoolYearAssignments);
+
+      if (schoolYearInsertError) throw schoolYearInsertError;
+    }
+
+    for (const studentData of studentDataList) {
+      const result = await this.registerStudent({ ...studentData, professorId: normalizedProfessorId });
+      if (!result.success) {
+        throw new Error(result.error || 'Student registration failed.');
+      }
+    }
+
+    return { success: true, data: savedStudents ?? [] };
+  } catch (error: any) {
+    const rollbackIds = studentIds.filter((studentId) => !existingStudentIdSet.has(studentId));
+    if (rollbackIds.length) {
+      await this.supabase.from('stud_section_subj').delete().in('student_id', rollbackIds);
+      await this.supabase.from('stud_dept').delete().in('student_id', rollbackIds);
+      await this.supabase.from('prof_stud').delete().in('student_id', rollbackIds);
+      await this.supabase.from('stud_sy').delete().in('student_id', rollbackIds);
+      await this.supabase.from('student_tbl').delete().in('student_id', rollbackIds);
+    }
+
+    console.error('Error registering students in bulk:', error);
+    return { success: false, data: [], error: error?.message || 'Bulk student registration failed.' };
+  }
+}
+
 async registerStudent(studentData: any): Promise<{
   success: boolean;
   data: any[];
