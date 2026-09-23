@@ -69,6 +69,7 @@ export class OmrContainerPage implements OnInit {
   isProcessing = false;
   savingResultKey: string | null = null;
   savedResultKey: string | null = null;
+  allStudentResultsSaved = false;
 
   constructor(
     private api: OmrApiService,
@@ -253,6 +254,7 @@ export class OmrContainerPage implements OnInit {
 
     this.isProcessing = true;
     this.studentBatchResults = [];
+    this.allStudentResultsSaved = false;
     this.scanError = null;
     this.studentId = '';
     const batchImages = this.studentImages.slice(0, MAX_BATCH_IMAGES);
@@ -394,6 +396,7 @@ export class OmrContainerPage implements OnInit {
   private resetStudentResultState() {
     this.studentResult = null;
     this.studentBatchResults = [];
+    this.allStudentResultsSaved = false;
     this.scanError = null;
     this.savingResultKey = null;
     this.savedResultKey = null;
@@ -433,6 +436,13 @@ export class OmrContainerPage implements OnInit {
 
       if (response?.status === 'success') {
         this.savedResultKey = resultKey;
+        this.studentBatchResults = this.studentBatchResults.filter(
+          (batchResult) => this.resultKey(batchResult) !== resultKey
+        );
+        if (this.studentBatchResults.length === 0 && this.studentResult?.mode === 'grade') {
+          this.studentResult = null;
+          this.allStudentResultsSaved = true;
+        }
         await this.showToast('Score successfully saved to database!', 'success');
       } else if (response?.status === 'duplicate') {
         this.savedResultKey = resultKey;
@@ -464,6 +474,10 @@ export class OmrContainerPage implements OnInit {
       buttons: ['OK'],
     });
     await alert.present();
+  }
+
+  private resultKey(result: GradeSheetResponse): string {
+    return `${result.student_id ?? ''}|${result.display_sheet_id || result.sheet_id}`;
   }
 
   private async showToast(message: string, color: 'success' | 'warning' | 'danger') {

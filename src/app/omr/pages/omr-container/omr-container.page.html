@@ -133,6 +133,13 @@
       <p>View individual scan results</p>
     </div>
 
+    <ion-note *ngIf="scanMode === 'grade' && studentBatchResults.length" color="primary">
+      {{ studentBatchResults.length }} student result{{ studentBatchResults.length === 1 ? '' : 's' }} pending save.
+    </ion-note>
+    <ion-card *ngIf="allStudentResultsSaved" color="success">
+      <ion-card-content>All student results have been successfully saved!</ion-card-content>
+    </ion-card>
+
     <app-results-display
       [result]="scanMode === 'key' ? teacherKeyResult : studentResult"
       [results]="scanMode === 'grade' ? studentBatchResults : []"
