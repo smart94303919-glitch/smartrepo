@@ -32,6 +32,11 @@ export class MorebtnPage implements OnInit {
     void this.loadProfessorDetails();
   }
 
+  async ionViewWillEnter(): Promise<void> {
+    this.loadCurrentUser();
+    await this.loadProfessorDetails();
+  }
+
   async handleRefresh(event: any): Promise<void> {
     try {
       this.loadCurrentUser();
@@ -68,7 +73,7 @@ export class MorebtnPage implements OnInit {
 
   loadCurrentUser() {
     try {
-      const userData = localStorage.getItem('currentUser');
+      const userData = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
       if (userData) {
         this.currentUser = JSON.parse(userData);
         const firstName = this.currentUser.first_name || '';
