@@ -47,7 +47,8 @@ export class MorebtnPage implements OnInit {
   }
 
   async loadProfessorDetails(): Promise<void> {
-    const professorId = Number(this.currentUser?.prof_id);
+    const storedProfessorId = localStorage.getItem('prof_id') || sessionStorage.getItem('prof_id');
+    const professorId = Number(storedProfessorId || this.currentUser?.prof_id);
     if (!Number.isFinite(professorId)) {
       this.profileError = 'Professor ID is missing.';
       return;
@@ -63,6 +64,7 @@ export class MorebtnPage implements OnInit {
       this.professorNumber = details.professorNumber;
       this.professorEmail = details.email;
       this.schoolYear = schoolYear;
+      this.profileError = '';
     } catch (error) {
       console.error('Failed to load professor details:', error);
       this.profileError = 'Unable to load professor details.';
