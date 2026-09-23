@@ -14,13 +14,13 @@
       <!-- ✅ Wrap inputs in a form -->
       <form [formGroup]="loginForm" (ngSubmit)="onEnter()">
 
-        <!-- PROF ID -->
-        <ion-item [class.error]="isFieldInvalid('p_log')">
-          <ion-label position="stacked">PROF ID:</ion-label>
-          <ion-input type="text" formControlName="p_log"></ion-input>
+        <!-- PROFESSOR ID NUMBER -->
+        <ion-item [class.error]="isFieldInvalid('prof_number')">
+          <ion-label position="stacked">PROFESSOR ID NUMBER / EMPLOYEE ID:</ion-label>
+          <ion-input type="text" formControlName="prof_number"></ion-input>
         </ion-item>
-        <div class="error-text" *ngIf="isFieldInvalid('p_log')">
-          {{ getFieldError('p_log') }}
+        <div class="error-text" *ngIf="isFieldInvalid('prof_number')">
+          {{ getFieldError('prof_number') }}
         </div>
 
         <!-- PASSWORD -->

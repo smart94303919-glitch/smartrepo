@@ -161,19 +161,19 @@ export class SupabaseService {
     }
   }
 
-  async validateLogin(loginData: { p_log: string; password: string }) {
+  async validateLogin(loginData: { prof_number: string; password: string }) {
     try {
-      const pLog = loginData.p_log?.trim();
+      const profNumber = loginData.prof_number?.trim();
       const password = loginData.password?.trim();
 
-      if (!pLog || !password) {
-        return { success: false, error: 'Please enter both p_log and password', data: [] };
+      if (!profNumber || !password) {
+        return { success: false, error: 'Please enter both prof_number and password', data: [] };
       }
 
       const { data: loginRecord, error: loginError } = await this.supabase
         .from(this.professorLoginTable)
-        .select('login_id, prof_id, prof_number, email, password')
-        .eq('prof_number', pLog)
+        .select('login_id, prof_id, prof_number, password')
+        .eq('prof_number', profNumber)
         .eq('password', password)
         .maybeSingle();
 
@@ -201,8 +201,7 @@ export class SupabaseService {
         success: true,
         user: {
           ...profRecord,
-          prof_number: loginRecord.prof_number,
-          email: loginRecord.email
+          prof_number: loginRecord.prof_number
         },
         data: [profRecord]
       };

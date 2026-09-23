@@ -33,7 +33,7 @@ export class LoginPage {
 
   initializeForm() {
     this.loginForm = this.fb.group({
-      p_log: ['', [Validators.required, Validators.minLength(1)]],
+      prof_number: ['', [Validators.required, Validators.minLength(1)]],
       password: ['', [Validators.required, Validators.minLength(6)]],
     });
   }
@@ -57,10 +57,6 @@ export class LoginPage {
     if (field.errors['minlength']) {
       return `${this.formatFieldName(fieldName)} must be at least ${field.errors['minlength'].requiredLength} characters`;
     }
-    if (field.errors['email']) {
-      return 'Please enter a valid email address';
-    }
-
     return 'Invalid input';
   }
 
@@ -97,7 +93,7 @@ export class LoginPage {
   this.isSubmitting = true;
 
   try {
-    const loginData = this.loginForm.value; // { p_log, password }
+    const loginData = this.loginForm.value; // { prof_number, password }
 
     const result = await this.supabaseService.validateLogin(loginData);
 
