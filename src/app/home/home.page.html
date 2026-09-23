@@ -9,7 +9,7 @@
   <div class="login-container">
     <form [formGroup]="loginForm" (ngSubmit)="onEnter()">
       <ion-item [class.error]="isFieldInvalid('prof_number')">
-        <ion-label position="stacked">PROFESSOR ID NUMBER / EMPLOYEE ID:</ion-label>
+        <ion-label position="stacked">PROFESSOR NUMBER:</ion-label>
         <ion-input type="text" formControlName="prof_number"></ion-input>
       </ion-item>
       <div class="error-text" *ngIf="isFieldInvalid('prof_number')">

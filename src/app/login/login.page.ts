@@ -12,7 +12,8 @@ import { ToastController } from '@ionic/angular';
 })
 export class LoginPage {
   loginForm!: FormGroup;
-  isSubmitting = false; 
+  isSubmitting = false;
+  showPassword = false;
 
   constructor(
     private fb: FormBuilder,
@@ -34,7 +35,7 @@ export class LoginPage {
   initializeForm() {
     this.loginForm = this.fb.group({
       prof_number: ['', [Validators.required, Validators.minLength(1)]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
+      password: ['', [Validators.required]],
     });
   }
 
@@ -79,6 +80,10 @@ export class LoginPage {
     await toast.present();
   }
 
+  togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
+  }
+
   // Handle login
  async onEnter() {
   Object.keys(this.loginForm.controls).forEach(key => {
@@ -93,7 +98,7 @@ export class LoginPage {
   this.isSubmitting = true;
 
   try {
-    const loginData = this.loginForm.value; // { prof_number, password }
+    const loginData = this.loginForm.getRawValue(); // { prof_number, password }
 
     const result = await this.supabaseService.validateLogin(loginData);
 
@@ -102,7 +107,7 @@ export class LoginPage {
       localStorage.setItem('currentUser', JSON.stringify(result.user));
       this.router.navigate(['/mainhome']);
     } else {
-      await this.showToast(`Login failed: ${result.error}`, 'danger');
+      await this.showToast('WRONG PASSWORD TRY AGAIN', 'danger');
     }
   } catch (error: any) {
     await this.showToast(`Error: ${error.message}`, 'danger');

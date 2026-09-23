@@ -23,10 +23,6 @@
       <div *ngIf="profileLoading" class="profile-loading">
         <ion-spinner name="crescent"></ion-spinner>
       </div>
-      <div *ngIf="!profileLoading && !profileError" class="profile-details">
-        <p><ion-icon name="card-outline"></ion-icon> Professor Number: {{ professorNumber }}</p>
-        <p><ion-icon name="mail-outline"></ion-icon> {{ professorEmail }}</p>
-      </div>
       <p *ngIf="profileError" class="profile-error">{{ profileError }}</p>
     </div>
   </div>
