@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule, ToastController } from '@ionic/angular';
+import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { SupabaseService } from '../services/supabase.service';
 import * as XLSX from 'xlsx';
@@ -22,8 +22,7 @@ export class ArchivePage {
 
   constructor(
     private router: Router,
-    private supabaseService: SupabaseService,
-    private toastCtrl: ToastController
+    private supabaseService: SupabaseService
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -98,11 +97,6 @@ export class ArchivePage {
         row.student_tbl?.s_middlename,
         row.student_tbl?.s_lastname
       ].filter(Boolean).join(' '),
-      'Department ID': row.dept_id ?? 'N/A',
-      'Section ID': row.section_id ?? 'N/A',
-      'Score ID': row.Score_id ?? 'N/A',
-      Score: row.student_score?.score_value ?? 'N/A',
-      Percentage: row.student_score?.percentage != null ? `${row.student_score.percentage}%` : 'N/A'
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportRows);
@@ -113,34 +107,6 @@ export class ArchivePage {
   }
 
   async restoreStudent(archiveRow: any): Promise<void> {
-    const studentId = String(archiveRow?.student_id ?? '').trim();
-    const archiveId = Number(archiveRow?.archive_id);
-    if (!studentId) {
-      console.error('Restore step failed:', new Error('Missing student_id on archived item.'));
-      this.errorMessage = 'The archived student ID is missing.';
-      const toast = await this.toastCtrl.create({
-        message: 'Unable to restore: student ID is missing.',
-        duration: 2500,
-        color: 'warning',
-        position: 'bottom'
-      });
-      await toast.present();
-      return;
-    }
-
-    if (!Number.isFinite(archiveId)) {
-      console.error('Restore step failed:', new Error('Missing archive_id on archived item.'));
-      this.errorMessage = 'The archive record ID is missing.';
-      const toast = await this.toastCtrl.create({
-        message: 'Unable to restore: archive record ID is missing.',
-        duration: 2500,
-        color: 'warning',
-        position: 'bottom'
-      });
-      await toast.present();
-      return;
-    }
-
     const currentUser = localStorage.getItem('currentUser');
     const profId = currentUser ? JSON.parse(currentUser)?.prof_id : null;
     if (!profId) {
@@ -148,26 +114,16 @@ export class ArchivePage {
       return;
     }
 
-    this.restoringArchiveId = archiveId;
+    this.restoringArchiveId = archiveRow.archive_id;
     this.errorMessage = '';
     try {
-      await this.supabaseService.restoreArchivedStudent(
-        { ...archiveRow, student_id: studentId, archive_id: archiveId },
-        Number(profId)
-      );
+      await this.supabaseService.restoreArchivedStudent(archiveRow, Number(profId));
       this.archivedStudents = this.archivedStudents.filter(
-        (student) => Number(student.archive_id) !== archiveId
+        (student) => student.archive_id !== archiveRow.archive_id
       );
     } catch (error) {
-      console.error('Restore step failed:', error);
+      console.error('Failed to restore archived student:', error);
       this.errorMessage = 'Failed to restore the student.';
-      const toast = await this.toastCtrl.create({
-        message: error instanceof Error ? error.message : 'Failed to restore the student.',
-        duration: 2500,
-        color: 'danger',
-        position: 'bottom'
-      });
-      await toast.present();
     } finally {
       this.restoringArchiveId = null;
     }
