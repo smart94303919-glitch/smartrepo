@@ -223,17 +223,10 @@ export class StudentDashboardComponent implements OnInit {
       .filter((student) => this.selectedStudentIds.has(String(student.student_id)))
       .map((student) => ({
         ...student,
-        archivedSection: this.selectedSectionName,
-        archivedSubject: this.subjectTabs[this.selectedSubjectTab]?.subject || this.selectedSubject
+        archivedSection: this.selectedSectionName
       }));
 
     if (!selectedStudents.length) {
-      return;
-    }
-
-    const selectedSubject = this.subjectTabs[this.selectedSubjectTab];
-    if (!selectedSubject?.SubjectID) {
-      await this.showToast('No subject selected.', 'danger');
       return;
     }
 
@@ -254,7 +247,6 @@ export class StudentDashboardComponent implements OnInit {
     try {
       const archived = await this.supabaseService.archiveStudents(
         selectedStudents.map((student) => String(student.student_id)),
-        selectedSubject.SubjectID,
         this.selectedSectionName,
         this.currentProfId ?? undefined
       );

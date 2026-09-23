@@ -99,7 +99,6 @@ export class ArchivePage {
       ].filter(Boolean).join(' '),
       'Department ID': row.dept_id ?? 'N/A',
       'Section ID': row.section_id ?? 'N/A',
-      'Subject ID': row.subj_id ?? 'N/A',
       'Score ID': row.Score_id ?? 'N/A',
       Score: row.student_score?.score_value ?? 'N/A',
       Percentage: row.student_score?.percentage != null ? `${row.student_score.percentage}%` : 'N/A'
