@@ -39,7 +39,7 @@
             *ngIf="exportSelectionMode"
             [checked]="isArchiveSelected(student)"
             (ionChange)="toggleArchiveSelection(student)"
-            aria-label="Select archived student for export"
+            [attr.aria-label]="'Select archive record ' + student.archive_id + ' for export'"
           ></ion-checkbox>
           <div>
             <ion-card-title>
@@ -52,11 +52,6 @@
         </div>
       </ion-card-header>
       <ion-card-content>
-        <div class="archive-details">
-          <div><span>Age</span><strong>{{ student.student_tbl?.age ?? 'N/A' }}</strong></div>
-          <div><span>Gender</span><strong>{{ student.student_tbl?.gender || 'N/A' }}</strong></div>
-          <div><span>Section</span><strong>{{ student.section_tbl?.section || 'N/A' }}</strong></div>
-        </div>
         <div class="archive-card-action">
         <ion-button
           fill="outline"
