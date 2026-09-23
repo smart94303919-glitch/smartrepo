@@ -728,7 +728,7 @@ async archiveStudents(studentIds: string[], subjectId: number | number[], sectio
 async getArchivedStudents(): Promise<any[]> {
   const { data, error } = await this.supabase
     .from('s_archive')
-    .select('*, student_tbl(*), department(*), section_tbl(*), subject_tbl(*), schoolyear_tbl(*), student_score(*)')
+    .select('archive_id, student_id, sy_id, dept_id, section_id, subj_id, "Score_id", student_tbl(*), department(*), section_tbl(*), subject_tbl(*), schoolyear_tbl(*), student_score(*)')
     .order('archive_id', { ascending: false });
 
   if (error) {

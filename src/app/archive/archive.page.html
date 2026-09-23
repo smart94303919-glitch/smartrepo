@@ -32,7 +32,7 @@
   <div *ngIf="errorMessage" class="archive-empty-state error-state">{{ errorMessage }}</div>
 
   <div *ngIf="!loading && !errorMessage && archivedStudents.length" class="archive-list">
-    <ion-card *ngFor="let student of archivedStudents" class="archive-card">
+    <ion-card *ngFor="let student of archivedStudents; trackBy: trackByArchiveId" class="archive-card">
       <ion-card-header>
         <div class="archive-card-heading">
           <ion-checkbox

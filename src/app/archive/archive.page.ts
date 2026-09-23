@@ -29,8 +29,8 @@ export class ArchivePage {
     try {
       this.loading = true;
       this.archivedStudents = await this.supabaseService.getArchivedStudents();
-    } catch (error) {
-      console.error('Failed to load archived students:', error);
+    } catch (error: any) {
+      console.error('Failed to load archived records:', error?.message, error?.details);
       this.errorMessage = 'Failed to load archived students.';
     } finally {
       this.loading = false;
@@ -74,6 +74,10 @@ export class ArchivePage {
 
   isArchiveSelected(archiveRow: any): boolean {
     return this.selectedArchiveIds.has(Number(archiveRow?.archive_id));
+  }
+
+  trackByArchiveId(_index: number, archiveRow: any): number {
+    return Number(archiveRow?.archive_id);
   }
 
   exportSelectedStudents(): void {
