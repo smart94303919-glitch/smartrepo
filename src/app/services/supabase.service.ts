@@ -727,9 +727,9 @@ async archiveStudents(studentIds: string[], subjectId: number | number[], sectio
 
 async getArchivedStudents(): Promise<any[]> {
   const { data, error } = await this.supabase
-    .from('p_archive')
-    .select('p_archive_id, student_id, dept_id, section_id, subj_id, "Score_id", student_tbl(s_firstname, s_middlename, s_lastname), section_tbl(section), subject_tbl(subject), student_score(score_value, percentage, sheet_id)')
-    .order('p_archive_id', { ascending: false });
+    .from('s_archive')
+    .select('*, student_tbl(*), department(*), section_tbl(*), subject_tbl(*), schoolyear_tbl(*), student_score(*)')
+    .order('archive_id', { ascending: false });
 
   if (error) {
     throw error;
@@ -764,7 +764,7 @@ async restoreArchivedStudent(archiveRow: any, profId: number): Promise<void> {
   const studentId = String(archiveRow?.student_id ?? '').trim();
   const sectionId = Number(archiveRow?.section_id);
   const subjectId = Number(archiveRow?.subj_id);
-  const archiveId = Number(archiveRow?.p_archive_id);
+  const archiveId = Number(archiveRow?.archive_id);
 
   if (!studentId || !Number.isFinite(sectionId) || !Number.isFinite(subjectId) || !Number.isFinite(archiveId)) {
     throw new Error('Archive record is incomplete.');
@@ -808,9 +808,9 @@ async restoreArchivedStudent(archiveRow: any, profId: number): Promise<void> {
   }
 
   const { error: archiveDeleteError } = await this.supabase
-    .from('p_archive')
+    .from('s_archive')
     .delete()
-    .eq('p_archive_id', archiveId);
+    .eq('archive_id', archiveId);
 
   if (archiveDeleteError) {
     throw archiveDeleteError;
