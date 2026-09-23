@@ -140,6 +140,7 @@
               [(ngModel)]="model.options_per_question"
               interface="popover"
               [disabled]="isTrueFalse"
+              (ionChange)="sanitizeOptionsInput()"
             >
               <ion-select-option *ngFor="let n of availableOptionChoices" [value]="n">{{ n }} options</ion-select-option>
             </ion-select>
@@ -157,6 +158,8 @@
               [(ngModel)]="model.columns"
               min="1"
               [max]="maxAllowedColumns"
+              (ionInput)="sanitizeColumnsInput($event)"
+              (keyup)="sanitizeColumnsInput($event)"
             ></ion-input>
           </ion-item>
         </ion-col>

@@ -186,11 +186,26 @@ export class TemplateFormComponent implements OnInit {
       this.maxAllowedColumns = 6;
     }
 
-    if (this.model.options_per_question > this.maxAllowedOptions) {
-      this.model.options_per_question = this.maxAllowedOptions;
-    }
-    if (this.model.columns > this.maxAllowedColumns) {
-      this.model.columns = this.maxAllowedColumns;
+    this.sanitizeOptionsInput();
+    this.sanitizeColumnsInput();
+  }
+
+  sanitizeOptionsInput(): void {
+    const options = Number(this.model.options_per_question);
+    this.model.options_per_question = Number.isFinite(options)
+      ? Math.min(this.maxAllowedOptions, Math.max(2, Math.trunc(options)))
+      : 2;
+  }
+
+  sanitizeColumnsInput(event?: any): void {
+    const value = event?.detail?.value ?? event?.target?.value ?? this.model.columns;
+    const columns = Number(value);
+    this.model.columns = Number.isFinite(columns)
+      ? Math.min(this.maxAllowedColumns, Math.max(1, Math.trunc(columns)))
+      : 1;
+
+    if (event?.target && Number.isFinite(columns) && columns > this.maxAllowedColumns) {
+      event.target.value = this.maxAllowedColumns;
     }
   }
 
