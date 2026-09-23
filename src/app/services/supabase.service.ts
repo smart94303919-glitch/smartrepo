@@ -600,14 +600,14 @@ async professorOwnsSheet(profId: number, sheetId: string): Promise<boolean> {
   return Boolean(data?.length);
 }
 
-async archiveStudents(studentIds: string[], subjectId: number | number[], sectionName?: string | null, profId?: number): Promise<void> {
+async archiveStudents(studentIds: string[], subjectId: number | number[], sectionName?: string | null, profId?: number): Promise<boolean> {
   const normalizedIds = Array.from(new Set(studentIds.map((id) => id.trim()).filter(Boolean)));
   const normalizedSubjectIds = Array.from(new Set((Array.isArray(subjectId) ? subjectId : [subjectId])
     .map((id) => Number(id))
     .filter((id) => Number.isFinite(id) && id > 0)));
 
   if (!normalizedIds.length || !normalizedSubjectIds.length || !sectionName?.trim()) {
-    return;
+    throw new Error('Student, subject, and section are required to archive students.');
   }
 
   const { data: section, error: sectionError } = await this.supabase
@@ -690,6 +690,7 @@ async archiveStudents(studentIds: string[], subjectId: number | number[], sectio
     throw studentAssignmentError;
   }
 
+  return true;
 }
 
 async getArchivedStudents(): Promise<any[]> {

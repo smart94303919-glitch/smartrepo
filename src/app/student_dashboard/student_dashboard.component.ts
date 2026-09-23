@@ -246,18 +246,22 @@ export class StudentDashboardComponent implements OnInit {
     }
 
     try {
-      await this.supabaseService.archiveStudents(
+      const archived = await this.supabaseService.archiveStudents(
         selectedStudents.map((student) => String(student.student_id)),
         selectedSubject.SubjectID,
         this.selectedSectionName,
         this.currentProfId ?? undefined
       );
+      if (!archived) {
+        throw new Error('Archive operation did not complete.');
+      }
+
       this.students = this.students.filter((student) => !this.selectedStudentIds.has(String(student.student_id)));
       this.cancelArchiveSelection();
-      await this.showToast('Student(s) archived successfully.', 'success');
+      await this.showToast('Student successfully archived.', 'success');
       this.openArchive();
     } catch (error) {
-      console.error('Failed to archive students:', error);
+      console.error('Archive failed:', error);
       this.errorMessage = 'Failed to archive the selected students.';
       await this.showToast('Failed to archive the selected students.', 'danger');
     }
