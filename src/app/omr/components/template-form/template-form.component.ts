@@ -50,9 +50,14 @@ export class TemplateFormComponent implements OnInit {
   sectionsLoadError = false;
   subjectsLoadError = false;
 
-  // A-H, since options_per_question maps 1:1 to option letters in the
-  // backend (config.OPTION_LETTERS = "ABCDEFGH").
-  readonly optionChoices = [1, 2, 3, 4, 5, 6, 7, 8];
+  // Options map 1:1 to answer letters in the backend (A-I).
+  readonly optionChoices = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  maxAllowedOptions = 9;
+  maxAllowedColumns = 6;
+
+  get availableOptionChoices(): number[] {
+    return this.optionChoices.filter((optionCount) => optionCount <= this.maxAllowedOptions);
+  }
 
   get isTrueFalse(): boolean {
     return this.model.quiz_type === 'True or False';
@@ -167,6 +172,28 @@ export class TemplateFormComponent implements OnInit {
     }
   }
 
+  onQuestionCountChange(): void {
+    const totalQuestions = Number(this.model.total_questions);
+    this.model.total_questions = Number.isFinite(totalQuestions)
+      ? Math.min(100, Math.max(1, Math.trunc(totalQuestions)))
+      : 1;
+
+    if (this.model.total_questions >= 70) {
+      this.maxAllowedOptions = 5;
+      this.maxAllowedColumns = 5;
+    } else {
+      this.maxAllowedOptions = 9;
+      this.maxAllowedColumns = 6;
+    }
+
+    if (this.model.options_per_question > this.maxAllowedOptions) {
+      this.model.options_per_question = this.maxAllowedOptions;
+    }
+    if (this.model.columns > this.maxAllowedColumns) {
+      this.model.columns = this.maxAllowedColumns;
+    }
+  }
+
   onTitleChange(title: string): void {
     const outputTitle = String(title ?? '').trim();
     this.model.output_name = outputTitle
@@ -178,18 +205,23 @@ export class TemplateFormComponent implements OnInit {
    * the constraints enforced server-side in config.SheetConfig.__post_init__. */
   private validate(): string | null {
     this.onQuizTypeChange(this.model.quiz_type);
+    this.onQuestionCountChange();
     if (!this.model.title.trim()) return 'Title is required.';
     if (!this.model.section_id) return 'Section is required.';
     if (!this.model.SubjectID) return 'Subject is required.';
     if (!this.model.sheet_id.trim()) return 'Sheet ID is required.';
     if (!this.model.output_name.trim()) return 'Output filename is required.';
-    if (this.model.total_questions <= 0) return 'Total questions must be positive.';
-    if (this.model.columns <= 0) return 'Columns must be positive.';
+    if (this.model.total_questions < 1 || this.model.total_questions > 100) {
+      return 'Total questions must be between 1 and 100.';
+    }
+    if (this.model.columns < 1 || this.model.columns > this.maxAllowedColumns) {
+      return `Columns must be between 1 and ${this.maxAllowedColumns}.`;
+    }
     if (this.isTrueFalse && this.model.options_per_question !== 2) {
       return 'True or False sheets must use exactly 2 options.';
     }
-    if (this.model.options_per_question < 1 || this.model.options_per_question > 8) {
-      return 'Options per question must be between 1 and 8 (A-H).';
+    if (this.model.options_per_question < 1 || this.model.options_per_question > this.maxAllowedOptions) {
+      return `Options per question must be between 1 and ${this.maxAllowedOptions}.`;
     }
     if (!this.model.output_name.toLowerCase().endsWith('.pdf')) {
       this.model.output_name += '.pdf';

@@ -119,7 +119,14 @@
           <ion-item>
             <ion-icon name="help-circle-outline" slot="start" color="primary"></ion-icon>
             <ion-label position="stacked">Questions</ion-label>
-            <ion-input type="number" inputmode="numeric" [(ngModel)]="model.total_questions" min="1"></ion-input>
+            <ion-input
+              type="number"
+              inputmode="numeric"
+              [(ngModel)]="model.total_questions"
+              min="1"
+              max="100"
+              (ionInput)="onQuestionCountChange()"
+            ></ion-input>
           </ion-item>
         </ion-col>
 
@@ -132,7 +139,7 @@
               interface="popover"
               [disabled]="isTrueFalse"
             >
-              <ion-select-option *ngFor="let n of optionChoices" [value]="n">{{ n }} options</ion-select-option>
+              <ion-select-option *ngFor="let n of availableOptionChoices" [value]="n">{{ n }} options</ion-select-option>
             </ion-select>
             <ion-note slot="helper" *ngIf="isTrueFalse">True or False sheets always use 2 options.</ion-note>
           </ion-item>
@@ -142,7 +149,13 @@
           <ion-item>
             <ion-icon name="grid-outline" slot="start" color="primary"></ion-icon>
             <ion-label position="stacked">Columns</ion-label>
-            <ion-input type="number" inputmode="numeric" [(ngModel)]="model.columns" min="1"></ion-input>
+            <ion-input
+              type="number"
+              inputmode="numeric"
+              [(ngModel)]="model.columns"
+              min="1"
+              [max]="maxAllowedColumns"
+            ></ion-input>
           </ion-item>
         </ion-col>
       </ion-row>
