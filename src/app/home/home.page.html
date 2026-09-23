@@ -10,7 +10,7 @@
     <form [formGroup]="loginForm" (ngSubmit)="onEnter()">
       <ion-item [class.error]="isFieldInvalid('prof_number')">
         <ion-label position="stacked">PROFESSOR NUMBER:</ion-label>
-        <ion-input type="text" formControlName="prof_number"></ion-input>
+        <ion-input type="text" formControlName="prof_number" [disabled]="isLockedOut"></ion-input>
       </ion-item>
       <div class="error-text" *ngIf="isFieldInvalid('prof_number')">
         {{ getFieldError('prof_number') }}
@@ -18,7 +18,7 @@
 
       <ion-item [class.error]="isFieldInvalid('password')">
         <ion-label position="stacked">PASSWORD:</ion-label>
-        <ion-input [type]="showPassword ? 'text' : 'password'" formControlName="password"></ion-input>
+        <ion-input [type]="showPassword ? 'text' : 'password'" formControlName="password" [disabled]="isLockedOut"></ion-input>
         <ion-button
           type="button"
           fill="clear"
@@ -34,10 +34,19 @@
       
 
       <div class="buttons">
-        <ion-button type="submit" color="primary" [disabled]="isSubmitting">
+        <ion-button type="submit" color="primary" [disabled]="isLockedOut || loginForm.invalid || isSubmitting">
           <span *ngIf="!isSubmitting">LOGIN</span>
           <span *ngIf="isSubmitting">LOGGING IN...</span>
         </ion-button>
+      </div>
+
+      <div *ngIf="isLockedOut" class="lockout-banner">
+        <ion-icon name="lock-closed-outline"></ion-icon>
+        <div class="lockout-text">
+          <h3>Account Temporarily Locked</h3>
+          <p>Too many failed attempts. Please try again in:</p>
+          <div class="timer-display">{{ formattedLockoutTime }}</div>
+        </div>
       </div>
     </form>
   </div>

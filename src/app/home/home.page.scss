@@ -54,6 +54,45 @@ ion-item.error {
   margin-top: 20px;
 }
 
+.lockout-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 16px;
+  color: #5a1111;
+  background: #fbe4e4;
+  border: 1px solid #d46a6a;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.lockout-banner > ion-icon {
+  flex: 0 0 auto;
+  font-size: 2rem;
+}
+
+.lockout-text h3,
+.lockout-text p {
+  margin: 0;
+}
+
+.lockout-text h3 {
+  font-size: 1rem;
+}
+
+.lockout-text p {
+  margin-top: 4px;
+}
+
+.timer-display {
+  margin-top: 8px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
 .forgot-password {
   display: flex;
   justify-content: flex-end;

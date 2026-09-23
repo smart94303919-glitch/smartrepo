@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { SupabaseService } from '../services/supabase.service';
@@ -10,10 +10,14 @@ import { ToastController } from '@ionic/angular';
   styleUrls: ['home.page.scss'],
   standalone: false,
 })
-export class HomePage {
+export class HomePage implements OnDestroy {
   loginForm!: FormGroup;
   isSubmitting = false;
   showPassword: boolean = false;
+  failedAttempts: number = 0;
+  isLockedOut: boolean = false;
+  lockoutRemainingSeconds: number = 0;
+  lockoutTimer: any = null;
 
   constructor(
     private fb: FormBuilder,
@@ -80,7 +84,38 @@ export class HomePage {
     this.showPassword = !this.showPassword;
   }
 
+  get formattedLockoutTime(): string {
+    const minutes = Math.floor(this.lockoutRemainingSeconds / 60);
+    const seconds = this.lockoutRemainingSeconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+
+  startLockoutTimer() {
+    this.clearLockoutTimer();
+    this.lockoutTimer = setInterval(() => {
+      this.lockoutRemainingSeconds--;
+
+      if (this.lockoutRemainingSeconds <= 0) {
+        this.clearLockoutTimer();
+        this.isLockedOut = false;
+        this.lockoutRemainingSeconds = 0;
+        this.failedAttempts = 0;
+      }
+    }, 1000);
+  }
+
+  private clearLockoutTimer() {
+    if (this.lockoutTimer !== null) {
+      clearInterval(this.lockoutTimer);
+      this.lockoutTimer = null;
+    }
+  }
+
   async onEnter() {
+    if (this.isLockedOut) {
+      return;
+    }
+
     Object.keys(this.loginForm.controls).forEach(key => {
       this.loginForm.get(key)?.markAsTouched();
     });
@@ -97,11 +132,25 @@ export class HomePage {
       const result = await this.supabaseService.validateLogin(loginData);
 
       if (result.success) {
+        this.failedAttempts = 0;
+        this.clearLockoutTimer();
         await this.showToast('Login successful!', 'success');
         localStorage.setItem('currentUser', JSON.stringify(result.user));
         this.router.navigate(['/mainhome']);
       } else {
-        await this.showToast('WRONG PASSWORD TRY AGAIN', 'danger');
+        this.failedAttempts++;
+
+        if (this.failedAttempts < 5) {
+          await this.showToast(
+            `WRONG PASSWORD TRY AGAIN (Attempt ${this.failedAttempts} of 5)`,
+            'danger'
+          );
+        } else {
+          this.isLockedOut = true;
+          this.lockoutRemainingSeconds = 300;
+          this.startLockoutTimer();
+          await this.showToast('Too many failed attempts. Login locked for 5 minutes.', 'danger');
+        }
       }
     } catch (error: any) {
       await this.showToast(`Error: ${error.message}`, 'danger');
@@ -112,5 +161,9 @@ export class HomePage {
 
   onForgotPassword() {
     this.router.navigate(['/forget']);
+  }
+
+  ngOnDestroy() {
+    this.clearLockoutTimer();
   }
 }
