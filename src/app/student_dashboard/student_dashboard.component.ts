@@ -29,6 +29,8 @@ export class StudentDashboardComponent implements OnInit {
   csvImporting: boolean = false;
   archiveSelectionMode = false;
   selectedStudentIds = new Set<string>();
+  private initializedRouteKey: string | null = null;
+  private initializationPromise: Promise<void> | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -39,20 +41,51 @@ export class StudentDashboardComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.route.queryParams.subscribe((params) => {
-      this.selectedSubject = params['subject'] || null;
-      this.selectedSectionName = params['section'] || null;
-      this.subjectId = params['subjectId'] ? String(params['subjectId']) : null;
-
-      if (this.selectedSectionName && this.subjectId) {
-        void this.loadSubjectTabsForSection();
-      }
-    });
+    void this.initAndLoadData();
   }
 
-  async handleRefresh(event: any): Promise<void> {
+  async ionViewWillEnter(): Promise<void> {
+    await this.initAndLoadData();
+  }
+
+  async initAndLoadData(forceReload = false): Promise<void> {
+    const params = this.route.snapshot.queryParams;
+    const subject = params['subject'] || null;
+    const subjectId = params['subjectId'] ? String(params['subjectId']) : null;
+    const section = params['section'] || null;
+    const routeKey = `${subjectId ?? ''}|${section ?? ''}|${subject ?? ''}`;
+
+    this.selectedSubject = subject;
+    this.selectedSectionName = section;
+    this.subjectId = subjectId;
+
+    if (!this.selectedSectionName || !this.subjectId) {
+      this.students = [];
+      return;
+    }
+
+    if (!forceReload && this.initializedRouteKey === routeKey && this.students.length) {
+      return;
+    }
+
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    this.initializationPromise = this.loadSubjectTabsForSection().then(() => {
+      this.initializedRouteKey = routeKey;
+    }).finally(() => {
+      this.initializationPromise = null;
+    });
+
+    return this.initializationPromise;
+  }
+
+  async doRefresh(event: any): Promise<void> {
     try {
-      await this.loadSubjectTabsForSection();
+      await this.initAndLoadData(true);
+    } catch (error) {
+      console.error('Error during pull-to-refresh:', error);
     } finally {
       event.target.complete();
     }
@@ -223,10 +256,17 @@ export class StudentDashboardComponent implements OnInit {
       .filter((student) => this.selectedStudentIds.has(String(student.student_id)))
       .map((student) => ({
         ...student,
-        archivedSection: this.selectedSectionName
+        archivedSection: this.selectedSectionName,
+        archivedSubject: this.subjectTabs[this.selectedSubjectTab]?.subject || this.selectedSubject
       }));
 
     if (!selectedStudents.length) {
+      return;
+    }
+
+    const selectedSubject = this.subjectTabs[this.selectedSubjectTab];
+    if (!selectedSubject?.SubjectID) {
+      await this.showToast('No subject selected.', 'danger');
       return;
     }
 
@@ -247,6 +287,7 @@ export class StudentDashboardComponent implements OnInit {
     try {
       const archived = await this.supabaseService.archiveStudents(
         selectedStudents.map((student) => String(student.student_id)),
+        selectedSubject.SubjectID,
         this.selectedSectionName,
         this.currentProfId ?? undefined
       );
