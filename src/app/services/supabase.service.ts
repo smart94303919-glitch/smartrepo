@@ -1067,6 +1067,31 @@ async registerStudent(studentData: any): Promise<{
       return { success: false, error: 'Student ID is required.', data: [] };
     }
 
+    const professorId = studentData.professorId ?? studentData.profId ?? this.getCurrentProfessorIdFromStorage();
+    const normalizedProfessorId = professorId !== null && professorId !== undefined && professorId !== ''
+      ? Number(professorId)
+      : null;
+
+    if (normalizedProfessorId === null || !Number.isFinite(normalizedProfessorId)) {
+      return { success: false, error: 'Active school year not set for professor.', data: [] };
+    }
+
+    const { data: professorAssignment, error: assignmentError } = await this.supabase
+      .from(this.professorDepartmentAssignmentTable)
+      .select('sy_id')
+      .eq('prof_id', normalizedProfessorId)
+      .not('sy_id', 'is', null)
+      .order('assignment_id', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (assignmentError) throw assignmentError;
+
+    const currentProfessorSyId = professorAssignment?.sy_id ?? null;
+    if (currentProfessorSyId === null || currentProfessorSyId === undefined) {
+      return { success: false, error: 'Active school year not set for professor.', data: [] };
+    }
+
     if (studentData.age !== undefined && studentData.age !== null && studentData.age !== '') {
       const ageValue = Number(studentData.age);
       if (ageValue < 18 || ageValue > 120) {
@@ -1113,12 +1138,11 @@ async registerStudent(studentData: any): Promise<{
       studentRow = insertedStudent;
     }
 
-    const professorId = studentData.professorId ?? studentData.profId ?? null;
-    if (professorId !== null && professorId !== undefined) {
+    if (normalizedProfessorId !== null) {
       const { data: existingProfessorStudent, error: professorStudentCheckError } = await this.supabase
         .from('prof_stud')
         .select('prof_id, student_id')
-        .eq('prof_id', Number(professorId))
+        .eq('prof_id', normalizedProfessorId)
         .eq('student_id', studentRow.student_id)
         .maybeSingle();
 
@@ -1126,7 +1150,7 @@ async registerStudent(studentData: any): Promise<{
       if (!existingProfessorStudent) {
         const { error: professorStudentInsertError } = await this.supabase
           .from('prof_stud')
-          .insert([{ prof_id: Number(professorId), student_id: studentRow.student_id }]);
+          .insert([{ prof_id: normalizedProfessorId, student_id: studentRow.student_id }]);
 
         if (professorStudentInsertError) throw professorStudentInsertError;
       }
@@ -1149,6 +1173,25 @@ async registerStudent(studentData: any): Promise<{
           if (studentDepartmentInsertError) throw studentDepartmentInsertError;
         }
       }
+    }
+
+    const { data: existingStudentSchoolYear, error: studentSchoolYearCheckError } = await this.supabase
+      .from('stud_sy')
+      .select('assignment_id')
+      .eq('student_id', studentRow.student_id)
+      .eq('sy_id', currentProfessorSyId)
+      .maybeSingle();
+
+    if (studentSchoolYearCheckError) throw studentSchoolYearCheckError;
+    if (!existingStudentSchoolYear) {
+      const { error: studentSchoolYearInsertError } = await this.supabase
+        .from('stud_sy')
+        .insert([{
+          student_id: studentRow.student_id,
+          sy_id: currentProfessorSyId
+        }]);
+
+      if (studentSchoolYearInsertError) throw studentSchoolYearInsertError;
     }
 
     const sectionName = studentData.section?.toString().trim();
