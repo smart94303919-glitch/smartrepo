@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AlertController, IonicModule } from '@ionic/angular';
+import { AlertController, IonicModule, ToastController } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SupabaseService } from '../services/supabase.service';
@@ -34,7 +34,8 @@ export class StudentDashboardComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private supabaseService: SupabaseService,
-    private alertCtrl: AlertController
+    private alertCtrl: AlertController,
+    private toastCtrl: ToastController
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -225,6 +226,25 @@ export class StudentDashboardComponent implements OnInit {
     }
 
     const selectedSubject = this.subjectTabs[this.selectedSubjectTab];
+    if (!selectedSubject?.SubjectID) {
+      await this.showToast('No subject selected.', 'danger');
+      return;
+    }
+
+    const confirmAlert = await this.alertCtrl.create({
+      header: 'Confirm Archive',
+      message: `Are you sure you want to archive ${selectedStudents.length} student${selectedStudents.length === 1 ? '' : 's'}?`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        { text: 'Archive', role: 'confirm' }
+      ]
+    });
+    await confirmAlert.present();
+    const { role } = await confirmAlert.onDidDismiss();
+    if (role !== 'confirm') {
+      return;
+    }
+
     try {
       await this.supabaseService.archiveStudents(
         selectedStudents.map((student) => String(student.student_id)),
@@ -234,10 +254,12 @@ export class StudentDashboardComponent implements OnInit {
       );
       this.students = this.students.filter((student) => !this.selectedStudentIds.has(String(student.student_id)));
       this.cancelArchiveSelection();
+      await this.showToast('Student(s) archived successfully.', 'success');
       this.openArchive();
     } catch (error) {
       console.error('Failed to archive students:', error);
       this.errorMessage = 'Failed to archive the selected students.';
+      await this.showToast('Failed to archive the selected students.', 'danger');
     }
   }
 
@@ -266,53 +288,51 @@ export class StudentDashboardComponent implements OnInit {
 
     const confirmAlert = await this.alertCtrl.create({
       header: 'Confirm Remove Student',
-      message: `Remove ${studentName || 'this student'} from this subject/section?`,
+      message: `Are you sure you want to remove ${studentName || 'this student'} from ${this.selectedSectionName || 'this section'}?`,
       buttons: [
-        {
-          text: 'Cancel',
-          role: 'cancel'
-        },
-        {
-          text: 'Remove',
-          handler: async () => {
-            const selectedSubject = this.subjectTabs[this.selectedSubjectTab];
-            if (!selectedSubject?.SubjectID) {
-              this.errorMessage = 'No subject selected.';
-              return;
-            }
-
-            try {
-              const removed = await this.supabaseService.removeStudentFromSubjectSectionAssignment(
-                student.student_id,
-                selectedSubject.SubjectID,
-                this.selectedSectionName,
-                this.currentProfId ?? undefined
-              );
-
-              if (!removed) {
-                this.errorMessage = 'Failed to remove the student.';
-                return;
-              }
-
-              this.students = this.students.filter((item) => item.student_id !== student.student_id);
-              this.errorMessage = '';
-
-              const successAlert = await this.alertCtrl.create({
-                header: 'Success',
-                message: 'Student removed successfully.',
-                buttons: ['OK']
-              });
-              await successAlert.present();
-            } catch (error: any) {
-              console.error('Failed to remove student:', error);
-              this.errorMessage = 'Failed to remove the student.';
-            }
-          }
-        }
+        { text: 'Cancel', role: 'cancel' },
+        { text: 'Remove', role: 'confirm' }
       ]
     });
 
     await confirmAlert.present();
+    const { role } = await confirmAlert.onDidDismiss();
+    if (role !== 'confirm') {
+      return;
+    }
+
+    const selectedSubject = this.subjectTabs[this.selectedSubjectTab];
+    if (!selectedSubject?.SubjectID) {
+      this.errorMessage = 'No subject selected.';
+      await this.showToast('No subject selected.', 'danger');
+      return;
+    }
+
+    try {
+      const removed = await this.supabaseService.removeStudentFromSubjectSectionAssignment(
+        student.student_id,
+        selectedSubject.SubjectID,
+        this.selectedSectionName,
+        this.currentProfId ?? undefined
+      );
+
+      if (!removed) {
+        throw new Error('Student mapping was not removed.');
+      }
+
+      this.students = this.students.filter((item) => item.student_id !== student.student_id);
+      this.errorMessage = '';
+      await this.showToast('Student removed successfully.', 'success');
+    } catch (error: any) {
+      console.error('Failed to remove student:', error);
+      this.errorMessage = 'Failed to remove the student.';
+      await this.showToast('Failed to remove the student.', 'danger');
+    }
+  }
+
+  private async showToast(message: string, color: 'success' | 'danger'): Promise<void> {
+    const toast = await this.toastCtrl.create({ message, duration: 2500, color, position: 'bottom' });
+    await toast.present();
   }
 
   async onCsvSelected(event: Event): Promise<void> {

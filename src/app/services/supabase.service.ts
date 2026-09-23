@@ -1366,33 +1366,36 @@ async registerStudent(studentData: any): Promise<{
 async removeStudentFromSubjectSectionAssignment(studentId: string, subjectId: number, sectionName?: string | null, profId?: number): Promise<boolean> {
   try {
     const normalizedStudentId = studentId?.toString().trim();
-    if (!normalizedStudentId) {
+    const normalizedSubjectId = Number(subjectId);
+    const normalizedSectionName = sectionName?.trim();
+    if (!normalizedStudentId || !Number.isFinite(normalizedSubjectId) || !normalizedSectionName) {
       return false;
     }
 
-    const dependentTables = [
-      'p_archive',
-      'student_score',
-      'stud_section_subj',
-      'stud_dept',
-      'prof_stud'
-    ];
+    const { data: section, error: sectionError } = await this.supabase
+      .from(this.sectionTable)
+      .select('section_id')
+      .ilike('section', normalizedSectionName)
+      .maybeSingle();
 
-    for (const table of dependentTables) {
-      const { error } = await this.supabase
-        .from(table)
-        .delete()
-        .eq('student_id', normalizedStudentId);
-
-      if (error) throw error;
+    if (sectionError) {
+      throw sectionError;
     }
 
-    const { error: studentDeleteError } = await this.supabase
-      .from('student_tbl')
-      .delete()
-      .eq('student_id', normalizedStudentId);
+    if (!section?.section_id) {
+      throw new Error('Section could not be found.');
+    }
 
-    if (studentDeleteError) throw studentDeleteError;
+    const { error: assignmentError } = await this.supabase
+      .from('stud_section_subj')
+      .delete()
+      .eq('student_id', normalizedStudentId)
+      .eq('section_id', Number(section.section_id))
+      .eq('subj_id', normalizedSubjectId);
+
+    if (assignmentError) {
+      throw assignmentError;
+    }
 
     return true;
   } catch (error: any) {
