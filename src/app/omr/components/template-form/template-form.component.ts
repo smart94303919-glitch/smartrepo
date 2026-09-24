@@ -51,7 +51,7 @@ export class TemplateFormComponent implements OnInit {
   subjectsLoadError = false;
 
   // Options map 1:1 to answer letters in the backend (A-I).
-  readonly optionChoices = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  readonly optionChoices = [2, 3, 4, 5, 6, 7, 8, 9];
   maxAllowedOptions = 9;
   maxAllowedColumns = 6;
 
@@ -250,8 +250,8 @@ export class TemplateFormComponent implements OnInit {
     if (this.isTrueFalse && this.model.options_per_question !== 2) {
       return 'True or False sheets must use exactly 2 options.';
     }
-    if (this.model.options_per_question < 1 || this.model.options_per_question > this.maxAllowedOptions) {
-      return `Options per question must be between 1 and ${this.maxAllowedOptions}.`;
+    if (this.model.options_per_question < 2 || this.model.options_per_question > this.maxAllowedOptions) {
+      return `Options per question must be between 2 and ${this.maxAllowedOptions}.`;
     }
     if (!this.model.output_name.toLowerCase().endsWith('.pdf')) {
       this.model.output_name += '.pdf';
@@ -287,6 +287,7 @@ export class TemplateFormComponent implements OnInit {
         sheet_title: this.model.title.trim(),
         quiz_type: this.model.quiz_type,
         questions: Number(this.model.total_questions),
+        options: Number(this.model.options_per_question),
         columns: Number(this.model.columns),
         section_id: Number(this.model.section_id),
         subj_id: Number(this.model.SubjectID),

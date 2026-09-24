@@ -24,7 +24,7 @@ export interface SheetConfigRequest {
   section?: string;
   quiz_type: 'Multiple Choice' | 'True or False';
   total_questions: number;
-  options_per_question: number; // 1-8 (A-H)
+  options_per_question: number; // 1-9 (A-I)
   columns: number;
   sheet_id: string;
   output_name: string;

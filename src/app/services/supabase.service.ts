@@ -229,7 +229,7 @@ export class SupabaseService {
         .maybeSingle(),
       this.supabase
         .from(this.professorLoginTable)
-        .select('prof_number, email')
+        .select('prof_number')
         .eq('prof_id', profId)
         .maybeSingle()
     ]);
@@ -247,8 +247,22 @@ export class SupabaseService {
         profileResult.data.p_lastname
       ].filter(Boolean).join(' '),
       professorNumber: String(loginResult.data.prof_number ?? 'N/A'),
-      email: loginResult.data.email ?? 'N/A'
+      email: 'N/A'
     };
+  }
+
+  async getProfessorIdByLoginId(loginId: number): Promise<number | null> {
+    const { data, error } = await this.supabase
+      .from(this.professorLoginTable)
+      .select('prof_id')
+      .eq('login_id', loginId)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return data?.prof_id ? Number(data.prof_id) : null;
   }
 
   async getProfessorSchoolYear(profId: number): Promise<string> {
@@ -605,11 +619,14 @@ async professorOwnsSheet(profId: number, sheetId: string): Promise<boolean> {
   return Boolean(data?.length);
 }
 
-async archiveStudents(studentIds: string[], sectionName?: string | null, profId?: number): Promise<boolean> {
+async archiveStudents(studentIds: string[], subjectId: number | number[], sectionName?: string | null, profId?: number): Promise<boolean> {
   const normalizedIds = Array.from(new Set(studentIds.map((id) => id.trim()).filter(Boolean)));
+  const normalizedSubjectIds = Array.from(new Set((Array.isArray(subjectId) ? subjectId : [subjectId])
+    .map((id) => Number(id))
+    .filter((id) => Number.isFinite(id) && id > 0)));
 
-  if (!normalizedIds.length || !sectionName?.trim()) {
-    throw new Error('Student and section are required to archive students.');
+  if (!normalizedIds.length || !normalizedSubjectIds.length || !sectionName?.trim()) {
+    throw new Error('Student, subject, and section are required to archive students.');
   }
 
   const { data: section, error: sectionError } = await this.supabase
@@ -645,8 +662,9 @@ async archiveStudents(studentIds: string[], sectionName?: string | null, profId?
 
   const { data: scores, error: scoreError } = await this.supabase
     .from('student_score')
-    .select('student_id, "Score_id"')
+    .select('student_id, subj_id, "Score_id"')
     .in('student_id', normalizedIds)
+    .in('subj_id', normalizedSubjectIds)
     .eq('section_id', Number(section.section_id));
 
   if (scoreError) {
@@ -666,30 +684,33 @@ async archiveStudents(studentIds: string[], sectionName?: string | null, profId?
     (departments || []).map((department: any) => [String(department.student_id), department.dept_id])
   );
 
-  const scoreRowsByStudent = new Map<string, any[]>();
+  const scoreRowsByStudentSubject = new Map<string, any[]>();
   (scores || []).forEach((score: any) => {
-    const key = String(score.student_id);
-    const studentScores = scoreRowsByStudent.get(key) || [];
+    const key = `${score.student_id}:${score.subj_id}`;
+    const studentScores = scoreRowsByStudentSubject.get(key) || [];
     studentScores.push(score);
-    scoreRowsByStudent.set(key, studentScores);
+    scoreRowsByStudentSubject.set(key, studentScores);
   });
 
   const archiveRows: any[] = [];
   normalizedIds.forEach((studentId) => {
-    const studentScores = scoreRowsByStudent.get(studentId) || [];
-    (studentScores.length ? studentScores : [{ 'Score_id': null }]).forEach((score) => {
-      const departmentId = departmentByStudent.get(studentId);
-      const scoreId = score['Score_id'];
-      archiveRows.push({
-        student_id: String(studentId),
-        sy_id: Number(professorAssignment.sy_id),
-        dept_id: departmentId !== null && departmentId !== undefined && Number.isFinite(Number(departmentId))
-          ? Number(departmentId)
-          : null,
-        section_id: Number(section.section_id),
-        'Score_id': scoreId !== null && scoreId !== undefined && Number.isFinite(Number(scoreId))
-          ? Number(scoreId)
-          : null
+    normalizedSubjectIds.forEach((selectedSubjectId) => {
+      const studentScores = scoreRowsByStudentSubject.get(`${studentId}:${selectedSubjectId}`) || [];
+      (studentScores.length ? studentScores : [{ 'Score_id': null }]).forEach((score) => {
+        const departmentId = departmentByStudent.get(studentId);
+        const scoreId = score['Score_id'];
+        archiveRows.push({
+          student_id: String(studentId),
+          sy_id: Number(professorAssignment.sy_id),
+          dept_id: departmentId !== null && departmentId !== undefined && Number.isFinite(Number(departmentId))
+            ? Number(departmentId)
+            : null,
+          section_id: Number(section.section_id),
+          subj_id: Number(selectedSubjectId),
+          'Score_id': scoreId !== null && scoreId !== undefined && Number.isFinite(Number(scoreId))
+            ? Number(scoreId)
+            : null
+        });
       });
     });
   });
@@ -707,6 +728,7 @@ async archiveStudents(studentIds: string[], sectionName?: string | null, profId?
     .from('stud_section_subj')
     .delete()
     .in('student_id', normalizedIds)
+    .in('subj_id', normalizedSubjectIds)
     .eq('section_id', Number(section.section_id));
   const { error: studentAssignmentError } = await studentAssignmentDelete;
 
@@ -720,7 +742,7 @@ async archiveStudents(studentIds: string[], sectionName?: string | null, profId?
 async getArchivedStudents(): Promise<any[]> {
   const { data, error } = await this.supabase
     .from('s_archive')
-    .select('archive_id, student_id, sy_id, dept_id, section_id, "Score_id", student_tbl(*), department(*), section_tbl(*), schoolyear_tbl(*), student_score(*)')
+    .select('archive_id, student_id, sy_id, dept_id, section_id, subj_id, "Score_id", student_tbl(*), department(*), section_tbl(*), subject_tbl(*), schoolyear_tbl(*), student_score(*)')
     .order('archive_id', { ascending: false });
 
   if (error) {
@@ -755,69 +777,29 @@ async getArchivedStudents(): Promise<any[]> {
 async restoreArchivedStudent(archiveRow: any, profId: number): Promise<void> {
   const studentId = String(archiveRow?.student_id ?? '').trim();
   const sectionId = Number(archiveRow?.section_id);
-  const schoolYearId = Number(archiveRow?.sy_id);
+  const subjectId = Number(archiveRow?.subj_id);
   const archiveId = Number(archiveRow?.archive_id);
 
-  if (!studentId || !Number.isFinite(sectionId) || !Number.isFinite(schoolYearId) || !Number.isFinite(archiveId)) {
+  if (!studentId || !Number.isFinite(sectionId) || !Number.isFinite(subjectId) || !Number.isFinite(archiveId)) {
     throw new Error('Archive record is incomplete.');
   }
 
-  const { data: studentRecord, error: studentError } = await this.supabase
-    .from('student_tbl')
-    .select('student_id')
-    .eq('student_id', studentId)
-    .maybeSingle();
-
-  if (studentError || !studentRecord) {
-    console.error('Validation failed: Student ID not found in student_tbl', studentError);
-    throw new Error('Student ID was not found in student_tbl.');
-  }
-
-  const { data: archiveRecord, error: archiveLookupError } = await this.supabase
-    .from('s_archive')
-    .select('archive_id, student_id')
-    .eq('archive_id', archiveId)
-    .eq('student_id', studentId)
-    .maybeSingle();
-
-  if (archiveLookupError || !archiveRecord) {
-    console.error('Validation failed: Archive record mismatch for student_id', archiveLookupError);
-    throw new Error('Archive record does not match the student ID.');
-  }
-
-  const { data: schoolYearEnrollment, error: schoolYearLookupError } = await this.supabase
-    .from('stud_sy')
-    .select('student_id')
-    .eq('student_id', studentId)
-    .eq('sy_id', schoolYearId)
-    .maybeSingle();
-
-  if (schoolYearLookupError) {
-    throw schoolYearLookupError;
-  }
-
-  if (!schoolYearEnrollment) {
-    const { error } = await this.supabase
-      .from('stud_sy')
-      .insert({ student_id: studentId, sy_id: schoolYearId });
-    if (error) throw error;
-  }
-
-  const { data: sectionEnrollment, error: sectionLookupError } = await this.supabase
-    .from('student_section_assignment')
+  const { data: enrollment, error: enrollmentLookupError } = await this.supabase
+    .from('stud_section_subj')
     .select('student_id')
     .eq('student_id', studentId)
     .eq('section_id', sectionId)
+    .eq('subj_id', subjectId)
     .maybeSingle();
 
-  if (sectionLookupError) {
-    throw sectionLookupError;
+  if (enrollmentLookupError) {
+    throw enrollmentLookupError;
   }
 
-  if (!sectionEnrollment) {
+  if (!enrollment) {
     const { error } = await this.supabase
-      .from('student_section_assignment')
-      .insert({ student_id: studentId, section_id: sectionId });
+      .from('stud_section_subj')
+      .insert({ student_id: studentId, section_id: sectionId, subj_id: subjectId });
     if (error) throw error;
   }
 
@@ -946,6 +928,7 @@ async saveSheetMetadata(metadata: {
   sheet_title: string;
   quiz_type: string;
   questions: number;
+  options: number;
   columns: number;
   section_id: number;
   subj_id: number;
