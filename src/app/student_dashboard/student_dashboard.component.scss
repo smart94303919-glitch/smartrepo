@@ -193,27 +193,15 @@
 .student-actions {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  min-width: 84px;
+  align-items: stretch;
+  gap: 8px;
+  width: 104px;
+  flex: 0 0 104px;
   margin-left: 8px;
 }
 
-.info-link {
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--ion-color-primary);
-  text-decoration: none;
-}
-
-.info-link:hover {
-  text-decoration: underline;
-}
-
 .student-actions ion-button {
-  --padding-start: 4px;
-  --padding-end: 4px;
-  --min-height: 24px;
+  width: 100%;
+  margin: 0;
   font-size: 0.9rem;
 }

@@ -107,8 +107,12 @@
               </ion-label>
               <ion-note slot="end" *ngIf="student.studentCode" class="student-code">{{ student.studentCode }}</ion-note>
               <div slot="end" class="student-actions" *ngIf="!archiveSelectionMode">
-                <ion-text color="primary" class="info-link" (click)="goToStudentInfo(student)">Update</ion-text>
-                <ion-button color="danger" fill="clear" (click)="removeStudent(student)">
+                <ion-button type="button" fill="solid" color="primary" size="small" expand="block" (click)="goToStudentInfo(student)">
+                  <ion-icon name="create-outline" slot="start"></ion-icon>
+                  Update
+                </ion-button>
+                <ion-button type="button" color="danger" fill="outline" size="small" expand="block" (click)="removeStudent(student)">
+                  <ion-icon name="trash-outline" slot="start"></ion-icon>
                   Remove
                 </ion-button>
               </div>
