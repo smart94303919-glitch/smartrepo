@@ -17,7 +17,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { IonicModule, ToastController, LoadingController, AlertController } from '@ionic/angular';
 import { OmrApiService, GradeSheetResponse, SheetConfigRequest } from '../../../services/omr-api.service';
-import { SupabaseService } from '../../../services/supabase.service';
+import { ProfessorSheet, SupabaseService } from '../../../services/supabase.service';
 import { TemplateFormComponent } from '../../components/template-form/template-form.component';
 import { ImagePickerComponent, MAX_BATCH_IMAGES } from '../../components/image-picker/image-picker.component';
 import { ResultsDisplayComponent } from '../../components/results-display/results-display.component';
@@ -46,6 +46,7 @@ export class OmrContainerPage implements OnInit {
 
   // Populated once a sheet has been generated
   activeSheetId = '';
+  professorSheets: ProfessorSheet[] = [];
   professorSheetIds: string[] = [];
   activeProfessorId: number | null = null;
   activeTotalQuestions: number | null = null;
@@ -111,12 +112,13 @@ export class OmrContainerPage implements OnInit {
       }
 
       this.activeProfessorId = professorId;
-      this.professorSheetIds = this.sortSheetIds(
-        await this.supabaseService.getProfessorSheetIds(professorId),
-      );
+      this.professorSheets = (await this.supabaseService.getProfessorSheets(professorId))
+        .sort((first, second) => second.sheet_id.localeCompare(first.sheet_id));
+      this.professorSheetIds = this.professorSheets.map((sheet) => sheet.sheet_id);
       if (!this.professorSheetIds.includes(this.activeSheetId.trim())) {
         this.activeSheetId = this.professorSheetIds[0] ?? '';
       }
+      this.onSheetSelected(this.activeSheetId);
     } catch (error) {
       console.error('Failed to load professor sheet assignments:', error);
       this.scanError = 'Unable to load your assigned sheet IDs.';
@@ -129,17 +131,35 @@ export class OmrContainerPage implements OnInit {
     )).sort((first, second) => second.localeCompare(first));
   }
 
+  onSheetSelected(sheetId: string): void {
+    const selectedSheet = this.professorSheets.find((sheet) => sheet.sheet_id === sheetId);
+    if (!selectedSheet) return;
+
+    this.activeSheetId = selectedSheet.sheet_id;
+    this.activeTotalQuestions = selectedSheet.questions;
+    this.activeColumns = selectedSheet.columns;
+    this.activeOptionsPerQuestion = selectedSheet.options;
+  }
+
   goBack() {
     this.router.navigate(['/exams']);
   }
 
   /** Called when TemplateFormComponent finishes generating a sheet. */
   onSheetGenerated(cfg: SheetConfigRequest) {
-    this.activeSheetId = cfg.sheet_id;
-    this.professorSheetIds = this.sortSheetIds([...this.professorSheetIds, this.activeSheetId]);
-    this.activeTotalQuestions = cfg.total_questions;
-    this.activeOptionsPerQuestion = cfg.options_per_question;
-    this.activeColumns = cfg.columns;
+    const generatedSheet: ProfessorSheet = {
+      sheet_id: cfg.sheet_id,
+      sheet_title: cfg.title,
+      questions: cfg.total_questions,
+      columns: cfg.columns,
+      options: cfg.options_per_question,
+    };
+    this.professorSheets = [
+      ...this.professorSheets.filter((sheet) => sheet.sheet_id !== cfg.sheet_id),
+      generatedSheet,
+    ];
+    this.professorSheetIds = this.sortSheetIds(this.professorSheets.map((sheet) => sheet.sheet_id));
+    this.onSheetSelected(cfg.sheet_id);
   }
 
   /** Called when ImagePickerComponent acquires an image (camera or gallery). */

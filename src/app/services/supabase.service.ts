@@ -2,6 +2,13 @@ import { Injectable } from '@angular/core';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { environment } from '../../environments/environment';
 
+export interface ProfessorSheet {
+  sheet_id: string;
+  sheet_title: string;
+  questions: number;
+  columns: number;
+  options: number;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -576,18 +583,38 @@ async getSheetAssignments(sheetIds: string[]): Promise<any[]> {
 }
 
 async getProfessorSheetIds(profId: number): Promise<string[]> {
+  const sheets = await this.getProfessorSheets(profId);
+  return Array.from(new Set(sheets.map((sheet) => sheet.sheet_id)));
+}
+
+async getProfessorSheets(profId: number): Promise<ProfessorSheet[]> {
   const { data, error } = await this.supabase
     .from('sheet_prof')
-    .select('sheet_id')
+    .select(`
+      sheet_id,
+      prof_id,
+      sheet_tbl!inner (
+        sheet_id,
+        sheet_title,
+        questions,
+        columns,
+        options
+      )
+    `)
     .eq('prof_id', Number(profId));
 
   if (error) {
+    console.error('Error fetching professor sheets with options:', error.message);
     throw error;
   }
 
-  return Array.from(new Set((data || [])
-    .map((row: any) => String(row.sheet_id ?? '').trim())
-    .filter(Boolean)));
+  return (data || []).map((item: any) => ({
+    sheet_id: String(item.sheet_id ?? '').trim(),
+    sheet_title: item.sheet_tbl?.sheet_title || String(item.sheet_id ?? '').trim(),
+    questions: Number(item.sheet_tbl?.questions ?? 30),
+    columns: Number(item.sheet_tbl?.columns ?? 2),
+    options: Number(item.sheet_tbl?.options ?? 4),
+  })).filter((sheet: ProfessorSheet) => Boolean(sheet.sheet_id));
 }
 
 async sheetIdExists(sheetId: string): Promise<boolean> {
