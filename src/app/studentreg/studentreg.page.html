@@ -6,13 +6,6 @@
       </ion-button>
     </ion-buttons>
     <ion-title>Student Registration</ion-title>
-    <ion-buttons slot="end">
-      <ion-button fill="solid" color="light" size="small" aria-label="Import CSV or Excel" (click)="onImportCsvClick()" [disabled]="isUploading">
-        <ion-spinner *ngIf="importingStudents" name="crescent"></ion-spinner>
-        <ion-icon *ngIf="!importingStudents" name="cloud-upload-outline"></ion-icon>
-      </ion-button>
-      <input #csvInput type="file" accept=".csv, .xlsx, .xls, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, text/csv" hidden (change)="onCsvSelected($event)" />
-    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
@@ -31,11 +24,17 @@
       </div>
     </div>
     <div class="format-actions-container">
-      <ion-button type="button" fill="outline" color="primary" size="small" aria-label="Download student master list format" (click)="downloadStudentFormat()">
+      <ion-button type="button" fill="solid" color="primary" size="small" aria-label="Import CSV or Excel" (click)="onImportCsvClick()" [disabled]="isUploading">
+        <ion-spinner *ngIf="importingStudents" name="crescent"></ion-spinner>
+        <ion-icon *ngIf="!importingStudents" name="cloud-upload-outline" slot="start"></ion-icon>
+        Import
+      </ion-button>
+      <input #csvInput type="file" accept=".csv, .xlsx, .xls, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, text/csv" hidden (change)="onCsvSelected($event)" />
+      <ion-button type="button" fill="solid" color="primary" size="small" aria-label="Download student master list format" (click)="downloadStudentFormat()">
         <ion-icon name="download-outline" slot="start"></ion-icon>
         Download Format
       </ion-button>
-      <ion-button type="button" fill="clear" color="medium" size="small" aria-label="Format of student master list" disabled>
+      <ion-button type="button" fill="outline" color="primary" size="small" aria-label="Format of student master list" disabled>
         <ion-icon name="document-text-outline" slot="start"></ion-icon>
         Format of student master list
       </ion-button>
