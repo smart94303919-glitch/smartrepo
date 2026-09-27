@@ -135,16 +135,16 @@
         <ion-col size="12" size-md="4" *ngIf="model.quiz_type !== 'True or False'">
           <ion-item>
             <ion-icon name="radio-button-on-outline" slot="start" color="primary"></ion-icon>
-            <ion-label position="stacked">Options</ion-label>
+            <ion-label position="stacked">Choices</ion-label>
             <ion-select
               [(ngModel)]="model.options_per_question"
               interface="popover"
               [disabled]="isTrueFalse"
               (ionChange)="sanitizeOptionsInput()"
             >
-              <ion-select-option *ngFor="let n of availableOptionChoices" [value]="n">{{ n }} options</ion-select-option>
+              <ion-select-option *ngFor="let n of availableOptionChoices" [value]="n">{{ n }} choices</ion-select-option>
             </ion-select>
-            <ion-note slot="helper" *ngIf="isTrueFalse">True or False sheets always use 2 options.</ion-note>
+            <ion-note slot="helper" *ngIf="isTrueFalse">True or False sheets always use 2 choices.</ion-note>
           </ion-item>
         </ion-col>
 
