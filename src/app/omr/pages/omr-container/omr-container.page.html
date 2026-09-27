@@ -48,6 +48,7 @@
           <ion-label position="stacked">Sheet ID</ion-label>
           <ion-select
             [(ngModel)]="activeSheetId"
+            (ionChange)="onSheetSelected($event.detail.value)"
             interface="popover"
             [interfaceOptions]="sheetSelectOptions"
             class="sheet-id-dropdown"

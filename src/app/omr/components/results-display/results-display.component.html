@@ -66,7 +66,7 @@
     </div>
 
     <ion-list *ngIf="displayResult.itemized" lines="full">
-      <ion-item *ngFor="let row of displayResult.itemized" [color]="row.is_correct ? '' : 'light'">
+      <ion-item *ngFor="let row of getSortedItemized(displayResult)" [color]="row.is_correct ? '' : 'light'">
         <ion-label>
           Q{{ row.question }}: your answer <b>{{ row.student_answer }}</b>
           &middot; correct: <b>{{ row.correct_answer }}</b>
@@ -80,8 +80,8 @@
     </ion-list>
 
     <ion-list *ngIf="displayResult.answer_key" lines="full">
-      <ion-item *ngFor="let q of displayResult.answer_key | keyvalue">
-        <ion-label>Q{{ q.key }}: {{ q.value ?? '(blank)' }}</ion-label>
+      <ion-item *ngFor="let q of getSortedAnswers(displayResult.answer_key)">
+        <ion-label>Q{{ q.question }}: {{ q.answer ?? '(blank)' }}</ion-label>
       </ion-item>
     </ion-list>
 

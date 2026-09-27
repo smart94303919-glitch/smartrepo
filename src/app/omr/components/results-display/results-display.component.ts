@@ -54,6 +54,18 @@ export class ResultsDisplayComponent implements OnChanges {
     return `${result.student_id ?? ''}|${result.display_sheet_id || result.sheet_id}`;
   }
 
+  getSortedItemized(result: GradeSheetResponse) {
+    return [...(result.itemized ?? [])]
+      .sort((first, second) => Number(first.question) - Number(second.question));
+  }
+
+  getSortedAnswers(answerKey: GradeSheetResponse['answer_key']) {
+    return Object.entries(answerKey ?? {})
+      .map(([question, answer]) => ({ question: Number(question), answer }))
+      .filter((item) => Number.isInteger(item.question))
+      .sort((first, second) => first.question - second.question);
+  }
+
   requestSave(result: GradeSheetResponse) {
     this.saveResult.emit(result);
   }
