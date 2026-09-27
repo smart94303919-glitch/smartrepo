@@ -52,6 +52,8 @@ export class OmrContainerPage implements OnInit {
   activeTotalQuestions: number | null = null;
   activeOptionsPerQuestion: number | null = null;
   activeColumns: number | null = null;
+  answerKeyConfigured = false;
+  private answerKeyStatusRequestId = 0;
   sheetSelectOptions = { cssClass: 'sheet-id-popover' };
 
   scanMode: ScanMode = 'key';
@@ -133,12 +135,38 @@ export class OmrContainerPage implements OnInit {
 
   onSheetSelected(sheetId: string): void {
     const selectedSheet = this.professorSheets.find((sheet) => sheet.sheet_id === sheetId);
-    if (!selectedSheet) return;
+    if (!selectedSheet) {
+      void this.refreshAnswerKeyStatus();
+      return;
+    }
 
     this.activeSheetId = selectedSheet.sheet_id;
     this.activeTotalQuestions = selectedSheet.questions;
     this.activeColumns = selectedSheet.columns;
     this.activeOptionsPerQuestion = selectedSheet.options;
+    void this.refreshAnswerKeyStatus();
+  }
+
+  private async refreshAnswerKeyStatus(): Promise<void> {
+    const requestId = ++this.answerKeyStatusRequestId;
+    const sheetId = this.activeSheetId.trim();
+    const professorId = this.activeProfessorId;
+    this.answerKeyConfigured = false;
+
+    if (!sheetId || !professorId) return;
+
+    try {
+      const answerKey = await this.supabaseService.getAnswerKey(sheetId, professorId);
+      if (
+        requestId === this.answerKeyStatusRequestId &&
+        this.activeSheetId.trim() === sheetId &&
+        this.activeProfessorId === professorId
+      ) {
+        this.answerKeyConfigured = answerKey !== null;
+      }
+    } catch (error) {
+      console.error('Failed to check configured answer key:', error);
+    }
   }
 
   goBack() {
@@ -239,6 +267,7 @@ export class OmrContainerPage implements OnInit {
                   this.activeProfessorId,
                   res.answer_key,
                 );
+                await this.refreshAnswerKeyStatus();
               } catch (error) {
                 console.error('Teacher answer key could not be mirrored to Supabase:', error);
                 await this.showToast('Answer key was processed but could not be saved to Supabase.', 'danger');
@@ -375,6 +404,7 @@ export class OmrContainerPage implements OnInit {
 
   async onConfirmResult() {
     this.activeSheetId = '';
+    void this.refreshAnswerKeyStatus();
     this.activeTotalQuestions = null;
     this.activeOptionsPerQuestion = null;
     this.activeColumns = null;
@@ -395,6 +425,7 @@ export class OmrContainerPage implements OnInit {
 
   async resetForm() {
     this.activeSheetId = '';
+    void this.refreshAnswerKeyStatus();
     this.activeTotalQuestions = null;
     this.activeOptionsPerQuestion = null;
     this.activeColumns = null;

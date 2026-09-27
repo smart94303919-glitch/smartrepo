@@ -92,6 +92,10 @@
             </div>
           </ion-card-header>
           <ion-card-content>
+            <ion-item *ngIf="answerKeyConfigured" color="success" lines="none" class="ion-margin-bottom">
+              <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
+              <ion-label>Answer key already configured</ion-label>
+            </ion-item>
             <app-image-picker
               [scanMode]="scanMode"
               (imageCaptured)="onImageCaptured($event)"
