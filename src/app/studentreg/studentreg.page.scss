@@ -26,6 +26,18 @@ ion-content {
   border: 1px solid rgba(59, 130, 246, 0.12);
 }
 
+.format-actions-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-bottom: 14px;
+
+  ion-button {
+    margin: 0;
+  }
+}
+
 .hero-icon {
   display: flex;
   align-items: center;
