@@ -81,7 +81,7 @@
 
     <ion-list *ngIf="displayResult.answer_key" lines="full">
       <ion-item
-        *ngFor="let q of getSortedAnswers(displayResult)"
+        *ngFor="let q of sortedAnswers; trackBy: trackByQuestion"
         (click)="enableAnswerEdit(displayResult, q.question)"
       >
         <ion-label>Q{{ q.question }}: {{ q.answer ?? '(blank)' }}</ion-label>

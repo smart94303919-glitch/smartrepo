@@ -12,6 +12,11 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from
 import { IonicModule } from '@ionic/angular';
 import { AnswerKey, GradeSheetResponse } from '../../../services/omr-api.service';
 
+interface AnswerKeyRow {
+  question: number;
+  answer: string | null;
+}
+
 @Component({
   selector: 'app-results-display',
   standalone: true,
@@ -20,6 +25,8 @@ import { AnswerKey, GradeSheetResponse } from '../../../services/omr-api.service
   styleUrls: ['./results-display.component.scss'],
 })
 export class ResultsDisplayComponent implements OnChanges {
+  sortedAnswers: AnswerKeyRow[] = [];
+
   /** Result of a single /grade-sheet call (key capture or student grade). */
   @Input() result: GradeSheetResponse | null = null;
 
@@ -49,6 +56,9 @@ export class ResultsDisplayComponent implements OnChanges {
     if (changes['result'] && this.result?.overlay_image_base64) {
       this.overlayImageUrl = `data:image/png;base64,${this.result.overlay_image_base64}`;
     }
+    if (changes['result'] || changes['results']) {
+      this.refreshSortedAnswers();
+    }
   }
 
   confirmResults() {
@@ -64,12 +74,31 @@ export class ResultsDisplayComponent implements OnChanges {
       .sort((first, second) => Number(first.question) - Number(second.question));
   }
 
-  getSortedAnswers(result: GradeSheetResponse) {
+  refreshSortedAnswers(): void {
+    const previousResult = this.editingAnswerKeyResult;
+    const result = this.result?.answer_key
+      ? this.result
+      : this.results.find((item) => Boolean(item.answer_key)) ?? null;
+    if (!result) {
+      this.sortedAnswers = [];
+      this.editingQuestionNumber = null;
+      this.editingAnswerKeyResult = null;
+      return;
+    }
+
+    if (previousResult !== result) {
+      this.editingQuestionNumber = null;
+    }
     const answerKey = this.editedAnswerKeys.get(result) ?? result.answer_key ?? {};
-    return Object.entries(answerKey)
+    this.sortedAnswers = Object.entries(answerKey)
       .map(([question, answer]) => ({ question: Number(question), answer }))
       .filter((item) => Number.isInteger(item.question))
       .sort((first, second) => first.question - second.question);
+    this.editingAnswerKeyResult = result;
+  }
+
+  trackByQuestion(_index: number, item: AnswerKeyRow): number {
+    return item.question;
   }
 
   getAvailableOptionChars(): string[] {
@@ -93,6 +122,9 @@ export class ResultsDisplayComponent implements OnChanges {
       [String(questionNumber)]: newAnswer.toUpperCase(),
     };
     this.editedAnswerKeys.set(result, updatedAnswerKey);
+    this.sortedAnswers = this.sortedAnswers.map((item) =>
+      item.question === questionNumber ? { ...item, answer: newAnswer.toUpperCase() } : item,
+    );
     this.cancelAnswerEdit();
   }
 
