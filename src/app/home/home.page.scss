@@ -33,8 +33,19 @@ ion-item ion-button {
   margin: 0;
 }
 
-.password-item::part(native) {
-  align-items: flex-end;
+.password-input-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input-row ion-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.password-toggle-btn {
+  flex: 0 0 auto;
 }
 
 ion-item.error {

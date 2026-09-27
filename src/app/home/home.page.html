@@ -18,15 +18,17 @@
 
       <ion-item class="password-item" [class.error]="isFieldInvalid('password')">
         <ion-label position="stacked">PASSWORD:</ion-label>
-        <ion-input [type]="showPassword ? 'text' : 'password'" formControlName="password" [disabled]="isLockedOut"></ion-input>
-        <ion-button
-          type="button"
-          fill="clear"
-          slot="end"
-          (click)="togglePasswordVisibility()"
-          [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
-          <ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
-        </ion-button>
+        <div class="password-input-row">
+          <ion-input [type]="showPassword ? 'text' : 'password'" formControlName="password" [disabled]="isLockedOut"></ion-input>
+          <ion-button
+            type="button"
+            fill="clear"
+            class="password-toggle-btn"
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
+            <ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+          </ion-button>
+        </div>
       </ion-item>
       <div class="error-text" *ngIf="isFieldInvalid('password')">
         {{ getFieldError('password') }}
