@@ -427,7 +427,7 @@ class SheetConfigRequest(BaseModel):
     subject: str = "General"
     quiz_type: str = "Multiple Choice"
     total_questions: int = Field(60, gt=0)
-    options_per_question: int = Field(4, ge=1, le=8)
+    options_per_question: int = Field(4, ge=2, le=9)
     columns: int = Field(3, gt=0)
     sheet_id: str = "SHEET-0001"
     output_name: str = Field("sheet.pdf", description="Desired output filename")
@@ -597,7 +597,7 @@ def _load_sheet_config_for_scan(
             sheet_response = (
                 _get_supabase_client()
                 .table("sheet_tbl")
-                .select("sheet_id, sheet_title, quiz_type, questions, columns, section_id, subj_id")
+                .select("sheet_id, sheet_title, quiz_type, questions, options, columns, section_id, subj_id")
                 .eq("sheet_id", str(sheet_id).strip())
                 .maybe_single()
                 .execute()
@@ -619,6 +619,7 @@ def _load_sheet_config_for_scan(
             "title": sheet_row.get("sheet_title") or "OMR Answer Sheet",
             "quiz_type": sheet_row.get("quiz_type") or "Multiple Choice",
             "total_questions": sheet_row.get("questions"),
+            "options_per_question": sheet_row.get("options") or 4,
             "columns": sheet_row.get("columns"),
             "section_id": sheet_row.get("section_id") or "",
             "SubjectID": sheet_row.get("subj_id") or "",
@@ -776,24 +777,15 @@ def save_student_score(payload: SaveStudentScoreRequest):
 
         sheet_response = (
             supabase.table("sheet_tbl")
-            .select("subj_id, section_id")
+            .select("sheet_id")
             .eq("sheet_id", sheet_id)
             .maybe_single()
             .execute()
         )
-        sheet_data = sheet_response.data
-        if not sheet_data:
+        if not sheet_response.data:
             return JSONResponse(
                 status_code=404,
                 content={"status": "error", "message": f"No sheet metadata found for sheet_id '{sheet_id}'."},
-            )
-
-        subject_id = sheet_data.get("subj_id")
-        section_id = sheet_data.get("section_id")
-        if subject_id is None or section_id is None:
-            return JSONResponse(
-                status_code=400,
-                content={"status": "error", "message": f"Sheet '{sheet_id}' missing subj_id or section_id metadata."},
             )
 
         insert_payload = {
@@ -801,8 +793,6 @@ def save_student_score(payload: SaveStudentScoreRequest):
             "sheet_id": sheet_id,
             "score_value": payload.score_value,
             "percentage": payload.percentage,
-            "subj_id": subject_id,
-            "section_id": section_id,
         }
         response = supabase.table("student_score").insert(insert_payload).execute()
         return {"status": "success", "message": "Score saved successfully!", "data": response.data}
@@ -870,6 +860,7 @@ def generate_pdf(payload: SheetConfigRequest):
                 "sheet_title": str(sheet_title_val),
                 "quiz_type": str(cfg.quiz_type),
                 "questions": int(cfg.total_questions),
+                "options": int(cfg.options_per_question),
                 "columns": int(cfg.columns),
             }
             if section_id:
@@ -1100,7 +1091,7 @@ def get_results(sheet_id: str):
         response = (
             _get_supabase_client()
             .table("student_score")
-            .select('student_id, score_value, percentage, sheet_id, subj_id, section_id')
+            .select('student_id, score_value, percentage, sheet_id')
             .eq("sheet_id", str(sheet_id))
             .execute()
         )
@@ -1124,10 +1115,23 @@ def get_results(sheet_id: str):
 
 def _total_questions_for_sheet(sheet_id: str) -> int:
     cfg_path = os.path.join(PDFS_DIR, f"{sheet_id}.config.json")
-    if not os.path.exists(cfg_path):
-        return 0
-    with open(cfg_path) as f:
-        return int(json.load(f).get("total_questions", 0))
+    if os.path.exists(cfg_path):
+        with open(cfg_path) as f:
+            return int(json.load(f).get("total_questions", 0))
+
+    try:
+        response = (
+            _get_supabase_client()
+            .table("sheet_tbl")
+            .select("questions")
+            .eq("sheet_id", str(sheet_id).strip())
+            .maybe_single()
+            .execute()
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Could not load sheet metadata: {exc}") from exc
+
+    return int((response.data or {}).get("questions") or 0)
 
 
 @app.get("/results/{sheet_id}/export")

@@ -400,18 +400,37 @@ async getProfessorStudentScores(profId: number): Promise<any[]> {
     return [];
   }
 
+  const { data: sheets, error: sheetError } = await this.supabase
+    .from('sheet_tbl')
+    .select('sheet_id, subj_id, section_id')
+    .in('sheet_id', ownedSheetIds);
+
+  if (sheetError) {
+    throw sheetError;
+  }
+
+  const sheetMetadata = new Map<string, any>(
+    (sheets || [])
+      .filter((sheet: any) => assignmentKeys.has(`${sheet.subj_id}:${sheet.section_id}`))
+      .map((sheet: any) => [String(sheet.sheet_id).trim(), sheet])
+  );
+  if (!sheetMetadata.size) {
+    return [];
+  }
+
   const { data: scoreRows, error: scoreError } = await this.supabase
     .from('student_score')
-    .select('student_id, sheet_id, score_value, percentage, subj_id, section_id');
+    .select('student_id, sheet_id, score_value, percentage, "Score_id"')
+    .in('sheet_id', Array.from(sheetMetadata.keys()));
 
   if (scoreError) {
     throw scoreError;
   }
 
-  const visibleScores = (scoreRows || []).filter((score: any) =>
-    ownedSheetIds.includes(String(score.sheet_id ?? '').trim()) &&
-    assignmentKeys.has(`${score.subj_id}:${score.section_id}`)
-  );
+  const visibleScores = (scoreRows || []).map((score: any) => ({
+    ...score,
+    ...sheetMetadata.get(String(score.sheet_id ?? '').trim())
+  }));
 
   if (!visibleScores.length) {
     return [];
@@ -523,12 +542,23 @@ async getProfessorGradesForAssessment(
     return [];
   }
 
+  const { data: sheet, error: sheetError } = await this.supabase
+    .from('sheet_tbl')
+    .select('section_id, subj_id')
+    .eq('sheet_id', String(sheetId).trim())
+    .maybeSingle();
+
+  if (sheetError) {
+    throw sheetError;
+  }
+  if (Number(sheet?.section_id) !== Number(sectionId) || Number(sheet?.subj_id) !== Number(subjectId)) {
+    return [];
+  }
+
   const { data: scoreRows, error: scoreError } = await this.supabase
     .from('student_score')
-    .select('student_id, sheet_id, score_value, percentage, subj_id, section_id')
-    .eq('sheet_id', sheetId)
-    .eq('subj_id', Number(subjectId))
-    .eq('section_id', Number(sectionId));
+    .select('student_id, sheet_id, score_value, percentage, "Score_id"')
+    .eq('sheet_id', String(sheetId).trim());
 
   if (scoreError) {
     throw scoreError;
@@ -687,15 +717,32 @@ async archiveStudents(studentIds: string[], subjectId: number | number[], sectio
     throw new Error('Professor school year assignment was not found.');
   }
 
-  const { data: scores, error: scoreError } = await this.supabase
-    .from('student_score')
-    .select('student_id, subj_id, "Score_id"')
-    .in('student_id', normalizedIds)
+  const { data: matchingSheets, error: sheetError } = await this.supabase
+    .from('sheet_tbl')
+    .select('sheet_id, subj_id')
     .in('subj_id', normalizedSubjectIds)
     .eq('section_id', Number(section.section_id));
 
-  if (scoreError) {
-    throw scoreError;
+  if (sheetError) {
+    throw sheetError;
+  }
+
+  const sheetSubjectById = new Map((matchingSheets || []).map((sheet: any) => [
+    String(sheet.sheet_id), Number(sheet.subj_id)
+  ]));
+  const matchingSheetIds = Array.from(sheetSubjectById.keys());
+  let scores: any[] = [];
+  if (matchingSheetIds.length) {
+    const { data, error } = await this.supabase
+      .from('student_score')
+      .select('student_id, sheet_id, "Score_id"')
+      .in('student_id', normalizedIds)
+      .in('sheet_id', matchingSheetIds);
+
+    if (error) {
+      throw error;
+    }
+    scores = data || [];
   }
 
   const { data: departments, error: departmentError } = await this.supabase
@@ -713,7 +760,7 @@ async archiveStudents(studentIds: string[], subjectId: number | number[], sectio
 
   const scoreRowsByStudentSubject = new Map<string, any[]>();
   (scores || []).forEach((score: any) => {
-    const key = `${score.student_id}:${score.subj_id}`;
+    const key = `${score.student_id}:${sheetSubjectById.get(String(score.sheet_id))}`;
     const studentScores = scoreRowsByStudentSubject.get(key) || [];
     studentScores.push(score);
     scoreRowsByStudentSubject.set(key, studentScores);

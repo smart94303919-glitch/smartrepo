@@ -53,8 +53,8 @@ CONTENT_MARGIN_FRAC = 0.06
 DEFAULT_TOTAL_QUESTIONS = 60
 DEFAULT_OPTIONS_PER_QUESTION = 4          # A-D
 DEFAULT_COLUMNS = 3
-MAX_OPTIONS = 8                            # A-H hard ceiling
-OPTION_LETTERS = "ABCDEFGH"
+MAX_OPTIONS = 9                            # A-I hard ceiling
+OPTION_LETTERS = "ABCDEFGHI"
 
 # --------------------------------------------------------------------------
 # 4. BUBBLE DRAWING GEOMETRY (points, on the PDF canvas)
@@ -148,7 +148,7 @@ class SheetConfig:
     def __post_init__(self):
         if self.quiz_type == "True or False":
             self.options_per_question = 2
-        if not (1 <= self.options_per_question <= MAX_OPTIONS):
+        if not (2 <= self.options_per_question <= MAX_OPTIONS):
             raise ValueError(
                 f"options_per_question must be between 1 and {MAX_OPTIONS} "
                 f"(A-{OPTION_LETTERS[MAX_OPTIONS - 1]})"
