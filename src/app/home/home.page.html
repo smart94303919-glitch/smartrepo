@@ -16,7 +16,7 @@
         {{ getFieldError('prof_number') }}
       </div>
 
-      <ion-item [class.error]="isFieldInvalid('password')">
+      <ion-item class="password-item" [class.error]="isFieldInvalid('password')">
         <ion-label position="stacked">PASSWORD:</ion-label>
         <ion-input [type]="showPassword ? 'text' : 'password'" formControlName="password" [disabled]="isLockedOut"></ion-input>
         <ion-button
