@@ -34,6 +34,29 @@
 
         <ion-col size="12" size-md="6">
           <ion-item>
+            <ion-icon name="people-outline" slot="start" color="primary"></ion-icon>
+            <ion-label position="stacked">Section</ion-label>
+            <ion-select
+              [value]="model.section_id ?? null"
+              interface="popover"
+              [disabled]="isLoadingSections || sectionsLoadError || !sections.length"
+              (ionChange)="onSectionChange($event.detail.value)"
+            >
+              <ion-select-option [value]="null">Select a section...</ion-select-option>
+              <ion-select-option *ngFor="let availableSection of sections" [value]="availableSection.section_id">
+                {{ availableSection.section }}
+              </ion-select-option>
+            </ion-select>
+            <ion-note slot="helper" *ngIf="isLoadingSections">Loading sections...</ion-note>
+            <ion-note slot="helper" color="danger" *ngIf="sectionsLoadError">Unable to load sections.</ion-note>
+            <ion-note slot="helper" *ngIf="!isLoadingSections && !sectionsLoadError && !sections.length">
+              No sections available.
+            </ion-note>
+          </ion-item>
+        </ion-col>
+
+        <ion-col size="12" size-md="6">
+          <ion-item>
             <ion-icon name="book-outline" slot="start" color="primary"></ion-icon>
             <ion-label position="stacked">Subject</ion-label>
             <ion-select
@@ -53,29 +76,6 @@
             <ion-note slot="helper" color="danger" *ngIf="subjectsLoadError">Unable to load subjects.</ion-note>
             <ion-note slot="helper" *ngIf="model.section_id && !isLoadingSubjects && !subjectsLoadError && !subjects.length">
               No subjects assigned to this section.
-            </ion-note>
-          </ion-item>
-        </ion-col>
-
-        <ion-col size="12" size-md="6">
-          <ion-item>
-            <ion-icon name="people-outline" slot="start" color="primary"></ion-icon>
-            <ion-label position="stacked">Section</ion-label>
-            <ion-select
-              [value]="model.section_id ?? null"
-              interface="popover"
-              [disabled]="isLoadingSections || sectionsLoadError || !sections.length"
-              (ionChange)="onSectionChange($event.detail.value)"
-            >
-              <ion-select-option [value]="null">Select a section...</ion-select-option>
-              <ion-select-option *ngFor="let availableSection of sections" [value]="availableSection.section_id">
-                {{ availableSection.section }}
-              </ion-select-option>
-            </ion-select>
-            <ion-note slot="helper" *ngIf="isLoadingSections">Loading sections...</ion-note>
-            <ion-note slot="helper" color="danger" *ngIf="sectionsLoadError">Unable to load sections.</ion-note>
-            <ion-note slot="helper" *ngIf="!isLoadingSections && !sectionsLoadError && !sections.length">
-              No sections available.
             </ion-note>
           </ion-item>
         </ion-col>
