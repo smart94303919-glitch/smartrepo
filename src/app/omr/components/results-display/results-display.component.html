@@ -80,8 +80,32 @@
     </ion-list>
 
     <ion-list *ngIf="displayResult.answer_key" lines="full">
-      <ion-item *ngFor="let q of getSortedAnswers(displayResult.answer_key)">
+      <ion-item
+        *ngFor="let q of getSortedAnswers(displayResult)"
+        (click)="enableAnswerEdit(displayResult, q.question)"
+      >
         <ion-label>Q{{ q.question }}: {{ q.answer ?? '(blank)' }}</ion-label>
+        <ion-select
+          *ngIf="isEditingAnswer(displayResult, q.question)"
+          [value]="q.answer"
+          interface="popover"
+          aria-label="Edit answer for question {{ q.question }}"
+          (ionChange)="updateQuestionAnswer(displayResult, q.question, $event.detail.value)"
+          (click)="$event.stopPropagation()"
+        >
+          <ion-select-option *ngFor="let optionChar of getAvailableOptionChars()" [value]="optionChar">
+            {{ optionChar }}
+          </ion-select-option>
+        </ion-select>
+        <ion-button
+          *ngIf="isEditingAnswer(displayResult, q.question)"
+          fill="clear"
+          aria-label="Close answer editor"
+          (click)="$event.stopPropagation(); cancelAnswerEdit()"
+        >
+          <ion-icon name="close-outline"></ion-icon>
+        </ion-button>
+        <ion-icon *ngIf="!isEditingAnswer(displayResult, q.question)" name="create-outline" slot="end"></ion-icon>
       </ion-item>
     </ion-list>
 

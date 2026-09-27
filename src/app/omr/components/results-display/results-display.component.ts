@@ -10,7 +10,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
-import { GradeSheetResponse } from '../../../services/omr-api.service';
+import { AnswerKey, GradeSheetResponse } from '../../../services/omr-api.service';
 
 @Component({
   selector: 'app-results-display',
@@ -26,6 +26,8 @@ export class ResultsDisplayComponent implements OnChanges {
   /** Results from a gallery batch, rendered one paper at a time. */
   @Input() results: GradeSheetResponse[] = [];
 
+  @Input() optionsPerQuestion: number | null = null;
+
   @Input() processingError: string | null = null;
 
   /** Fired only when the user explicitly confirms the displayed results. */
@@ -37,6 +39,9 @@ export class ResultsDisplayComponent implements OnChanges {
   @Input() savedResultKey: string | null = null;
 
   overlayImageUrl: string | null = null;
+  editingQuestionNumber: number | null = null;
+  private editingAnswerKeyResult: GradeSheetResponse | null = null;
+  private readonly editedAnswerKeys = new WeakMap<GradeSheetResponse, AnswerKey>();
 
   constructor() {}
 
@@ -59,11 +64,41 @@ export class ResultsDisplayComponent implements OnChanges {
       .sort((first, second) => Number(first.question) - Number(second.question));
   }
 
-  getSortedAnswers(answerKey: GradeSheetResponse['answer_key']) {
-    return Object.entries(answerKey ?? {})
+  getSortedAnswers(result: GradeSheetResponse) {
+    const answerKey = this.editedAnswerKeys.get(result) ?? result.answer_key ?? {};
+    return Object.entries(answerKey)
       .map(([question, answer]) => ({ question: Number(question), answer }))
       .filter((item) => Number.isInteger(item.question))
       .sort((first, second) => first.question - second.question);
+  }
+
+  getAvailableOptionChars(): string[] {
+    const configuredCount = Number(this.optionsPerQuestion) || 4;
+    const count = Math.min(9, Math.max(2, Math.trunc(configuredCount)));
+    return Array.from({ length: count }, (_, index) => String.fromCharCode(65 + index));
+  }
+
+  isEditingAnswer(result: GradeSheetResponse, questionNumber: number): boolean {
+    return this.editingAnswerKeyResult === result && this.editingQuestionNumber === questionNumber;
+  }
+
+  enableAnswerEdit(result: GradeSheetResponse, questionNumber: number): void {
+    this.editingAnswerKeyResult = result;
+    this.editingQuestionNumber = questionNumber;
+  }
+
+  updateQuestionAnswer(result: GradeSheetResponse, questionNumber: number, newAnswer: string): void {
+    const updatedAnswerKey = {
+      ...(this.editedAnswerKeys.get(result) ?? result.answer_key ?? {}),
+      [String(questionNumber)]: newAnswer.toUpperCase(),
+    };
+    this.editedAnswerKeys.set(result, updatedAnswerKey);
+    this.cancelAnswerEdit();
+  }
+
+  cancelAnswerEdit(): void {
+    this.editingQuestionNumber = null;
+    this.editingAnswerKeyResult = null;
   }
 
   requestSave(result: GradeSheetResponse) {
