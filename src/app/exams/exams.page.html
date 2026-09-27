@@ -1,3 +1,12 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Exams</ion-title>
+  </ion-toolbar>
+</ion-header>
+
 <ion-content class="smart-content">
   <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
     <ion-refresher-content pullingIcon="chevron-down-circle-outline" pullingText="Pull down to refresh" refreshingSpinner="circles" refreshingText="Refreshing data..."></ion-refresher-content>
@@ -54,11 +63,6 @@
    
       
     </div>
-
-    <!-- Go Back Button -->
-    <ion-button class="go-back-btn" routerLink="/mainhome" color="primary" shape="round">
-      ← GO BACK
-    </ion-button>
   </div>
 
   <div class="grades-container" *ngIf="showGrades">
