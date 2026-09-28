@@ -13,50 +13,40 @@
   .grades-header-row {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
+    flex-wrap: wrap;
   }
 
   .grades-heading {
     display: flex;
     align-items: center;
-    gap: 14px;
-    margin-top: 14px;
+    gap: 12px;
+    min-width: 0;
     padding: 16px;
-    border: 1px solid #dce7f5;
     border-radius: 14px;
-    background: linear-gradient(135deg, #ffffff, #edf5ff);
-    flex: 1;
+    background: linear-gradient(#fff, #eef7ff, #eaf7f3);
+    flex: 1 1 230px;
   }
 
   .export-button {
     flex: 0 0 auto;
     margin: 0;
+    --border-radius: 12px;
   }
 
   .grades-heading-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 46px;
-    height: 46px;
-    flex: 0 0 46px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #e6f0ff, #d8f4f0);
-
-    ion-icon {
-      color: var(--ion-color-primary);
-      font-size: 25px;
-    }
+    display: grid;
+    place-items: center;
+    flex: 0 0 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #e6f0ff;
   }
 
   h1 {
-    margin: 12px 0 4px;
+    margin: 0 0 4px;
     color: #0a1935;
-  }
-
-  p {
-    margin: 0;
-    color: #57607a;
+    font-size: 1.4rem;
   }
 }
 
@@ -474,6 +464,22 @@
 }
 
 @media (max-width: 480px) {
+  .grades-header {
+    .grades-header-row {
+      gap: 10px;
+    }
+
+    .export-button {
+      flex-basis: 100%;
+    }
+
+    .grades-heading { padding: 14px; }
+
+    h1 {
+      font-size: 1.25rem;
+    }
+  }
+
   .smart-content {
     padding: 12px;
   }
