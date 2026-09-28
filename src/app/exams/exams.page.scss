@@ -1,5 +1,10 @@
 /* exams.page.scss */
 
+.header-title {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
 .grades-container {
   width: 100%;
   max-width: 1000px;
@@ -24,14 +29,13 @@
     min-width: 0;
     padding: 16px;
     border-radius: 14px;
-    background: linear-gradient(#fff, #eef7ff, #eaf7f3);
+    background: #eef7ff;
     flex: 1 1 230px;
   }
 
   .export-button {
     flex: 0 0 auto;
     margin: 0;
-    --border-radius: 12px;
   }
 
   .grades-heading-icon {
@@ -464,11 +468,9 @@
 }
 
 @media (max-width: 480px) {
-  .grades-header {
-    .grades-header-row {
-      gap: 10px;
-    }
+  .header-title { font-size: 0.9rem; }
 
+  .grades-header {
     .export-button {
       flex-basis: 100%;
     }

@@ -1,9 +1,12 @@
-<ion-header>
-  <ion-toolbar>
+<ion-header class="ion-no-border smart-header">
+  <ion-toolbar color="primary">
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/exams" text=""></ion-back-button>
+      <ion-back-button *ngIf="!showGrades" defaultHref="/mainhome" text="" icon="chevron-back-outline"></ion-back-button>
+      <ion-button *ngIf="showGrades" fill="clear" aria-label="Back to exam tools" (click)="showGrades = false">
+        <ion-icon name="chevron-back-outline"></ion-icon>
+      </ion-button>
     </ion-buttons>
-    <ion-title>Exams</ion-title> <!--will be changed -->
+    <ion-title class="ion-text-center header-title">{{ showGrades ? 'Student Grades' : 'Exam Tools & Analytics' }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
