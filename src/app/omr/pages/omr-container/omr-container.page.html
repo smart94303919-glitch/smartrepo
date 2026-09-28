@@ -92,12 +92,13 @@
             </div>
           </ion-card-header>
           <ion-card-content>
-            <ion-item *ngIf="answerKeyConfigured" color="success" lines="none" class="ion-margin-bottom">
-              <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
-              <ion-label>Answer key already configured</ion-label>
+            <ion-item *ngIf="scanMode === 'key' && answerKeyConfigured" color="warning" lines="none" class="ion-margin-bottom">
+              <ion-icon name="lock-closed-outline" slot="start"></ion-icon>
+              <ion-label><strong>Answer Key Already Uploaded (Locked)</strong></ion-label>
             </ion-item>
             <app-image-picker
               [scanMode]="scanMode"
+              [answerKeyLocked]="scanMode === 'key' && (answerKeyConfigured || answerKeyStatusLoading)"
               (imageCaptured)="onImageCaptured($event)"
               (imagesCaptured)="onImagesCaptured($event)"
             ></app-image-picker>
@@ -149,10 +150,14 @@
       [result]="scanMode === 'key' ? teacherKeyResult : studentResult"
       [results]="scanMode === 'grade' ? studentBatchResults : []"
       [optionsPerQuestion]="activeOptionsPerQuestion"
+      [answerKeySaved]="answerKeyConfigured"
+      [answerKeySaveDisabled]="!canSaveTeacherAnswerKey"
+      [savingAnswerKey]="isSavingTeacherAnswerKey"
       [processingError]="scanError"
       [savingResultKey]="savingResultKey"
       [savedResultKey]="savedResultKey"
       (saveResult)="saveScoreToDatabase($event)"
+      (answerKeySaveRequested)="saveTeacherAnswerKey($event)"
       (resultConfirmed)="onConfirmResult()"
     ></app-results-display>
   </div>

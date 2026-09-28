@@ -16,7 +16,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { IonicModule, ToastController, LoadingController, AlertController } from '@ionic/angular';
-import { OmrApiService, GradeSheetResponse, SheetConfigRequest } from '../../../services/omr-api.service';
+import { AnswerKey, OmrApiService, GradeSheetResponse, SheetConfigRequest } from '../../../services/omr-api.service';
 import { ProfessorSheet, SupabaseService } from '../../../services/supabase.service';
 import { TemplateFormComponent } from '../../components/template-form/template-form.component';
 import { ImagePickerComponent, MAX_BATCH_IMAGES } from '../../components/image-picker/image-picker.component';
@@ -53,7 +53,10 @@ export class OmrContainerPage implements OnInit {
   activeOptionsPerQuestion: number | null = null;
   activeColumns: number | null = null;
   answerKeyConfigured = false;
+  answerKeyStatusLoading = false;
   private answerKeyStatusRequestId = 0;
+  pendingAnswerKeySheetId: string | null = null;
+  isSavingTeacherAnswerKey = false;
   sheetSelectOptions = { cssClass: 'sheet-id-popover' };
 
   scanMode: ScanMode = 'key';
@@ -152,8 +155,12 @@ export class OmrContainerPage implements OnInit {
     const sheetId = this.activeSheetId.trim();
     const professorId = this.activeProfessorId;
     this.answerKeyConfigured = false;
+    this.answerKeyStatusLoading = true;
 
-    if (!sheetId || !professorId) return;
+    if (!sheetId || !professorId) {
+      this.answerKeyStatusLoading = false;
+      return;
+    }
 
     try {
       const answerKey = await this.supabaseService.getAnswerKey(sheetId, professorId);
@@ -166,6 +173,56 @@ export class OmrContainerPage implements OnInit {
       }
     } catch (error) {
       console.error('Failed to check configured answer key:', error);
+    } finally {
+      if (requestId === this.answerKeyStatusRequestId) {
+        this.answerKeyStatusLoading = false;
+      }
+    }
+  }
+
+  get canSaveTeacherAnswerKey(): boolean {
+    return Boolean(this.pendingAnswerKeySheetId) &&
+      this.activeSheetId.trim() === this.pendingAnswerKeySheetId &&
+      !this.answerKeyConfigured &&
+      !this.answerKeyStatusLoading &&
+      !this.isSavingTeacherAnswerKey;
+  }
+
+  async saveTeacherAnswerKey(answerKey: AnswerKey): Promise<void> {
+    const sheetId = this.pendingAnswerKeySheetId;
+    const professorId = this.activeProfessorId;
+
+    if (!sheetId || !professorId || !this.professorSheetIds.includes(sheetId)) {
+      await this.showToast('Select a sheet assigned to your account before saving an answer key.', 'danger');
+      return;
+    }
+    if (this.activeSheetId.trim() !== sheetId) {
+      await this.showToast('The selected sheet changed. Select the scanned sheet before saving.', 'warning');
+      return;
+    }
+    if (this.isSavingTeacherAnswerKey || this.answerKeyConfigured) return;
+
+    this.isSavingTeacherAnswerKey = true;
+    try {
+      const existingAnswerKey = await this.supabaseService.getAnswerKey(sheetId, professorId);
+      if (existingAnswerKey) {
+        if (this.activeSheetId.trim() === sheetId) this.answerKeyConfigured = true;
+        await this.showToast('An answer key already exists for this sheet. Overwriting is disabled.', 'warning');
+        return;
+      }
+      if (this.activeSheetId.trim() !== sheetId) {
+        await this.showToast('The selected sheet changed. Select the scanned sheet before saving.', 'warning');
+        return;
+      }
+
+      await this.supabaseService.saveAnswerKey(sheetId, professorId, answerKey);
+      if (this.activeSheetId.trim() === sheetId) this.answerKeyConfigured = true;
+      await this.showToast('Teacher answer key saved successfully.', 'success');
+    } catch (error) {
+      console.error('Teacher answer key could not be saved:', error);
+      await this.showToast('Unable to save the teacher answer key. Please try again.', 'danger');
+    } finally {
+      this.isSavingTeacherAnswerKey = false;
     }
   }
 
@@ -238,6 +295,7 @@ export class OmrContainerPage implements OnInit {
       await this.showToast('Capture or import a sheet image first.', 'danger');
       return;
     }
+    const scannedSheetId = this.activeSheetId.trim();
 
     this.isProcessing = true;
     const loading = await this.loadingCtrl.create({
@@ -260,19 +318,7 @@ export class OmrContainerPage implements OnInit {
           this.scanError = null;
           if (this.scanMode === 'key') {
             this.teacherKeyResult = res;
-            if (res.answer_key && this.activeProfessorId) {
-              try {
-                await this.supabaseService.saveAnswerKey(
-                  this.activeSheetId,
-                  this.activeProfessorId,
-                  res.answer_key,
-                );
-                await this.refreshAnswerKeyStatus();
-              } catch (error) {
-                console.error('Teacher answer key could not be mirrored to Supabase:', error);
-                await this.showToast('Answer key was processed but could not be saved to Supabase.', 'danger');
-              }
-            }
+            this.pendingAnswerKeySheetId = scannedSheetId;
             this.teacherKeyImage = null;
           } else {
             this.studentResult = await this.normalizeResult(res);
@@ -414,6 +460,7 @@ export class OmrContainerPage implements OnInit {
     this.studentImage = null;
     this.studentImages = [];
     this.teacherKeyResult = null;
+    this.pendingAnswerKeySheetId = null;
     this.studentResult = null;
     this.studentBatchResults = [];
     this.scanError = null;
@@ -515,6 +562,7 @@ export class OmrContainerPage implements OnInit {
   resetTeacherKey() {
     this.teacherKeyImage = null;
     this.teacherKeyResult = null;
+    this.pendingAnswerKeySheetId = null;
     this.imagePicker?.resetTeacherKey();
   }
 
