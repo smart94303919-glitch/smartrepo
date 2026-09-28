@@ -1,6 +1,6 @@
 import { ChangeDetectorRef, Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AlertController, IonicModule, ToastController } from '@ionic/angular';
+import { AlertController, IonicModule, LoadingController, ToastController } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -41,6 +41,7 @@ export class StudentDashboardComponent implements OnDestroy {
     private supabaseService: SupabaseService,
     private alertCtrl: AlertController,
     private toastCtrl: ToastController,
+    private loadingCtrl: LoadingController,
     private cdr: ChangeDetectorRef
   ) {
     this.studentUpdatedSubscription = this.supabaseService.studentUpdated$.subscribe(() => {
@@ -326,6 +327,12 @@ export class StudentDashboardComponent implements OnDestroy {
       return;
     }
 
+    const loading = await this.loadingCtrl.create({
+      message: 'Archiving student...',
+      spinner: 'crescent'
+    });
+    await loading.present();
+
     try {
       const archived = await this.supabaseService.archiveStudents(
         selectedStudents.map((student) => String(student.student_id)),
@@ -339,9 +346,11 @@ export class StudentDashboardComponent implements OnDestroy {
 
       this.students = this.students.filter((student) => !this.selectedStudentIds.has(String(student.student_id)));
       this.cancelArchiveSelection();
+      await loading.dismiss();
       await this.showToast('Student successfully archived.', 'success');
       this.openArchive();
     } catch (error) {
+      await loading.dismiss();
       console.error('Archive failed:', error);
       this.errorMessage = 'Failed to archive the selected students.';
       await this.showToast('Failed to archive the selected students.', 'danger');
