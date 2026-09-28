@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AlertController, IonicModule, ToastController } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
@@ -12,7 +12,7 @@ import { SupabaseService } from '../services/supabase.service';
   templateUrl: './student_dashboard.component.html',
   styleUrls: ['./student_dashboard.component.scss'],
 })
-export class StudentDashboardComponent implements OnInit {
+export class StudentDashboardComponent {
   selectedSubject: string | null = null;
   selectedSectionName: string | null = null;
   subjectId: string | null = null;
@@ -37,15 +37,12 @@ export class StudentDashboardComponent implements OnInit {
     private router: Router,
     private supabaseService: SupabaseService,
     private alertCtrl: AlertController,
-    private toastCtrl: ToastController
+    private toastCtrl: ToastController,
+    private cdr: ChangeDetectorRef
   ) {}
 
-  ngOnInit(): void {
-    void this.initAndLoadData();
-  }
-
   async ionViewWillEnter(): Promise<void> {
-    await this.initAndLoadData();
+    await this.initAndLoadData(true);
   }
 
   async initAndLoadData(forceReload = false): Promise<void> {
@@ -61,6 +58,7 @@ export class StudentDashboardComponent implements OnInit {
 
     if (!this.selectedSectionName || !this.subjectId) {
       this.students = [];
+      this.cdr.markForCheck();
       return;
     }
 
@@ -87,13 +85,15 @@ export class StudentDashboardComponent implements OnInit {
     } catch (error) {
       console.error('Error during pull-to-refresh:', error);
     } finally {
-      event.target.complete();
+      event?.target?.complete();
+      this.cdr.markForCheck();
     }
   }
 
   private async loadSubjectTabsForSection(): Promise<void> {
     try {
       this.loading = true;
+      this.cdr.markForCheck();
       this.errorMessage = '';
       this.subjectTabs = [];
       this.selectedSubjectTab = 0;
@@ -154,6 +154,7 @@ export class StudentDashboardComponent implements OnInit {
       this.errorMessage = 'Failed to load subjects for this section.';
     } finally {
       this.loading = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -173,11 +174,13 @@ export class StudentDashboardComponent implements OnInit {
 
     if (!selectedSubject?.SubjectID || !profId) {
       this.students = [];
+      this.cdr.markForCheck();
       return;
     }
 
     try {
       this.studentsLoading = true;
+      this.cdr.markForCheck();
       this.currentProfId = profId;
       this.students = await this.supabaseService.getStudentsForSubject(
         selectedSubject.SubjectID,
@@ -189,6 +192,7 @@ export class StudentDashboardComponent implements OnInit {
       this.students = [];
     } finally {
       this.studentsLoading = false;
+      this.cdr.markForCheck();
     }
   }
 
