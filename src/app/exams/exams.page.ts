@@ -224,11 +224,16 @@ export class ExamsPage implements OnInit {
       }
     });
 
+    const selectedSubjectName = this.selectedSubjects.find((subject) => subject.id === this.selectedSubjectId)?.name;
+    const selectedSectionName = this.sections.find((section) => section.id === this.selectedSectionId)?.name;
+    const exportSubject = selectedSubjectName ?? rows.find((grade) => grade.subject_name)?.subject_name ?? 'N/A';
+    const exportSection = selectedSectionName ?? rows.find((grade) => grade.section_name)?.section_name ?? 'N/A';
+
     const exportRows = rows.map((grade) => ({
       'Student ID': grade.student_id ?? 'N/A',
       'Student Name': grade.student_name ?? 'N/A',
-      Subject: grade.subject_name ?? 'N/A',
-      Section: grade.section_name ?? 'N/A',
+      Subject: exportSubject,
+      Section: exportSection,
       Score: grade.score_value ?? 0,
       Percentage: grade.percentage != null ? `${grade.percentage}%` : 'N/A',
       'Letter Grade': this.getLetterGrade(grade.percentage),
