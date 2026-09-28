@@ -1,15 +1,3 @@
-<ion-header class="ion-no-border smart-header">
-  <ion-toolbar color="primary">
-    <ion-buttons slot="start">
-      <ion-back-button *ngIf="!showGrades" defaultHref="/mainhome" text="" icon="chevron-back-outline"></ion-back-button>
-      <ion-button *ngIf="showGrades" fill="clear" aria-label="Back to exam tools" (click)="showGrades = false">
-        <ion-icon name="chevron-back-outline"></ion-icon>
-      </ion-button>
-    </ion-buttons>
-    <ion-title class="ion-text-center header-title">{{ showGrades ? 'Student Grades' : 'Exam Tools & Analytics' }}</ion-title>
-  </ion-toolbar>
-</ion-header>
-
 <ion-content class="smart-content">
   <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
     <ion-refresher-content pullingIcon="chevron-down-circle-outline" pullingText="Pull down to refresh" refreshingSpinner="circles" refreshingText="Refreshing data..."></ion-refresher-content>
@@ -17,11 +5,16 @@
   <div class="smart-container" *ngIf="!showGrades">
     <!-- Header Section -->
     <div class="header-section">
+      <div class="card-top-bar">
+        <ion-button fill="clear" size="small" color="dark" class="card-back-btn" aria-label="Back to main menu" [routerLink]="['/mainhome']">
+          <ion-icon name="chevron-back-outline" slot="icon-only"></ion-icon>
+        </ion-button>
+      </div>
       <div class="header-decoration"></div>
       <div class="icon-badge">
         <ion-icon name="school"></ion-icon>
       </div>
-      <h1 class="main-title">Smart Classroom Analytics<br><span class="highlight">Where Education Meets Innovation</span></h1>
+      <h1 class="main-title">Exam Tools &amp; Analytics<br><span class="highlight">Where Education Meets Innovation</span></h1>
       <p class="subtitle">Manage master answer keys, track student performance, and store item analysis data seamlessly to make your teaching workflow smoother.</p>
     </div>
 
@@ -70,6 +63,9 @@
 
   <div class="grades-container" *ngIf="showGrades">
     <div class="grades-header">
+      <ion-button fill="clear" color="primary" aria-label="Back to exam tools" (click)="showGrades = false">
+        <ion-icon name="chevron-back-outline" slot="icon-only"></ion-icon>
+      </ion-button>
       <div class="grades-header-row">
         <div class="grades-heading">
           <div class="grades-heading-icon">

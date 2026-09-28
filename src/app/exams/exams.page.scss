@@ -1,10 +1,5 @@
 /* exams.page.scss */
 
-.header-title {
-  font-size: 1rem;
-  font-weight: 700;
-}
-
 .grades-container {
   width: 100%;
   max-width: 1000px;
@@ -163,6 +158,13 @@
   position: relative;
   margin-bottom: 40px;
 }
+
+.card-top-bar {
+  margin-left: -16px;
+  text-align: left;
+}
+
+.card-back-btn { margin: 0; }
 
 .header-decoration {
   position: absolute;
@@ -468,8 +470,6 @@
 }
 
 @media (max-width: 480px) {
-  .header-title { font-size: 0.9rem; }
-
   .grades-header {
     .export-button {
       flex-basis: 100%;
