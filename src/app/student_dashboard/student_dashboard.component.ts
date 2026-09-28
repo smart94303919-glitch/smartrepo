@@ -1,8 +1,9 @@
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AlertController, IonicModule, ToastController } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { SupabaseService } from '../services/supabase.service';
 
 @Component({
@@ -12,7 +13,7 @@ import { SupabaseService } from '../services/supabase.service';
   templateUrl: './student_dashboard.component.html',
   styleUrls: ['./student_dashboard.component.scss'],
 })
-export class StudentDashboardComponent {
+export class StudentDashboardComponent implements OnDestroy {
   selectedSubject: string | null = null;
   selectedSectionName: string | null = null;
   subjectId: string | null = null;
@@ -30,7 +31,9 @@ export class StudentDashboardComponent {
   archiveSelectionMode = false;
   selectedStudentIds = new Set<string>();
   private initializedRouteKey: string | null = null;
+  private routeParamsKey: string | null = null;
   private initializationPromise: Promise<void> | null = null;
+  private studentUpdatedSubscription: Subscription;
 
   constructor(
     private route: ActivatedRoute,
@@ -39,7 +42,15 @@ export class StudentDashboardComponent {
     private alertCtrl: AlertController,
     private toastCtrl: ToastController,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) {
+    this.studentUpdatedSubscription = this.supabaseService.studentUpdated$.subscribe(() => {
+      void this.refreshAfterStudentUpdate();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.studentUpdatedSubscription.unsubscribe();
+  }
 
   async ionViewWillEnter(): Promise<void> {
     await this.initAndLoadData(true);
@@ -47,14 +58,26 @@ export class StudentDashboardComponent {
 
   async initAndLoadData(forceReload = false): Promise<void> {
     const params = this.route.snapshot.queryParams;
-    const subject = params['subject'] || null;
-    const subjectId = params['subjectId'] ? String(params['subjectId']) : null;
-    const section = params['section'] || null;
-    const routeKey = `${subjectId ?? ''}|${section ?? ''}|${subject ?? ''}`;
+    const requestedSubject = params['subject'] || null;
+    const requestedSubjectId = params['subjectId'] ? String(params['subjectId']) : null;
+    const requestedSection = params['section'] || null;
+    const requestedRouteParamsKey = `${requestedSubjectId ?? ''}|${requestedSection ?? ''}|${requestedSubject ?? ''}`;
 
-    this.selectedSubject = subject;
-    this.selectedSectionName = section;
-    this.subjectId = subjectId;
+    if (requestedSubjectId && requestedSection && requestedRouteParamsKey !== this.routeParamsKey) {
+      this.selectedSubject = requestedSubject;
+      this.selectedSectionName = requestedSection;
+      this.subjectId = requestedSubjectId;
+      this.routeParamsKey = requestedRouteParamsKey;
+    } else {
+      this.selectedSubject = this.selectedSubject ?? requestedSubject;
+      this.selectedSectionName = this.selectedSectionName ?? requestedSection;
+      this.subjectId = this.subjectId ?? requestedSubjectId;
+    }
+
+    const subject = this.selectedSubject;
+    const subjectId = this.subjectId;
+    const section = this.selectedSectionName;
+    const routeKey = `${subjectId ?? ''}|${section ?? ''}|${subject ?? ''}`;
 
     if (!this.selectedSectionName || !this.subjectId) {
       this.students = [];
@@ -158,6 +181,16 @@ export class StudentDashboardComponent {
     }
   }
 
+  private async refreshAfterStudentUpdate(): Promise<void> {
+    try {
+      await this.initAndLoadData(true);
+    } catch (error) {
+      console.error('Failed to refresh dashboard after student update:', error);
+    } finally {
+      this.cdr.detectChanges();
+    }
+  }
+
   private getCurrentProfessorId(): number | null {
     const currentUser = localStorage.getItem('currentUser');
     if (!currentUser) {
@@ -198,6 +231,11 @@ export class StudentDashboardComponent {
 
   onSubjectTabChange(event: any): void {
     this.selectedSubjectTab = event.detail.value;
+    const selectedSubject = this.subjectTabs[this.selectedSubjectTab];
+    if (selectedSubject) {
+      this.selectedSubject = selectedSubject.subject;
+      this.subjectId = String(selectedSubject.SubjectID);
+    }
     this.searchText = '';
     void this.loadStudentsForSelectedSubject();
   }

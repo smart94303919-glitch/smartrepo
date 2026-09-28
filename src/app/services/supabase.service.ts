@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Subject } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface ProfessorSheet {
@@ -15,6 +16,12 @@ export interface ProfessorSheet {
 })
 export class SupabaseService {
   private supabase: SupabaseClient;
+  private readonly studentUpdatedSubject = new Subject<void>();
+  readonly studentUpdated$ = this.studentUpdatedSubject.asObservable();
+
+  notifyStudentUpdated(): void {
+    this.studentUpdatedSubject.next();
+  }
 
   // ✅ Updated table names
   private professorTable = 'professor_tbl';

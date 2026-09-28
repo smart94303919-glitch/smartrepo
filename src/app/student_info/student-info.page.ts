@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AlertController, IonicModule } from '@ionic/angular';
+import { AlertController, IonicModule, LoadingController } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SupabaseService } from '../services/supabase.service';
@@ -37,7 +37,8 @@ export class StudentInfoPage implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private supabaseService: SupabaseService,
-    private alertCtrl: AlertController
+    private alertCtrl: AlertController,
+    private loadingCtrl: LoadingController
   ) {}
 
   ngOnInit(): void {
@@ -171,10 +172,18 @@ export class StudentInfoPage implements OnInit {
   }
 
   async saveStudent(): Promise<void> {
+    const loading = await this.loadingCtrl.create({
+      message: 'Updating student information...',
+      spinner: 'crescent'
+    });
+    await loading.present();
+
+    let result: any;
+    let updateFailed = false;
     try {
       const currentUser = localStorage.getItem('currentUser');
       const user = currentUser ? JSON.parse(currentUser) : null;
-      const result = await this.supabaseService.updateStudent(this.student.student_id, {
+      result = await this.supabaseService.updateStudent(this.student.student_id, {
         originalStudentId: this.originalStudentId,
         first_name: this.student.first_name,
         middle_name: this.student.middle_name,
@@ -187,33 +196,41 @@ export class StudentInfoPage implements OnInit {
         subjectIds: this.selectedSubjectIds,
         professorId: user?.prof_id ?? null
       });
-
-      if (result && 'error' in result && result.error) {
-        const errorAlert = await this.alertCtrl.create({
-          header: 'Save Failed',
-          message: result.error.message || 'Failed to save student information.',
-          buttons: ['OK']
-        });
-        await errorAlert.present();
-        return;
-      }
-
-      const successAlert = await this.alertCtrl.create({
-        header: 'Changes saved successfully',
-        message: 'Your changes were saved successfully.',
-        buttons: ['OK']
-      });
-      await successAlert.present();
-      this.router.navigate(['/student_dashboard']);
     } catch (error: any) {
       console.error('Failed to save student:', error);
+      updateFailed = true;
+    } finally {
+      await loading.dismiss();
+    }
+
+    if (updateFailed) {
       const failureAlert = await this.alertCtrl.create({
         header: 'Save Failed',
         message: 'Failed to save student information.',
         buttons: ['OK']
       });
       await failureAlert.present();
+      return;
     }
+
+    if (result && 'error' in result && result.error) {
+      const errorAlert = await this.alertCtrl.create({
+        header: 'Save Failed',
+        message: result.error.message || 'Failed to save student information.',
+        buttons: ['OK']
+      });
+      await errorAlert.present();
+      return;
+    }
+
+    this.supabaseService.notifyStudentUpdated();
+    const successAlert = await this.alertCtrl.create({
+      header: 'Changes saved successfully',
+      message: 'Your changes were saved successfully.',
+      buttons: ['OK']
+    });
+    await successAlert.present();
+    this.router.navigate(['/student_dashboard']);
   }
 
   goBack(): void {
