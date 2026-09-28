@@ -155,16 +155,12 @@
 
 /* Header Section */
 .header-section {
-  position: relative;
-  margin-bottom: 40px;
+  position: relative; margin-bottom: 40px; padding: 18px 24px 24px;
 }
 
-.card-top-bar {
-  margin-left: -16px;
-  text-align: left;
-}
+.card-top-bar { padding-left: 6px; text-align: left; }
 
-.card-back-btn { margin: 0; }
+.card-back-btn { --padding-start: 8px; margin: 0; }
 
 .header-decoration {
   position: absolute;
