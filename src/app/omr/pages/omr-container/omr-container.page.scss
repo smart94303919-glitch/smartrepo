@@ -108,6 +108,12 @@
   font-weight: 700;
 }
 
+.status-banner ion-label p {
+  margin: 0;
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
 ion-button {
   --border-radius: 10px;
   font-weight: 700;
