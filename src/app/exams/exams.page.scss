@@ -155,12 +155,21 @@
 
 /* Header Section */
 .header-section {
-  position: relative; margin-bottom: 40px; padding: 18px 24px 24px;
+  position: relative; margin-bottom: 40px; padding: 18px 24px 24px; padding-top: 32px;
 }
 
-.card-top-bar { padding-left: 6px; text-align: left; }
+.card-top-bar { margin-top: -4px; padding-left: 0px; text-align: left; }
 
-.card-back-btn { --padding-start: 8px; margin: 0; }
+.card-back-btn {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  --padding-start: 8px;
+  --background: #f1f5f9;
+  --color: #0f172a;
+  margin: 0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
 
 .header-decoration {
   position: absolute;
