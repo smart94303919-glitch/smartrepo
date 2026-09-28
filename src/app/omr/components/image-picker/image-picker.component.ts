@@ -31,6 +31,7 @@ const JPEG_QUALITY = 0.8;
 export class ImagePickerComponent implements AfterViewInit, OnChanges, OnDestroy {
   /** Which workflow is active: 'key' = Teacher Answer Key, 'grade' = Student Sheet. */
   @Input() scanMode: 'key' | 'grade' = 'key';
+  @Input() answerKeyLocked = false;
 
   /** Fired once a single image has been acquired (camera capture or single gallery pick). */
   @Output() imageCaptured = new EventEmitter<File>();

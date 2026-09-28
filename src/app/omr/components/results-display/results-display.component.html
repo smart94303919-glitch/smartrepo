@@ -133,7 +133,19 @@
 </ion-card>
 
 <ion-button
-  *ngIf="result || results.length || processingError"
+  *ngIf="result?.mode === 'key'"
+  expand="block"
+  color="success"
+  class="confirm-results-button"
+  [disabled]="answerKeySaveDisabled || savingAnswerKey || answerKeySaved"
+  (click)="requestSaveAnswerKey()"
+>
+  <ion-icon name="save-outline" slot="start"></ion-icon>
+  {{ savingAnswerKey ? 'Saving Answer Key...' : (answerKeySaved ? 'Answer Key Already Saved' : 'Save Answer Key') }}
+</ion-button>
+
+<ion-button
+  *ngIf="(result && result.mode !== 'key') || results.length || processingError"
   expand="block"
   color="primary"
   class="confirm-results-button"

@@ -15,7 +15,7 @@
     expand="block"
     color="primary"
     (click)="captureFromCamera()"
-    [disabled]="isCameraActive || cameraLocked"
+    [disabled]="answerKeyLocked || isCameraActive || cameraLocked"
   >
     <ion-icon name="camera-outline" slot="start"></ion-icon>
     Capture with Camera
@@ -24,7 +24,7 @@
     This button is for a single photo per session only.
   </p>
 
-  <ion-button expand="block" fill="outline" (click)="importFromGallery()">
+  <ion-button expand="block" fill="outline" [disabled]="answerKeyLocked" (click)="importFromGallery()">
     <ion-icon name="image-outline" slot="start"></ion-icon>
     Import from Gallery
   </ion-button>

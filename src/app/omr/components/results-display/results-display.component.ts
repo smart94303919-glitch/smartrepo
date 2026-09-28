@@ -41,9 +41,13 @@ export class ResultsDisplayComponent implements OnChanges {
   @Output() resultConfirmed = new EventEmitter<void>();
 
   @Output() saveResult = new EventEmitter<GradeSheetResponse>();
+  @Output() answerKeySaveRequested = new EventEmitter<AnswerKey>();
 
   @Input() savingResultKey: string | null = null;
   @Input() savedResultKey: string | null = null;
+  @Input() answerKeySaved = false;
+  @Input() answerKeySaveDisabled = false;
+  @Input() savingAnswerKey = false;
 
   overlayImageUrl: string | null = null;
   editingQuestionNumber: number | null = null;
@@ -135,6 +139,14 @@ export class ResultsDisplayComponent implements OnChanges {
 
   requestSave(result: GradeSheetResponse) {
     this.saveResult.emit(result);
+  }
+
+  requestSaveAnswerKey(): void {
+    const result = this.result;
+    if (result?.mode !== 'key' || !result.answer_key) return;
+
+    const answerKey = this.editedAnswerKeys.get(result) ?? result.answer_key;
+    this.answerKeySaveRequested.emit({ ...answerKey });
   }
 
 }
