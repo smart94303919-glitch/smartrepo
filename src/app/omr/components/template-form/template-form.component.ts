@@ -52,6 +52,7 @@ export class TemplateFormComponent implements OnInit {
 
   // Options map 1:1 to answer letters in the backend (A-I).
   readonly optionChoices = [2, 3, 4, 5, 6, 7, 8, 9];
+  readonly columnChoices = [1, 2, 3, 4, 5, 6];
   maxAllowedOptions = 9;
   maxAllowedColumns = 6;
 

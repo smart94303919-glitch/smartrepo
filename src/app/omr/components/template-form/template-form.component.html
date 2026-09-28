@@ -149,18 +149,19 @@
         </ion-col>
 
         <ion-col size="12" size-md="4">
-          <ion-item>
+          <ion-item class="metadata-dropdown-item">
             <ion-icon name="grid-outline" slot="start" color="primary"></ion-icon>
             <ion-label position="stacked">Columns</ion-label>
-            <ion-input
-              type="number"
-              inputmode="numeric"
+            <ion-select
               [(ngModel)]="model.columns"
-              min="1"
-              [max]="maxAllowedColumns"
-              (ionInput)="sanitizeColumnsInput($event)"
-              (keyup)="sanitizeColumnsInput($event)"
-            ></ion-input>
+              interface="popover"
+              class="custom-select"
+              (ionChange)="sanitizeColumnsInput($event)"
+            >
+              <ion-select-option *ngFor="let n of columnChoices | slice:0:maxAllowedColumns" [value]="n">
+                {{ n }} {{ n === 1 ? 'column' : 'columns' }}
+              </ion-select-option>
+            </ion-select>
           </ion-item>
         </ion-col>
       </ion-row>
