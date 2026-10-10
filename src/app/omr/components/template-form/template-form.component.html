@@ -140,7 +140,7 @@
               [(ngModel)]="model.options_per_question"
               interface="popover"
               [disabled]="isTrueFalse"
-              (ionChange)="sanitizeOptionsInput()"
+              (ionChange)="onOptionsChange($event.detail.value)"
             >
               <ion-select-option *ngFor="let n of availableOptionChoices" [value]="n">{{ n }} choices</ion-select-option>
             </ion-select>
@@ -156,12 +156,35 @@
               [(ngModel)]="model.columns"
               interface="popover"
               class="custom-select"
+              [disabled]="isAutoColumns"
               (ionChange)="sanitizeColumnsInput($event)"
             >
               <ion-select-option *ngFor="let n of columnChoices | slice:0:maxAllowedColumns" [value]="n">
                 {{ n }} {{ n === 1 ? 'column' : 'columns' }}
               </ion-select-option>
             </ion-select>
+            <ion-note slot="helper" *ngIf="isAutoColumns && automaticColumnRecommendation !== null">
+              Automatically calculated for this page layout.
+            </ion-note>
+            <ion-note slot="helper" color="danger" *ngIf="isAutoColumns && automaticColumnRecommendation === null">
+              This question and choice combination does not fit on one page.
+            </ion-note>
+            <ion-note slot="helper" color="danger" *ngIf="!isAutoColumns && !isManualColumnLayoutValid">
+              This column count does not fit the page layout.
+            </ion-note>
+          </ion-item>
+        </ion-col>
+      </ion-row>
+      <ion-row>
+        <ion-col size="12" size-md="6">
+          <ion-item lines="none">
+            <ion-label>Manual column override</ion-label>
+            <ion-toggle
+              slot="end"
+              [checked]="!isAutoColumns"
+              (ionChange)="setManualColumns($event.detail.checked)"
+              aria-label="Manual column override"
+            ></ion-toggle>
           </ion-item>
         </ion-col>
       </ion-row>
