@@ -63,7 +63,7 @@ export class SearchstudPage implements OnInit {
 
   async saveEdit() {
     const { error } = await this.supabaseService.updateStudent(
-      this.editStudent.studinfo_id,
+      this.editStudent.student_id,
       this.editStudent
     );
     if (!error) {
@@ -79,7 +79,7 @@ export class SearchstudPage implements OnInit {
   }
 
   async delete(student: any) {
-    const studentId = student?.student_id ?? student?.studinfo_id;
+    const studentId = student?.student_id;
 
     const confirmAlert = await this.alertCtrl.create({
       header: 'Confirm Delete',
@@ -91,7 +91,7 @@ export class SearchstudPage implements OnInit {
           handler: async () => {
             const { error } = await this.supabaseService.deleteStudent(studentId);
             if (!error) {
-              this.students = this.students.filter((s) => (s.student_id ?? s.studinfo_id) !== studentId);
+              this.students = this.students.filter((s) => s.student_id !== studentId);
               const successAlert = await this.alertCtrl.create({
                 header: 'Success',
                 message: 'Student deleted successfully',

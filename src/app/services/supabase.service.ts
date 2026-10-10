@@ -25,7 +25,7 @@ export class SupabaseService {
 
   // ✅ Updated table names
   private professorTable = 'professor_tbl';
-  private studentTable = 'student';
+  private studentTable = 'student_tbl';
   private professorLoginTable = 'professor_login';
   private departmentTable = 'department';
   private professorDepartmentAssignmentTable = 'prof_assignment';
@@ -43,13 +43,13 @@ export class SupabaseService {
 
   async getStudentById(studentId: string): Promise<{
     student_id: string;
-    firstname: string;
-    lastname: string;
-    middlename: string | null;
+    s_firstname: string;
+    s_lastname: string;
+    s_middlename: string | null;
   } | null> {
     const { data, error } = await this.supabase
-      .from('student')
-      .select('student_id, firstname, lastname, middlename')
+      .from('student_tbl')
+      .select('student_id, s_firstname, s_lastname, s_middlename')
       .eq('student_id', studentId)
       .maybeSingle();
 
@@ -91,7 +91,7 @@ export class SupabaseService {
         .select('dept_id')
         .eq('prof_id', profId)
         .not('dept_id', 'is', null)
-        .order('assignment_id', { ascending: false })
+        .order('p_assignment_id', { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -145,8 +145,8 @@ export class SupabaseService {
 
       const loginData = {
         prof_id: profData.prof_id,
-        email: professorData.email,
-        password: professorData.password
+        prof_number: professorData.prof_number ?? professorData.email,
+        p_password: professorData.p_password ?? professorData.password
       };
 
       const { data: loginDataResult, error: loginError } = await this.supabase
@@ -191,9 +191,9 @@ export class SupabaseService {
 
       const { data: loginRecord, error: loginError } = await this.supabase
         .from(this.professorLoginTable)
-        .select('login_id, prof_id, prof_number, password')
+        .select('p_login_id, prof_id, prof_number, p_password')
         .eq('prof_number', profNumber)
-        .eq('password', password)
+        .eq('p_password', password)
         .maybeSingle();
 
       if (loginError) {
@@ -269,7 +269,7 @@ export class SupabaseService {
     const { data, error } = await this.supabase
       .from(this.professorLoginTable)
       .select('prof_id')
-      .eq('login_id', loginId)
+      .eq('p_login_id', loginId)
       .maybeSingle();
 
     if (error) {
@@ -282,10 +282,10 @@ export class SupabaseService {
   async getProfessorSchoolYear(profId: number): Promise<string> {
     const { data, error } = await this.supabase
       .from(this.professorDepartmentAssignmentTable)
-      .select('assignment_id, schoolyear_tbl(*)')
+      .select('p_assignment_id, schoolyear_tbl(*)')
       .eq('prof_id', profId)
       .not('sy_id', 'is', null)
-      .order('assignment_id', { ascending: false })
+      .order('p_assignment_id', { ascending: false })
       .limit(1)
       .maybeSingle();
 
@@ -607,9 +607,9 @@ async getSheetAssignments(sheetIds: string[]): Promise<any[]> {
 
   const { data, error } = await this.supabase
     .from('sheet_assignment')
-    .select('assignment_id, sheet_id, dept_id, sy_id')
+    .select('sheet_assignment_id, sheet_id, dept_id, sy_id')
     .in('sheet_id', normalizedSheetIds)
-    .order('assignment_id', { ascending: false });
+    .order('sheet_assignment_id', { ascending: false });
 
   if (error) {
     console.error('Error fetching sheet assignments:', error);
@@ -671,7 +671,7 @@ async sheetIdExists(sheetId: string): Promise<boolean> {
 async professorOwnsSheet(profId: number, sheetId: string): Promise<boolean> {
   const { data, error } = await this.supabase
     .from('sheet_prof')
-    .select('assignment_id')
+    .select('sheet_prof_id')
     .eq('prof_id', Number(profId))
     .eq('sheet_id', sheetId.trim())
     .limit(1);
@@ -712,7 +712,7 @@ async archiveStudents(studentIds: string[], subjectId: number | number[], sectio
     .select('sy_id')
     .eq('prof_id', Number(profId))
     .not('sy_id', 'is', null)
-    .order('assignment_id', { ascending: false })
+    .order('p_assignment_id', { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -823,8 +823,8 @@ async archiveStudents(studentIds: string[], subjectId: number | number[], sectio
 async getArchivedStudents(): Promise<any[]> {
   const { data, error } = await this.supabase
     .from('s_archive')
-    .select('archive_id, student_id, sy_id, dept_id, section_id, subj_id, "Score_id", student_tbl(*), department(*), section_tbl(*), subject_tbl(*), schoolyear_tbl(*), student_score(*)')
-    .order('archive_id', { ascending: false });
+    .select('s_archive_id, student_id, sy_id, dept_id, section_id, subj_id, "Score_id", student_tbl(*), department(*), section_tbl(*), subject_tbl(*), schoolyear_tbl(*), student_score(*)')
+    .order('s_archive_id', { ascending: false });
 
   if (error) {
     throw error;
@@ -859,7 +859,7 @@ async restoreArchivedStudent(archiveRow: any, profId: number): Promise<void> {
   const studentId = String(archiveRow?.student_id ?? '').trim();
   const sectionId = Number(archiveRow?.section_id);
   const subjectId = Number(archiveRow?.subj_id);
-  const archiveId = Number(archiveRow?.archive_id);
+  const archiveId = Number(archiveRow?.s_archive_id);
 
   if (!studentId || !Number.isFinite(sectionId) || !Number.isFinite(subjectId) || !Number.isFinite(archiveId)) {
     throw new Error('Archive record is incomplete.');
@@ -905,7 +905,7 @@ async restoreArchivedStudent(archiveRow: any, profId: number): Promise<void> {
   const { error: archiveDeleteError } = await this.supabase
     .from('s_archive')
     .delete()
-    .eq('archive_id', archiveId);
+    .eq('s_archive_id', archiveId);
 
   if (archiveDeleteError) {
     throw archiveDeleteError;
@@ -914,8 +914,8 @@ async restoreArchivedStudent(archiveRow: any, profId: number): Promise<void> {
 
 async getProfessorAssignedSubjects(profId: number) {
   const { data, error } = await this.supabase
-    .from(this.profSubjectAssignmentTable)
-    .select('SubjectID, subject(SubjectID, subject)')
+    .from(this.professorSectionSubjectTable)
+    .select('subj_id, subject_tbl(subj_id, subject)')
     .eq('prof_id', profId);
 
   if (error) {
@@ -923,7 +923,10 @@ async getProfessorAssignedSubjects(profId: number) {
     throw error;
   }
 
-  return data;
+  return (data || []).map((assignment: any) => ({
+    SubjectID: Number(assignment.subj_id),
+    subject: assignment.subject_tbl?.subject
+  }));
 }
 
 async getSubjectSectionAssignments(subjectIds: number[]) {
@@ -932,23 +935,27 @@ async getSubjectSectionAssignments(subjectIds: number[]) {
   }
 
   const { data, error } = await this.supabase
-    .from('subject_section_assignment_tbl')
-    .select('SubjectID, section_id, section(section_id, section)')
-    .in('SubjectID', subjectIds);
+    .from(this.professorSectionSubjectTable)
+    .select('subj_id, section_id, section:section_tbl(section_id, section)')
+    .in('subj_id', subjectIds);
 
   if (error) {
     console.error('Error fetching subject section assignments:', error);
     throw error;
   }
 
-  return data;
+  return (data || []).map((assignment: any) => ({
+    ...assignment,
+    SubjectID: Number(assignment.subj_id)
+  }));
 }
 
 async getProfessorAssignedSection(profId: number) {
   const { data, error } = await this.supabase
-    .from('prof_section_assignment_tbl')
-    .select('section_id, section(section_id, section)')
+    .from(this.professorSectionSubjectTable)
+    .select('section_id, section:section_tbl(section_id, section)')
     .eq('prof_id', profId)
+    .limit(1)
     .single();
 
   if (error) {
@@ -1031,7 +1038,7 @@ async saveSheetMetadata(metadata: {
 
   const { data: existingMapping, error: mappingLookupError } = await this.supabase
     .from('sheet_prof')
-    .select('assignment_id')
+    .select('sheet_prof_id')
     .eq('sheet_id', metadata.sheet_id.trim())
     .eq('prof_id', activeProfessorId)
     .limit(1);
@@ -1062,16 +1069,32 @@ async saveAnswerKey(
     throw new Error('A valid sheet ID and professor ID are required to save the answer key.');
   }
 
-  const { error } = await this.supabase
+  const { data: existingAnswerKey, error: lookupError } = await this.supabase
     .from('sheet_anskey')
-    .upsert({
-      sheet_id: normalizedSheetId,
-      prof_id: normalizedProfId,
-      answer_key: answerKey,
-    }, { onConflict: 'sheet_id,prof_id' });
+    .select('anskey_id')
+    .eq('sheet_id', normalizedSheetId)
+    .eq('prof_id', normalizedProfId)
+    .maybeSingle();
 
-  if (error) {
-    throw error;
+  if (lookupError) {
+    throw lookupError;
+  }
+
+  const writeResult = existingAnswerKey
+    ? await this.supabase
+      .from('sheet_anskey')
+      .update({ answer_key: answerKey })
+      .eq('anskey_id', existingAnswerKey.anskey_id)
+    : await this.supabase
+      .from('sheet_anskey')
+      .insert({
+        sheet_id: normalizedSheetId,
+        prof_id: normalizedProfId,
+        answer_key: answerKey,
+      });
+
+  if (writeResult.error) {
+    throw writeResult.error;
   }
 }
 
@@ -1093,11 +1116,11 @@ async getAnswerKey(sheetId: string, profId: number): Promise<Record<string, stri
 async assignSheetToProfessor(sheetId: string, profId: number): Promise<void> {
   const { data: professorAssignment, error: assignmentError } = await this.supabase
     .from(this.professorDepartmentAssignmentTable)
-    .select('assignment_id, dept_id, sy_id')
+    .select('p_assignment_id, dept_id, sy_id')
     .eq('prof_id', profId)
     .not('dept_id', 'is', null)
     .not('sy_id', 'is', null)
-    .order('assignment_id', { ascending: false })
+    .order('p_assignment_id', { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -1219,7 +1242,7 @@ async registerStudentsBatch(studentDataList: any[]): Promise<{
       .select('sy_id')
       .eq('prof_id', normalizedProfessorId)
       .not('sy_id', 'is', null)
-      .order('assignment_id', { ascending: false })
+      .order('p_assignment_id', { ascending: false })
       .limit(1)
       .maybeSingle();
 
@@ -1242,7 +1265,7 @@ async registerStudentsBatch(studentDataList: any[]): Promise<{
       s_middlename: studentData.middle_name ?? studentData.middlename ?? studentData.s_middlename ?? null,
       s_lastname: studentData.last_name ?? studentData.lastname ?? studentData.s_lastname ?? '',
       age: studentData.age !== '' && studentData.age !== null && studentData.age !== undefined ? Number(studentData.age) : null,
-      gender: studentData.gender ?? null
+      s_sex: studentData.gender ?? studentData.s_sex ?? null
     }));
 
     const { data: savedStudents, error: studentUpsertError } = await this.supabase
@@ -1325,7 +1348,7 @@ async registerStudent(studentData: any): Promise<{
       .select('sy_id')
       .eq('prof_id', normalizedProfessorId)
       .not('sy_id', 'is', null)
-      .order('assignment_id', { ascending: false })
+      .order('p_assignment_id', { ascending: false })
       .limit(1)
       .maybeSingle();
 
@@ -1349,7 +1372,7 @@ async registerStudent(studentData: any): Promise<{
       s_middlename: studentData.middle_name ?? studentData.middlename ?? studentData.s_middlename ?? null,
       s_lastname: studentData.last_name ?? studentData.lastname ?? studentData.s_lastname ?? '',
       age: studentData.age !== '' && studentData.age !== null && studentData.age !== undefined ? Number(studentData.age) : null,
-      gender: studentData.gender ?? null
+      s_sex: studentData.gender ?? studentData.s_sex ?? null
     };
 
     const { data: existingStudent, error: studentCheckError } = await this.supabase
@@ -1594,7 +1617,7 @@ async getStudentsForSubject(subjectId: number, sectionName?: string | null, prof
 
     const studentResult = await this.supabase
       .from('student_tbl')
-      .select('student_id, s_firstname, s_middlename, s_lastname, age, gender')
+      .select('student_id, s_firstname, s_middlename, s_lastname, age, s_sex')
       .in('student_id', studentIds);
 
     if (studentResult.error) {
@@ -1608,7 +1631,7 @@ async getStudentsForSubject(subjectId: number, sectionName?: string | null, prof
       middle_name: student.s_middlename,
       last_name: student.s_lastname,
       age: student.age,
-      gender: student.gender,
+      gender: student.s_sex,
       studentCode: null,
       subjectName: null,
       sectionName: normalizedSectionName,
@@ -1638,7 +1661,7 @@ async updateStudent(studentIdentifier: string | number, updates: any) {
     s_middlename: updates.middle_name ?? null,
     s_lastname: updates.last_name ?? null,
     age: updates.age ?? null,
-    gender: updates.gender ?? null
+    s_sex: updates.gender ?? updates.s_sex ?? null
   };
 
   if (originalStudentId !== normalizedId) {
@@ -1653,7 +1676,7 @@ async updateStudent(studentIdentifier: string | number, updates: any) {
 
     const { data: originalStudent, error: originalStudentError } = await this.supabase
       .from('student_tbl')
-      .select('student_id, s_firstname, s_middlename, s_lastname, age, gender')
+      .select('student_id, s_firstname, s_middlename, s_lastname, age, s_sex')
       .eq('student_id', originalStudentId)
       .maybeSingle();
 
@@ -1666,7 +1689,7 @@ async updateStudent(studentIdentifier: string | number, updates: any) {
 
     if (newStudentError) return { error: newStudentError };
 
-    const linkedTables = ['student_score', 'p_archive', 'prof_stud', 'stud_section_subj'];
+    const linkedTables = ['student_score', 's_archive', 'prof_stud', 'stud_section_subj'];
     for (const table of linkedTables) {
       const { error } = await this.supabase
         .from(table)
@@ -1841,26 +1864,26 @@ async deleteStudent(studentId: string | number) {
 
 async getAllStudents() {
   return await this.supabase
-    .from('student')
+    .from('student_tbl')
     .select(`
       student_id,
-      studinfo_id,
-      first_name,
-      last_name,
+      first_name:s_firstname,
+      middle_name:s_middlename,
+      last_name:s_lastname,
       age,
-      gender,
-      student_department (
+      gender:s_sex,
+      student_department:stud_dept (
         department:department (
           department
         )
       ),
-      student_year_assignment (
-        year:year (
+      student_year_assignment:stud_sy (
+        year:schoolyear_tbl (
           year
         )
       ),
-      student_section_assignment (
-        section:section (
+      student_section_assignment:stud_section_subj (
+        section:section_tbl (
           section
         )
       )
@@ -1873,18 +1896,18 @@ async getStudentsBySectionIds(sectionIds: number[]) {
   }
 
   const { data, error } = await this.supabase
-    .from('student_section_assignment')
+    .from('stud_section_subj')
     .select(`
       section_id,
-      student (
-        studinfo_id,
-        first_name,
-        middle_name,
-        last_name,
+      student:student_tbl (
+        student_id,
+        first_name:s_firstname,
+        middle_name:s_middlename,
+        last_name:s_lastname,
         age,
-        gender
+        gender:s_sex
       ),
-      section (
+      section:section_tbl (
         section_id,
         section
       )

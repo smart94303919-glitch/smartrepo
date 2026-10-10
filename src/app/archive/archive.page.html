@@ -39,7 +39,7 @@
             *ngIf="exportSelectionMode"
             [checked]="isArchiveSelected(student)"
             (ionChange)="toggleArchiveSelection(student)"
-            [attr.aria-label]="'Select archive record ' + student.archive_id + ' for export'"
+            [attr.aria-label]="'Select archive record ' + student.s_archive_id + ' for export'"
           ></ion-checkbox>
           <div>
             <ion-card-title>
@@ -56,10 +56,10 @@
         <ion-button
           fill="outline"
           size="small"
-          [disabled]="restoringArchiveId === student.archive_id"
+          [disabled]="restoringArchiveId === student.s_archive_id"
           (click)="restoreStudent(student)"
         >
-          {{ restoringArchiveId === student.archive_id ? 'Restoring...' : 'Restore' }}
+          {{ restoringArchiveId === student.s_archive_id ? 'Restoring...' : 'Restore' }}
         </ion-button>
         </div>
       </ion-card-content>

@@ -60,7 +60,7 @@ export class ArchivePage {
   }
 
   toggleArchiveSelection(archiveRow: any): void {
-    const archiveId = Number(archiveRow?.archive_id);
+    const archiveId = Number(archiveRow?.s_archive_id);
     if (!Number.isFinite(archiveId)) {
       return;
     }
@@ -73,16 +73,16 @@ export class ArchivePage {
   }
 
   isArchiveSelected(archiveRow: any): boolean {
-    return this.selectedArchiveIds.has(Number(archiveRow?.archive_id));
+    return this.selectedArchiveIds.has(Number(archiveRow?.s_archive_id));
   }
 
   trackByArchiveId(_index: number, archiveRow: any): number {
-    return Number(archiveRow?.archive_id);
+    return Number(archiveRow?.s_archive_id);
   }
 
   exportSelectedStudents(): void {
     const selectedRows = this.archivedStudents.filter((row) =>
-      this.selectedArchiveIds.has(Number(row.archive_id))
+      this.selectedArchiveIds.has(Number(row.s_archive_id))
     );
 
     if (!selectedRows.length) {
@@ -90,7 +90,7 @@ export class ArchivePage {
     }
 
     const exportRows = selectedRows.map((row) => ({
-      'Archive ID': row.archive_id,
+      'Archive ID': row.s_archive_id,
       'Student ID': row.student_id,
       'Student Name': [
         row.student_tbl?.s_firstname,
@@ -114,12 +114,12 @@ export class ArchivePage {
       return;
     }
 
-    this.restoringArchiveId = archiveRow.archive_id;
+    this.restoringArchiveId = archiveRow.s_archive_id;
     this.errorMessage = '';
     try {
       await this.supabaseService.restoreArchivedStudent(archiveRow, Number(profId));
       this.archivedStudents = this.archivedStudents.filter(
-        (student) => student.archive_id !== archiveRow.archive_id
+        (student) => student.s_archive_id !== archiveRow.s_archive_id
       );
     } catch (error) {
       console.error('Failed to restore archived student:', error);

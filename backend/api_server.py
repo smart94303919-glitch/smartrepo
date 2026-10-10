@@ -176,7 +176,7 @@ def _link_sheet_to_professor(supabase: Client, sheet_id: str, prof_id: Optional[
 
     existing_mapping = (
         supabase.table("sheet_prof")
-        .select("assignment_id")
+        .select("sheet_prof_id")
         .eq("sheet_id", str(sheet_id))
         .eq("prof_id", active_prof_id)
         .limit(1)
@@ -202,7 +202,7 @@ def _require_sheet_ownership(supabase: Client, sheet_id: str, prof_id: Optional[
 
     ownership = (
         supabase.table("sheet_prof")
-        .select("assignment_id")
+        .select("sheet_prof_id")
         .eq("sheet_id", str(sheet_id).strip())
         .eq("prof_id", active_prof_id)
         .limit(1)
@@ -214,14 +214,27 @@ def _require_sheet_ownership(supabase: Client, sheet_id: str, prof_id: Optional[
 
 def _save_answer_key(supabase: Client, sheet_id: str, prof_id: int, answer_key: dict) -> None:
     """Persist a teacher key under the professor-owned sheet identity."""
-    supabase.table("sheet_anskey").upsert(
-        {
-            "sheet_id": str(sheet_id).strip(),
-            "prof_id": int(prof_id),
-            "answer_key": answer_key,
-        },
-        on_conflict="sheet_id,prof_id",
-    ).execute()
+    answer_key_table = supabase.table("sheet_anskey")
+    existing = (
+        answer_key_table.select("anskey_id")
+        .eq("sheet_id", str(sheet_id).strip())
+        .eq("prof_id", int(prof_id))
+        .limit(1)
+        .execute()
+    )
+
+    if existing.data:
+        answer_key_table.update({"answer_key": answer_key}).eq(
+            "anskey_id", existing.data[0]["anskey_id"]
+        ).execute()
+    else:
+        answer_key_table.insert(
+            {
+                "sheet_id": str(sheet_id).strip(),
+                "prof_id": int(prof_id),
+                "answer_key": answer_key,
+            }
+        ).execute()
 
 
 def _load_answer_key(supabase: Client, sheet_id: str, prof_id: int) -> dict:
