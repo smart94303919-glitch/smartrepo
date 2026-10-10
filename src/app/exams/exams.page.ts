@@ -237,9 +237,7 @@ export class ExamsPage implements OnInit {
       Score: grade.score_value ?? 0,
       Percentage: grade.percentage != null ? `${grade.percentage}%` : 'N/A',
       'Letter Grade': this.getLetterGrade(grade.percentage),
-      'Assigned Sheet ID': assignmentBySheetId.get(String(grade.sheet_id ?? '').trim())?.sheet_id ?? 'N/A',
-      'Department ID': assignmentBySheetId.get(String(grade.sheet_id ?? '').trim())?.dept_id ?? 'N/A',
-      'School Year ID': assignmentBySheetId.get(String(grade.sheet_id ?? '').trim())?.sy_id ?? 'N/A'
+      'Assigned Sheet ID': assignmentBySheetId.get(String(grade.sheet_id ?? '').trim())?.sheet_id ?? 'N/A'
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportRows);
