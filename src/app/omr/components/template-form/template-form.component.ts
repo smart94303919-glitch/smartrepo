@@ -19,63 +19,6 @@ import { SupabaseService } from '../../../services/supabase.service';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 
-const LETTER_LAYOUT_GEOMETRY = {
-  pageWidthPt: 612,
-  pageHeightPt: 792,
-  fiducialInsetPt: 18,
-  contentMarginFraction: 0.06,
-  headerFraction: 0.2,
-  footerFraction: 0.04,
-  labelFractionOfColumn: 0.16,
-  minimumRowHeightPt: 20,
-  minimumChoicePitchPt: 20,
-};
-
-function isColumnLayoutFeasible(
-  totalQuestions: number,
-  choicesCount: number,
-  columns: number,
-  maxColumns: number
-): boolean {
-  if (
-    !Number.isInteger(totalQuestions) || totalQuestions < 1 ||
-    !Number.isInteger(choicesCount) || choicesCount < 2 ||
-    !Number.isInteger(columns) || columns < 1 || columns > maxColumns
-  ) {
-    return false;
-  }
-
-  const usableWidth =
-    (LETTER_LAYOUT_GEOMETRY.pageWidthPt - 2 * LETTER_LAYOUT_GEOMETRY.fiducialInsetPt) *
-    (1 - 2 * LETTER_LAYOUT_GEOMETRY.contentMarginFraction);
-  const usableHeight =
-    (LETTER_LAYOUT_GEOMETRY.pageHeightPt - 2 * LETTER_LAYOUT_GEOMETRY.fiducialInsetPt) *
-    (1 - 2 * LETTER_LAYOUT_GEOMETRY.contentMarginFraction) *
-    (1 - LETTER_LAYOUT_GEOMETRY.headerFraction - LETTER_LAYOUT_GEOMETRY.footerFraction);
-  const rowsPerColumn = Math.ceil(totalQuestions / columns);
-  const rowHeight = usableHeight / rowsPerColumn;
-  const choicePitch =
-    usableWidth * (1 - LETTER_LAYOUT_GEOMETRY.labelFractionOfColumn) /
-    (columns * choicesCount);
-
-  return rowHeight >= LETTER_LAYOUT_GEOMETRY.minimumRowHeightPt &&
-    choicePitch >= LETTER_LAYOUT_GEOMETRY.minimumChoicePitchPt;
-}
-
-export function recommendColumns(
-  totalQuestions: number,
-  choicesCount: number,
-  maxColumns = 6
-): number | null {
-  for (let columns = 1; columns <= maxColumns; columns += 1) {
-    if (isColumnLayoutFeasible(totalQuestions, choicesCount, columns, maxColumns)) {
-      return columns;
-    }
-  }
-
-  return null;
-}
-
 @Component({
   selector: 'app-template-form',
   standalone: true,
@@ -108,12 +51,10 @@ export class TemplateFormComponent implements OnInit {
   subjectsLoadError = false;
 
   // Options map 1:1 to answer letters in the backend (A-I).
-  readonly optionChoices = [2, 3, 4, 5, 6, 7, 8, 9];
-  readonly columnChoices = [1, 2, 3, 4, 5, 6];
-  maxAllowedOptions = 9;
-  maxAllowedColumns = 6;
-  isAutoColumns = true;
-  automaticColumnRecommendation: number | null = null;
+  readonly optionChoices = [2, 3, 4, 5, 6];
+  readonly columnChoices = [1, 2, 3, 4, 5];
+  readonly maxAllowedOptions = 6;
+  readonly maxAllowedColumns = 5;
 
   get availableOptionChoices(): number[] {
     return this.optionChoices.filter((optionCount) => optionCount <= this.maxAllowedOptions);
@@ -121,15 +62,6 @@ export class TemplateFormComponent implements OnInit {
 
   get isTrueFalse(): boolean {
     return this.model.quiz_type === 'True or False';
-  }
-
-  get isManualColumnLayoutValid(): boolean {
-    return isColumnLayoutFeasible(
-      Number(this.model.total_questions),
-      Number(this.model.options_per_question),
-      Number(this.model.columns),
-      this.maxAllowedColumns
-    );
   }
 
   isGenerating = false;
@@ -143,7 +75,7 @@ export class TemplateFormComponent implements OnInit {
   ) {}
 
   async ngOnInit(): Promise<void> {
-    this.updateAutomaticColumns();
+    this.onQuestionCountChange();
 
     try {
       this.model.sheet_id = await this.generateUniqueSheetId();
@@ -241,7 +173,6 @@ export class TemplateFormComponent implements OnInit {
     if (this.isTrueFalse) {
       this.model.options_per_question = 2;
     }
-    this.updateAutomaticColumns();
   }
 
   onQuestionCountChange(): void {
@@ -250,45 +181,16 @@ export class TemplateFormComponent implements OnInit {
       ? Math.min(100, Math.max(1, Math.trunc(totalQuestions)))
       : 1;
 
-    if (this.model.total_questions >= 70) {
-      this.maxAllowedOptions = 5;
-      this.maxAllowedColumns = 5;
-    } else {
-      this.maxAllowedOptions = 9;
-      this.maxAllowedColumns = 6;
-    }
-
     this.sanitizeOptionsInput();
-    if (this.isAutoColumns) {
-      this.updateAutomaticColumns();
-    } else {
-      this.sanitizeColumnsInput();
-    }
+    this.model.columns = this.fixedColumnForQuestionCount(this.model.total_questions);
   }
 
-  onOptionsChange(value: number | string): void {
-    this.model.options_per_question = Number(value);
-    this.sanitizeOptionsInput();
-    this.updateAutomaticColumns();
-  }
-
-  setManualColumns(enabled: boolean): void {
-    this.isAutoColumns = !enabled;
-    if (this.isAutoColumns) {
-      this.updateAutomaticColumns();
-    }
-  }
-
-  private updateAutomaticColumns(): void {
-    this.automaticColumnRecommendation = recommendColumns(
-      Number(this.model.total_questions),
-      Number(this.model.options_per_question),
-      this.maxAllowedColumns
-    );
-
-    if (this.isAutoColumns && this.automaticColumnRecommendation !== null) {
-      this.model.columns = this.automaticColumnRecommendation;
-    }
+  private fixedColumnForQuestionCount(totalQuestions: number): number {
+    if (totalQuestions <= 5) return 1;
+    if (totalQuestions <= 12) return 2;
+    if (totalQuestions <= 15) return 3;
+    if (totalQuestions <= 24) return 4;
+    return 5;
   }
 
   sanitizeOptionsInput(): void {
@@ -299,20 +201,8 @@ export class TemplateFormComponent implements OnInit {
   }
 
   sanitizeColumnsInput(event?: any): void {
-    if (this.isAutoColumns) {
-      this.updateAutomaticColumns();
-      return;
-    }
-
-    const value = event?.detail?.value ?? event?.target?.value ?? this.model.columns;
-    const columns = Number(value);
-    this.model.columns = Number.isFinite(columns)
-      ? Math.min(this.maxAllowedColumns, Math.max(1, Math.trunc(columns)))
-      : 1;
-
-    if (event?.target && Number.isFinite(columns) && columns > this.maxAllowedColumns) {
-      event.target.value = this.maxAllowedColumns;
-    }
+    this.model.columns = this.fixedColumnForQuestionCount(Number(this.model.total_questions));
+    if (event?.target) event.target.value = this.model.columns;
   }
 
   sanitizeQuestionInput(event: any): void {
@@ -342,9 +232,6 @@ export class TemplateFormComponent implements OnInit {
   private validate(): string | null {
     this.onQuizTypeChange(this.model.quiz_type);
     this.onQuestionCountChange();
-    if (this.isAutoColumns && this.automaticColumnRecommendation === null) {
-      return 'This question and choice combination does not fit on one page. Reduce the question or choice count.';
-    }
     if (!this.model.title.trim()) return 'Title is required.';
     if (!this.model.section_id) return 'Section is required.';
     if (!this.model.SubjectID) return 'Subject is required.';
@@ -356,8 +243,8 @@ export class TemplateFormComponent implements OnInit {
     if (this.model.columns < 1 || this.model.columns > this.maxAllowedColumns) {
       return `Columns must be between 1 and ${this.maxAllowedColumns}.`;
     }
-    if (!this.isManualColumnLayoutValid) {
-      return 'The selected column count does not fit the page layout. Choose a different count or reduce questions or choices.';
+    if (this.model.columns !== this.fixedColumnForQuestionCount(this.model.total_questions)) {
+      return 'Columns must match the selected question count.';
     }
     if (this.isTrueFalse && this.model.options_per_question !== 2) {
       return 'True or False sheets must use exactly 2 options.';
