@@ -156,6 +156,7 @@ def draw_header(
     student_id: str = "",
     student_name: str = "",
     qr_payload: str | None = None,
+    is_teacher_sheet: bool = False,
 ) -> None:
     """
     Title / subject / quiz-type text block plus student-info fill-in lines
@@ -203,7 +204,8 @@ def draw_header(
     id_label_y = name_label_y - 20
     id_box = 14
     id_x0 = x0 + 200
-    c.drawString(id_x0, id_label_y + 20, "Student ID:")
+    id_label = "Prof number:" if is_teacher_sheet else "Student ID:"
+    c.drawString(id_x0, id_label_y + 20, id_label)
     for i in range(cfg.student_id_digits):
         bx = id_x0 + i * (id_box + 3)
         by = id_label_y
@@ -325,6 +327,7 @@ def generate_omr_sheets(
             cfg.sheet_id,
             professor_name or "MASTER ANSWER KEY",
         ),
+        is_teacher_sheet=True,
     )
     draw_instructions(c)
     draw_bubbles(c, cfg)
