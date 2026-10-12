@@ -53,8 +53,11 @@ export class TemplateFormComponent implements OnInit {
   // Options map 1:1 to answer letters in the backend (A-I).
   readonly optionChoices = [2, 3, 4, 5, 6];
   readonly columnChoices = [1, 2, 3, 4, 5];
-  readonly maxAllowedOptions = 6;
   readonly maxAllowedColumns = 5;
+
+  get maxAllowedOptions(): number {
+    return Number(this.model.total_questions) >= 70 ? 5 : 6;
+  }
 
   get availableOptionChoices(): number[] {
     return this.optionChoices.filter((optionCount) => optionCount <= this.maxAllowedOptions);

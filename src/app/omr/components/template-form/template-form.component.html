@@ -145,6 +145,9 @@
               <ion-select-option *ngFor="let n of availableOptionChoices" [value]="n">{{ n }} choices</ion-select-option>
             </ion-select>
             <ion-note slot="helper" *ngIf="isTrueFalse">True or False sheets always use 2 choices.</ion-note>
+            <ion-note slot="helper" *ngIf="!isTrueFalse && model.total_questions >= 70">
+              Maximum 5 choices for 70-100 questions.
+            </ion-note>
           </ion-item>
         </ion-col>
 
