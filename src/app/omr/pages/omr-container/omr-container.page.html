@@ -115,7 +115,10 @@
               <ion-card-content>
                 <ion-list lines="full">
                   <ion-item *ngFor="let row of teacherAnswerKeyEditorRows">
-                    <ion-label>Question {{ row.question }}</ion-label>
+                    <ion-label>
+                      <h2>Question {{ row.question }}</h2>
+                      <p>Previously saved: {{ row.previousAnswer ?? '(blank)' }}</p>
+                    </ion-label>
                     <ion-select
                       [(ngModel)]="row.answer"
                       [ngModelOptions]="{ standalone: true }"

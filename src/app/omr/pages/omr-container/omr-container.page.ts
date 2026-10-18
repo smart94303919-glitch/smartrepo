@@ -27,6 +27,7 @@ type DisplayMode = 'metadata' | 'scanner' | 'results' | 'full';
 
 interface TeacherAnswerKeyEditorRow {
   question: number;
+  previousAnswer: string | null;
   answer: string | null;
 }
 
@@ -236,7 +237,11 @@ export class OmrContainerPage implements OnInit {
       this.storedTeacherAnswerKey = { ...answerKey };
       this.storedTeacherAnswerKeySheetId = sheetId;
       this.teacherAnswerKeyEditorRows = Object.entries(answerKey)
-        .map(([question, answer]) => ({ question: Number(question), answer }))
+        .map(([question, answer]) => ({
+          question: Number(question),
+          previousAnswer: answer,
+          answer,
+        }))
         .filter((row) => Number.isInteger(row.question))
         .sort((first, second) => first.question - second.question);
       this.teacherAnswerKeyEditorSheetId = sheetId;
@@ -277,7 +282,11 @@ export class OmrContainerPage implements OnInit {
         this.storedTeacherAnswerKey = { ...answerKey };
         this.storedTeacherAnswerKeySheetId = sheetId;
         this.teacherAnswerKeyEditorRows = Object.entries(answerKey)
-          .map(([question, answer]) => ({ question: Number(question), answer }))
+          .map(([question, answer]) => ({
+            question: Number(question),
+            previousAnswer: answer,
+            answer,
+          }))
           .sort((first, second) => first.question - second.question);
         this.closeTeacherAnswerKeyEditor();
         await this.showToast('Teacher answer key updated successfully.', 'success');
