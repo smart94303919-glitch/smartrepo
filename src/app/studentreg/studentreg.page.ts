@@ -95,10 +95,10 @@ export class StudentregPage implements OnInit {
   onAgeInput(event: CustomEvent<{ value?: string | number | null }>): void {
     const value = event.detail?.value;
     const hasValue = value !== null && value !== undefined && String(value).trim() !== '';
-    if (hasValue && Number(value) < 17) {
+    if (hasValue && Number(value) < 18) {
       if (!this.invalidAgeNotified) {
         this.invalidAgeNotified = true;
-        void this.showToast('Age is invalid. The minimum age is 17.', 'warning');
+        void this.showToast('Age is invalid. The minimum age is 18.', 'warning');
       }
       return;
     }
@@ -288,8 +288,8 @@ export class StudentregPage implements OnInit {
       return;
     }
 
-    if (this.student.age != null && Number(this.student.age) < 17) {
-      await this.showToast('Age is invalid. The minimum age is 17.', 'warning');
+    if (this.student.age != null && Number(this.student.age) < 18) {
+      await this.showToast('Age is invalid. The minimum age is 18.', 'warning');
       return;
     }
 
