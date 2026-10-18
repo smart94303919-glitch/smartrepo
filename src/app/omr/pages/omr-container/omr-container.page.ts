@@ -316,10 +316,16 @@ export class OmrContainerPage implements OnInit {
           await loading.dismiss();
           this.isProcessing = false;
           this.scanError = null;
-          if (this.scanMode === 'key') {
+          if (res.mode === 'key') {
             this.teacherKeyResult = res;
             this.pendingAnswerKeySheetId = scannedSheetId;
             this.teacherKeyImage = null;
+            if (res.answer_key) {
+              await this.saveTeacherAnswerKey(res.answer_key);
+            } else {
+              this.scanError = 'The scanned teacher answer key did not include extracted answers.';
+              await this.showToast(this.scanError, 'danger');
+            }
           } else {
             this.studentResult = await this.normalizeResult(res);
             this.studentImage = null;

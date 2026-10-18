@@ -93,7 +93,9 @@ export class ResultsDisplayComponent implements OnChanges {
     if (previousResult !== result) {
       this.editingQuestionNumber = null;
     }
-    const answerKey = this.editedAnswerKeys.get(result) ?? result.answer_key ?? {};
+    const answerKey = result.mode === 'key'
+      ? result.answer_key ?? {}
+      : this.editedAnswerKeys.get(result) ?? result.answer_key ?? {};
     this.sortedAnswers = Object.entries(answerKey)
       .map(([question, answer]) => ({ question: Number(question), answer }))
       .filter((item) => Number.isInteger(item.question))
@@ -116,11 +118,13 @@ export class ResultsDisplayComponent implements OnChanges {
   }
 
   enableAnswerEdit(result: GradeSheetResponse, questionNumber: number): void {
+    if (result.mode === 'key') return;
     this.editingAnswerKeyResult = result;
     this.editingQuestionNumber = questionNumber;
   }
 
   updateQuestionAnswer(result: GradeSheetResponse, questionNumber: number, newAnswer: string): void {
+    if (result.mode === 'key') return;
     const updatedAnswerKey = {
       ...(this.editedAnswerKeys.get(result) ?? result.answer_key ?? {}),
       [String(questionNumber)]: newAnswer.toUpperCase(),
