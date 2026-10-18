@@ -27,6 +27,7 @@ export class StudentregPage implements OnInit {
   registeringStudent = false;
   importingStudents = false;
   isUploading = false;
+  private studentIdLimitNotified = false;
 
   constructor(
     private supabaseService: SupabaseService,
@@ -59,6 +60,19 @@ export class StudentregPage implements OnInit {
     } finally {
       event.target.complete();
     }
+  }
+
+  onStudentIdInput(event: CustomEvent<{ value?: string | null }>): void {
+    const studentId = String(event.detail?.value ?? '');
+    if (studentId.length >= 13) {
+      if (!this.studentIdLimitNotified) {
+        this.studentIdLimitNotified = true;
+        void this.showToast('Student ID cannot exceed 13 characters.', 'warning');
+      }
+      return;
+    }
+
+    this.studentIdLimitNotified = false;
   }
 
   async downloadStudentFormat(): Promise<void> {
