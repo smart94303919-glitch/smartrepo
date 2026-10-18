@@ -64,25 +64,45 @@
             <!-- Last Name -->
             <ion-item class="form-field">
               <ion-label position="stacked">Last Name</ion-label>
-              <ion-input [(ngModel)]="student.last_name" name="last_name" required></ion-input>
+              <ion-input
+                [(ngModel)]="student.last_name"
+                name="last_name"
+                required
+                (ionInput)="onNameInput('last_name', $event)"
+              ></ion-input>
             </ion-item>
 
             <!-- First Name -->
             <ion-item class="form-field">
               <ion-label position="stacked">First Name</ion-label>
-              <ion-input [(ngModel)]="student.first_name" name="first_name" required></ion-input>
+              <ion-input
+                [(ngModel)]="student.first_name"
+                name="first_name"
+                required
+                (ionInput)="onNameInput('first_name', $event)"
+              ></ion-input>
             </ion-item>
 
             <!-- Middle Name -->
             <ion-item class="form-field">
               <ion-label position="stacked">Middle Name</ion-label>
-              <ion-input [(ngModel)]="student.middle_name" name="middle_name"></ion-input>
+              <ion-input
+                [(ngModel)]="student.middle_name"
+                name="middle_name"
+                (ionInput)="onNameInput('middle_name', $event)"
+              ></ion-input>
             </ion-item>
 
             <!-- Age -->
             <ion-item class="form-field">
               <ion-label position="stacked">Age</ion-label>
-              <ion-input type="number" [(ngModel)]="student.age" name="age" required></ion-input>
+              <ion-input
+                type="number"
+                [(ngModel)]="student.age"
+                name="age"
+                required
+                (ionInput)="onAgeInput($event)"
+              ></ion-input>
             </ion-item>
 
             <!-- Gender -->

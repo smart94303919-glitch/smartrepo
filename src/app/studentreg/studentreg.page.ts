@@ -9,6 +9,8 @@ import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 
+type StudentNameField = 'first_name' | 'middle_name' | 'last_name';
+
 @Component({
   selector: 'app-studentreg',
   templateUrl: './studentreg.page.html',
@@ -28,6 +30,8 @@ export class StudentregPage implements OnInit {
   importingStudents = false;
   isUploading = false;
   private studentIdLimitNotified = false;
+  private readonly invalidNameNotifications = new Set<StudentNameField>();
+  private invalidAgeNotified = false;
 
   constructor(
     private supabaseService: SupabaseService,
@@ -73,6 +77,37 @@ export class StudentregPage implements OnInit {
     }
 
     this.studentIdLimitNotified = false;
+  }
+
+  onNameInput(field: StudentNameField, event: CustomEvent<{ value?: string | null }>): void {
+    const name = String(event.detail?.value ?? '');
+    if (!this.isValidName(name)) {
+      if (!this.invalidNameNotifications.has(field)) {
+        this.invalidNameNotifications.add(field);
+        void this.showToast('Name contains invalid characters. Use letters, spaces, hyphens, or apostrophes.', 'warning');
+      }
+      return;
+    }
+
+    this.invalidNameNotifications.delete(field);
+  }
+
+  onAgeInput(event: CustomEvent<{ value?: string | number | null }>): void {
+    const value = event.detail?.value;
+    const hasValue = value !== null && value !== undefined && String(value).trim() !== '';
+    if (hasValue && Number(value) < 17) {
+      if (!this.invalidAgeNotified) {
+        this.invalidAgeNotified = true;
+        void this.showToast('Age is invalid. The minimum age is 17.', 'warning');
+      }
+      return;
+    }
+
+    this.invalidAgeNotified = false;
+  }
+
+  private isValidName(name: string): boolean {
+    return /^[\p{L}\p{M} '\-]*$/u.test(name);
   }
 
   async downloadStudentFormat(): Promise<void> {
@@ -240,6 +275,21 @@ export class StudentregPage implements OnInit {
         buttons: ['OK']
       });
       await validationAlert.present();
+      return;
+    }
+
+    const invalidName = [
+      this.student.first_name,
+      this.student.middle_name,
+      this.student.last_name
+    ].some((name) => name && !this.isValidName(name));
+    if (invalidName) {
+      await this.showToast('Name contains invalid characters. Use letters, spaces, hyphens, or apostrophes.', 'warning');
+      return;
+    }
+
+    if (this.student.age != null && Number(this.student.age) < 17) {
+      await this.showToast('Age is invalid. The minimum age is 17.', 'warning');
       return;
     }
 
