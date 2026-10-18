@@ -96,6 +96,60 @@
               <ion-icon name="lock-closed-outline" slot="start"></ion-icon>
               <ion-label><strong>Answer Key Already Uploaded (Locked)</strong></ion-label>
             </ion-item>
+            <ion-button
+              *ngIf="scanMode === 'key' && answerKeyConfigured"
+              expand="block"
+              fill="outline"
+              class="ion-margin-bottom"
+              [disabled]="isLoadingTeacherAnswerKey || isUpdatingTeacherAnswerKey"
+              (click)="editStoredTeacherAnswerKey()"
+            >
+              <ion-spinner *ngIf="isLoadingTeacherAnswerKey" name="crescent" slot="start"></ion-spinner>
+              <ion-icon *ngIf="!isLoadingTeacherAnswerKey" name="create-outline" slot="start"></ion-icon>
+              Edit Answer Key
+            </ion-button>
+            <ion-card *ngIf="scanMode === 'key' && teacherAnswerKeyEditorOpen" class="answer-key-editor">
+              <ion-card-header>
+                <ion-card-title>Edit Saved Answer Key</ion-card-title>
+              </ion-card-header>
+              <ion-card-content>
+                <ion-list lines="full">
+                  <ion-item *ngFor="let row of teacherAnswerKeyEditorRows">
+                    <ion-label>Question {{ row.question }}</ion-label>
+                    <ion-select
+                      [(ngModel)]="row.answer"
+                      [ngModelOptions]="{ standalone: true }"
+                      interface="popover"
+                      [disabled]="isUpdatingTeacherAnswerKey"
+                      aria-label="Correct answer for question {{ row.question }}"
+                    >
+                      <ion-select-option [value]="null">(Blank)</ion-select-option>
+                      <ion-select-option *ngFor="let optionChar of teacherAnswerKeyOptionChars" [value]="optionChar">
+                        {{ optionChar }}
+                      </ion-select-option>
+                    </ion-select>
+                  </ion-item>
+                </ion-list>
+                <ion-button
+                  expand="block"
+                  color="success"
+                  [disabled]="isUpdatingTeacherAnswerKey || isLoadingTeacherAnswerKey"
+                  (click)="saveStoredTeacherAnswerKey()"
+                >
+                  <ion-spinner *ngIf="isUpdatingTeacherAnswerKey" name="crescent" slot="start"></ion-spinner>
+                  <ion-icon *ngIf="!isUpdatingTeacherAnswerKey" name="save-outline" slot="start"></ion-icon>
+                  {{ isUpdatingTeacherAnswerKey ? 'Saving Changes...' : 'Save Changes' }}
+                </ion-button>
+                <ion-button
+                  expand="block"
+                  fill="clear"
+                  [disabled]="isUpdatingTeacherAnswerKey"
+                  (click)="closeTeacherAnswerKeyEditor()"
+                >
+                  Cancel
+                </ion-button>
+              </ion-card-content>
+            </ion-card>
             <ion-item *ngIf="scanMode === 'grade' && answerKeyConfigured" color="success" lines="none" class="ion-margin-bottom status-banner">
               <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
               <ion-label>
