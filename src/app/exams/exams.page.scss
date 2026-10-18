@@ -158,17 +158,49 @@
   position: relative; margin-bottom: 40px; padding: 18px 24px 24px; padding-top: 32px;
 }
 
-.card-top-bar { margin-top: -4px; padding-left: 0px; text-align: left; }
+.card-top-bar {
+  margin-top: -4px;
+  padding-left: 0;
+  text-align: left;
+}
 
 .card-back-btn {
   position: absolute;
   top: 12px;
   left: 12px;
-  --padding-start: 8px;
-  --background: #f1f5f9;
-  --color: #0f172a;
+  min-width: 44px;
+  min-height: 44px;
   margin: 0;
+  --padding-start: 12px;
+  --padding-end: 14px;
+  --background: #f1f5f9;
+  --background-hover: #e2e8f0;
+  --background-activated: #dbeafe;
+  --color: #0f172a;
+  --ripple-color: rgba(37, 99, 235, 0.2);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+  transition: box-shadow 160ms ease, transform 160ms ease;
+
+  &::part(native) {
+    min-height: 44px;
+    border-radius: 12px;
+    transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  }
+
+  &:hover {
+    --color: #1d4ed8;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.16);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.97);
+  }
+
+  &:focus-visible::part(native) {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+  }
 }
 
 .header-decoration {
