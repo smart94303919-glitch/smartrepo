@@ -219,6 +219,16 @@ export class StudentregPage implements OnInit {
       return;
     }
 
+    if (this.student.student_id?.length > 13) {
+      const validationAlert = await this.alertCtrl.create({
+        header: 'Invalid Student ID',
+        message: 'Student ID must be 13 characters or fewer.',
+        buttons: ['OK']
+      });
+      await validationAlert.present();
+      return;
+    }
+
     if (!this.student.student_id || !this.student.first_name || !this.student.last_name || !this.selectedSubjectIds.length) {
       const validationAlert = await this.alertCtrl.create({
         header: 'Missing information',
