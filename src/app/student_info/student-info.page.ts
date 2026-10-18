@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AlertController, IonicModule, LoadingController } from '@ionic/angular';
+import { AlertController, IonicModule, LoadingController, ToastController } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SupabaseService } from '../services/supabase.service';
@@ -14,6 +14,8 @@ import { SupabaseService } from '../services/supabase.service';
 })
 export class StudentInfoPage implements OnInit {
   originalStudentId = '';
+  private readonly invalidNameNotifications = new Set<'first_name' | 'middle_name' | 'last_name'>();
+  private invalidAgeNotified = false;
   student: any = {
     student_id: '',
     first_name: '',
@@ -38,7 +40,8 @@ export class StudentInfoPage implements OnInit {
     private router: Router,
     private supabaseService: SupabaseService,
     private alertCtrl: AlertController,
-    private loadingCtrl: LoadingController
+    private loadingCtrl: LoadingController,
+    private toastCtrl: ToastController
   ) {}
 
   ngOnInit(): void {
@@ -150,7 +153,74 @@ export class StudentInfoPage implements OnInit {
     this.selectedSubject = this.student.subject;
   }
 
+  onNameInput(field: 'first_name' | 'middle_name' | 'last_name', event: CustomEvent<{ value?: string | null }>): void {
+    const name = String(event.detail?.value ?? '');
+    if (!this.isValidName(name)) {
+      if (!this.invalidNameNotifications.has(field)) {
+        this.invalidNameNotifications.add(field);
+        void this.showValidationToast(
+          'Name is invalid. Use letters, spaces, hyphens, or apostrophes.'
+        );
+      }
+      return;
+    }
+
+    this.invalidNameNotifications.delete(field);
+  }
+
+  onAgeInput(event: CustomEvent<{ value?: string | number | null }>): void {
+    const value = event.detail?.value;
+    const hasValue = value !== null && value !== undefined && String(value).trim() !== '';
+    if (hasValue && Number(value) < 18) {
+      if (!this.invalidAgeNotified) {
+        this.invalidAgeNotified = true;
+        void this.showValidationToast('Age is invalid. The minimum age is 18.');
+      }
+      return;
+    }
+
+    this.invalidAgeNotified = false;
+  }
+
+  private isValidName(name: string): boolean {
+    return /^[\p{L}\p{M} '\-]*$/u.test(name);
+  }
+
+  private async showValidationToast(message: string): Promise<void> {
+    const toast = await this.toastCtrl.create({
+      message,
+      duration: 2500,
+      position: 'bottom',
+      color: 'warning'
+    });
+    await toast.present();
+  }
+
+  private async validateEditableFields(): Promise<boolean> {
+    const invalidName = [
+      this.student.first_name,
+      this.student.middle_name,
+      this.student.last_name
+    ].some((name: string | null | undefined) => name && !this.isValidName(name));
+
+    if (invalidName) {
+      await this.showValidationToast(
+        'Name is invalid. Use letters, spaces, hyphens, or apostrophes.'
+      );
+      return false;
+    }
+
+    if (this.student.age !== '' && this.student.age !== null && Number(this.student.age) < 18) {
+      await this.showValidationToast('Age is invalid. The minimum age is 18.');
+      return false;
+    }
+
+    return true;
+  }
+
   async confirmSaveChanges(): Promise<void> {
+    if (!(await this.validateEditableFields())) return;
+
     const confirmAlert = await this.alertCtrl.create({
       header: 'Save changes confirmation',
       message: `Are you sure you want to save the changes for ${this.student.first_name || 'this student'} ${this.student.last_name || ''}?`,
@@ -172,6 +242,8 @@ export class StudentInfoPage implements OnInit {
   }
 
   async saveStudent(): Promise<void> {
+    if (!(await this.validateEditableFields())) return;
+
     const loading = await this.loadingCtrl.create({
       message: 'Updating student information...',
       spinner: 'crescent'
