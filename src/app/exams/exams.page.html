@@ -5,12 +5,6 @@
   <div class="smart-container" *ngIf="!showGrades">
     <!-- Header Section -->
     <div class="header-section">
-      <div class="card-top-bar">
-        <ion-button fill="clear" color="dark" class="card-back-btn" aria-label="Back to main menu" [routerLink]="['/mainhome']">
-          <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
-          <span>Back</span>
-        </ion-button>
-      </div>
       <div class="header-decoration"></div>
       <div class="icon-badge">
         <ion-icon name="school"></ion-icon>
@@ -57,8 +51,20 @@
         <ion-icon class="arrow-icon" name="chevron-forward"></ion-icon>
       </div>
 
-   
-      
+    </div>
+
+    <div class="dashboard-footer">
+      <ion-button
+        expand="block"
+        fill="outline"
+        color="primary"
+        class="dashboard-back-button"
+        aria-label="Back to main menu"
+        [routerLink]="['/mainhome']"
+      >
+        <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
+        Return to Dashboard
+      </ion-button>
     </div>
   </div>
 

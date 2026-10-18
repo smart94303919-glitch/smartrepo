@@ -158,43 +158,41 @@
   position: relative; margin-bottom: 40px; padding: 18px 24px 24px; padding-top: 32px;
 }
 
-.card-top-bar {
-  margin-top: -4px;
-  padding-left: 0;
-  text-align: left;
+.dashboard-footer {
+  width: 100%;
+  margin: -12px auto 0;
+  padding: 0 4px 8px;
 }
 
-.card-back-btn {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  min-width: 44px;
-  min-height: 44px;
+.dashboard-back-button {
+  width: 100%;
+  min-height: 48px;
   margin: 0;
-  --padding-start: 12px;
-  --padding-end: 14px;
-  --background: #f1f5f9;
-  --background-hover: #e2e8f0;
+  --border-radius: 12px;
+  --border-width: 1px;
+  --background: #f8faff;
+  --background-hover: #eaf1ff;
   --background-activated: #dbeafe;
-  --color: #0f172a;
+  --color: #1d4ed8;
+  --border-color: rgba(37, 99, 235, 0.35);
   --ripple-color: rgba(37, 99, 235, 0.2);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
   transition: box-shadow 160ms ease, transform 160ms ease;
 
   &::part(native) {
-    min-height: 44px;
+    min-height: 48px;
     border-radius: 12px;
     transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
   }
 
   &:hover {
-    --color: #1d4ed8;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.16);
+    --background: #eaf1ff;
+    --border-color: rgba(37, 99, 235, 0.6);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
     transform: translateY(-1px);
   }
 
   &:active {
-    transform: translateY(0) scale(0.97);
+    transform: translateY(0) scale(0.99);
   }
 
   &:focus-visible::part(native) {
