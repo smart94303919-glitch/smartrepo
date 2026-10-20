@@ -508,6 +508,12 @@ export class StudentregPage implements OnInit {
       return;
     }
 
+    if (!file.name.trim() || file.size === 0 || !/\.(csv|xls|xlsx)$/i.test(file.name)) {
+      input.value = '';
+      await this.showToast('Please upload a valid non-empty CSV or Excel file with a proper filename.', 'warning');
+      return;
+    }
+
     this.importingStudents = true;
     this.isUploading = true;
     const loading = await this.loadingCtrl.create({
@@ -537,14 +543,38 @@ export class StudentregPage implements OnInit {
       }
 
       if (!rows.length) {
-        alert('The selected CSV or Excel file is empty.');
+        await this.showToast('The selected CSV or Excel file is empty.', 'warning');
         return;
       }
 
       const header = rows[0]
         .map((value) => value?.toString().trim() ?? '')
         .map((value) => this.normalizeCsvHeader(value));
-      const dataRows = rows.slice(1);
+      const requiredHeaders = [
+        'student_id',
+        'first_name',
+        'middle_name',
+        'last_name',
+        'age',
+        'gender',
+        'department',
+        'year',
+        'section',
+        'subject'
+      ];
+      const duplicateHeaders = header.filter((value, index) => value && header.indexOf(value) !== index);
+      const missingHeaders = requiredHeaders.filter((value) => !header.includes(value));
+      if (duplicateHeaders.length || missingHeaders.length) {
+        await this.showToast(
+          `Invalid file headers. Required columns: ${requiredHeaders.join(', ')}.`,
+          'warning'
+        );
+        return;
+      }
+
+      const dataRows = rows.slice(1).filter((row) =>
+        row.some((value) => String(value ?? '').trim().length > 0)
+      );
 
       const importedStudents = dataRows.map((row) => {
         const studentData: any = {};
@@ -559,11 +589,48 @@ export class StudentregPage implements OnInit {
       });
 
       if (!importedStudents.length) {
-        alert('No student data found in the selected CSV file.');
+        await this.showToast('No student data found in the selected CSV or Excel file.', 'warning');
         return;
       }
 
       const professorId = this.getCurrentProfessorId();
+      const requiredTextFields = [
+        'student_id',
+        'first_name',
+        'last_name',
+        'age',
+        'gender',
+        'department',
+        'year',
+        'section',
+        'subject'
+      ];
+      const invalidRowIndex = importedStudents.findIndex((studentData) =>
+        requiredTextFields.some((field) => this.normalizeCsvValue(studentData[field]).length === 0)
+      );
+      if (invalidRowIndex !== -1) {
+        await this.showToast(
+          `Student import stopped: required values are blank or whitespace-only on row ${invalidRowIndex + 2}.`,
+          'warning'
+        );
+        return;
+      }
+
+      if (professorId === null || !Number.isFinite(Number(professorId))) {
+        await this.showToast('Unable to verify the department enrolled to this account.', 'danger');
+        return;
+      }
+
+      const professorDepartments = await this.supabaseService.getProfessorDepartmentValues(Number(professorId));
+      const authorizedDepartments = new Set(professorDepartments.map((department) => department.toLowerCase()));
+      const hasDepartmentMismatch = importedStudents.some((studentData) =>
+        !authorizedDepartments.has(this.normalizeCsvValue(studentData.department).toLowerCase())
+      );
+      if (hasDepartmentMismatch) {
+        await this.showToast('The department is not enrolled to this account', 'danger');
+        return;
+      }
+
       const registrationPayloads = [] as any[];
       for (const importedStudent of importedStudents) {
         const subjectId = await this.resolveImportedStudentSubjectId(importedStudent);

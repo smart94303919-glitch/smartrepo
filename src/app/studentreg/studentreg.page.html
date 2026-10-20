@@ -27,7 +27,7 @@
       <ion-button type="button" fill="solid" color="primary" size="small" aria-label="Format of student master list" (click)="onImportCsvClick()" [disabled]="isUploading">
         <ion-spinner *ngIf="importingStudents" name="crescent"></ion-spinner>
         <ion-icon *ngIf="!importingStudents" name="cloud-upload-outline" slot="start"></ion-icon>
-        Format of student master list
+        UPLOAD STUDENT MASTER LIST
       </ion-button>
       <input #csvInput type="file" accept=".csv, .xlsx, .xls, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, text/csv" hidden (change)="onCsvSelected($event)" />
       <ion-button type="button" fill="solid" color="primary" size="small" aria-label="Download student master list format" (click)="downloadStudentFormat()">
