@@ -486,6 +486,21 @@ export class StudentregPage implements OnInit {
     };
   }
 
+  private normalizeDepartmentForComparison(department: string): string {
+    const normalized = department.trim().toLowerCase();
+    const cictPrograms = new Set(['bsit', 'bsis', 'blis', 'bscs']);
+
+    if (
+      cictPrograms.has(normalized) ||
+      normalized === 'cict' ||
+      normalized.includes('college of information and communications technology')
+    ) {
+      return 'cict';
+    }
+
+    return normalized;
+  }
+
   private async resolveImportedStudentSubjectId(importedStudent: any): Promise<number | null> {
     const sectionName = this.normalizeCsvValue(importedStudent.section);
     if (sectionName) {
@@ -638,9 +653,11 @@ export class StudentregPage implements OnInit {
       }
 
       const professorDepartments = await this.supabaseService.getProfessorDepartmentValues(Number(professorId));
-      const authorizedDepartments = new Set(professorDepartments.map((department) => department.toLowerCase()));
+      const authorizedDepartments = new Set(
+        professorDepartments.map((department) => this.normalizeDepartmentForComparison(department))
+      );
       const hasDepartmentMismatch = !authorizedDepartments.has(
-        derivedDepartmentAndYear.department.toLowerCase()
+        this.normalizeDepartmentForComparison(derivedDepartmentAndYear.department)
       );
       if (hasDepartmentMismatch) {
         await this.showToast('The department is not enrolled to this account', 'danger');
