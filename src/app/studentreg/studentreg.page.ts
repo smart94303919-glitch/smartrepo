@@ -93,7 +93,15 @@ export class StudentregPage implements OnInit {
   }
 
   onAgeInput(event: CustomEvent<{ value?: string | number | null }>): void {
-    const value = event.detail?.value;
+    let value = event.detail?.value;
+    const ageInput = event.target as HTMLIonInputElement;
+    const rawValue = String(value ?? '');
+    if (rawValue.length > 2) {
+      value = rawValue.slice(0, 2);
+      ageInput.value = value;
+      this.student.age = value === '' ? null : Number(value);
+    }
+
     const hasValue = value !== null && value !== undefined && String(value).trim() !== '';
     if (hasValue && Number(value) < 18) {
       if (!this.invalidAgeNotified) {
@@ -161,7 +169,19 @@ export class StudentregPage implements OnInit {
     }
   }
 
-  getEmptyStudent() {
+  getEmptyStudent(): {
+    student_id: string;
+    first_name: string;
+    middle_name: string;
+    last_name: string;
+    age: number | null;
+    gender: string;
+    department: string;
+    year: string;
+    section: string;
+    subject: string;
+    subjectId: number | null;
+  } {
     return {
       student_id: '',
       first_name: '',
