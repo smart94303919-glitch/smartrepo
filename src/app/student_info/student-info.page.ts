@@ -234,6 +234,37 @@ export class StudentInfoPage implements OnInit {
   }
 
   private async validateEditableFields(): Promise<boolean> {
+    const requiredTextFields = [
+      this.student.student_id,
+      this.student.first_name,
+      this.student.last_name,
+      this.student.section
+    ];
+    const hasMissingRequiredText = requiredTextFields.some(
+      (value) => typeof value !== 'string' || value.trim().length === 0
+    );
+    const textFields = [
+      this.student.student_id,
+      this.student.first_name,
+      this.student.middle_name,
+      this.student.last_name,
+      this.student.section,
+      this.student.subject,
+      this.student.gender,
+      this.student.department,
+      this.student.year
+    ];
+    const hasWhitespaceOnlyText = textFields.some(
+      (value) => typeof value === 'string' && value.length > 0 && value.trim().length === 0
+    );
+
+    if (hasMissingRequiredText || hasWhitespaceOnlyText) {
+      await this.showValidationToast(
+        'Required fields must be completed, and text fields cannot consist only of spaces.'
+      );
+      return false;
+    }
+
     const invalidName = [
       this.student.first_name,
       this.student.middle_name,
