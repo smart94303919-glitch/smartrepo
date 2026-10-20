@@ -112,7 +112,7 @@
               ></ion-checkbox>
               <ion-label>
                 <h3>{{ student.first_name }} {{ student.middle_name || '' }} {{ student.last_name }}</h3>
-                <p>Age: {{ student.age }} • Gender: {{ student.gender || 'N/A' }}</p>
+                <p>Age: {{ student.age }} • Sex: {{ student.gender || 'N/A' }}</p>
                 <p>Subject: {{ subjectTabs[selectedSubjectTab]?.subject || selectedSubject || 'N/A' }} • Section: {{ selectedSectionName || 'N/A' }}</p>
               </ion-label>
               <ion-note slot="end" *ngIf="student.studentCode" class="student-code">{{ student.studentCode }}</ion-note>
