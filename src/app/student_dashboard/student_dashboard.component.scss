@@ -16,8 +16,16 @@
 
 .archive-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  justify-content: flex-end;
+  gap: 4px 8px;
+}
+
+.archive-select-toggle {
+  min-height: 44px;
+  --padding-start: 8px;
+  --padding-end: 8px;
 }
 
 .hero-panel {

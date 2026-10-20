@@ -254,6 +254,13 @@ export class StudentDashboardComponent implements OnDestroy {
     });
   }
 
+  get isAllArchiveSelected(): boolean {
+    const displayedStudents = this.filteredStudents;
+    return displayedStudents.length > 0 && displayedStudents.every((student) =>
+      this.selectedStudentIds.has(String(student?.student_id ?? ''))
+    );
+  }
+
   onGoBack(): void {
     this.router.navigate(['/sections']);
   }
@@ -288,6 +295,19 @@ export class StudentDashboardComponent implements OnDestroy {
     } else {
       this.selectedStudentIds.add(studentId);
     }
+  }
+
+  toggleSelectAllForArchive(): void {
+    const displayedStudentIds = this.filteredStudents
+      .map((student) => String(student?.student_id ?? ''))
+      .filter(Boolean);
+
+    if (this.isAllArchiveSelected) {
+      displayedStudentIds.forEach((studentId) => this.selectedStudentIds.delete(studentId));
+      return;
+    }
+
+    displayedStudentIds.forEach((studentId) => this.selectedStudentIds.add(studentId));
   }
 
   isStudentSelected(student: any): boolean {

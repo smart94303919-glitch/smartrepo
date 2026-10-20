@@ -75,6 +75,16 @@
                   Archive
                 </ion-button>
                 <ng-container *ngIf="archiveSelectionMode">
+                  <ion-button
+                    class="archive-select-toggle"
+                    fill="clear"
+                    size="small"
+                    [disabled]="!filteredStudents.length"
+                    [attr.aria-label]="isAllArchiveSelected ? 'Deselect all displayed students' : 'Select all displayed students'"
+                    (click)="toggleSelectAllForArchive()"
+                  >
+                    {{ isAllArchiveSelected ? 'Deselect All' : 'Select All' }}
+                  </ion-button>
                   <ion-button fill="solid" size="small" [disabled]="!selectedStudentIds.size" (click)="archiveSelectedStudents()">
                     Select
                   </ion-button>
