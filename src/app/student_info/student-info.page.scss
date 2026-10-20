@@ -3,53 +3,199 @@
 }
 
 ion-content {
-  --padding-bottom: 24px;
-  --background: linear-gradient(180deg, #f7faff 0%, #eef5ff 100%);
+  --padding-start: clamp(16px, 4vw, 32px);
+  --padding-end: clamp(16px, 4vw, 32px);
+  --padding-top: 20px;
+  --padding-bottom: 28px;
+  --background: #f4f7fc;
+}
+
+ion-toolbar {
+  --min-height: 56px;
+}
+
+ion-toolbar ion-button {
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .form-scroll-area {
-  display: flex;
-  flex-direction: column;
   min-height: 100%;
   padding-bottom: 24px;
 }
 
-.hero-card {
+.profile-page {
+  display: grid;
+  gap: 24px;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+  padding: clamp(22px, 5vw, 36px);
+  border: 1px solid #e2eaf6;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(59, 130, 246, 0.14), transparent 38%),
+    linear-gradient(135deg, #ffffff 0%, #f3f7ff 100%);
+  box-shadow: 0 14px 36px rgba(25, 47, 89, 0.08);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 72px;
+  width: 72px;
+  height: 72px;
+  border: 4px solid #ffffff;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #2563eb, #4f8df7);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.24);
+  color: #ffffff;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.profile-copy {
+  min-width: 0;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: #526b91;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.profile-copy h1 {
+  margin: 0;
+  color: #10213f;
+  font-size: clamp(1.45rem, 4vw, 2rem);
+  font-weight: 750;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.student-id {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 10px 0 0;
+  color: #526b91;
+  font-size: 0.94rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.student-id ion-icon {
+  flex: 0 0 auto;
+  font-size: 18px;
+}
+
+.details-section,
+.form-card {
+  border: 1px solid #e4eaf3;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(25, 47, 89, 0.05);
+}
+
+.details-section {
+  padding: clamp(18px, 3vw, 26px);
+}
+
+.section-heading,
+.edit-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-heading {
+  margin-bottom: 16px;
+}
+
+.section-heading h2,
+.edit-heading h2 {
+  margin: 0;
+  color: #10213f;
+  font-size: 1.2rem;
+  font-weight: 750;
+}
+
+.section-heading > ion-icon {
+  color: #3974d8;
+  font-size: 24px;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.detail-card {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px;
-  margin-bottom: 14px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #ffffff 0%, #edf4ff 100%);
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
-  border: 1px solid rgba(59, 130, 246, 0.12);
-}
-
-.hero-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
+  min-width: 0;
+  min-height: 76px;
+  padding: 14px;
+  border: 1px solid #e9eef6;
   border-radius: 14px;
-  background: rgba(59, 130, 246, 0.14);
-  color: var(--ion-color-primary);
-  font-size: 22px;
+  background: #fbfcff;
 }
 
-.hero-copy h2 {
+.detail-card > div {
+  min-width: 0;
+}
+
+.detail-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 19px;
+}
+
+.detail-icon.personal {
+  background: #edf4ff;
+  color: #2864c5;
+}
+
+.detail-icon.academic {
+  background: #eef8f4;
+  color: #218264;
+}
+
+.detail-card p {
   margin: 0 0 4px;
-  font-size: 1rem;
-  font-weight: 700;
-  color: #11213d;
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 650;
 }
 
-.hero-copy p {
-  margin: 0;
-  font-size: 0.88rem;
-  line-height: 1.4;
-  color: #5f6f8f;
+.detail-card strong {
+  display: block;
+  color: #182b49;
+  font-size: 0.96rem;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.edit-heading {
+  margin: 0 2px -12px;
 }
 
 .student-form {
@@ -60,15 +206,16 @@ ion-content {
 
 .form-card {
   margin: 0;
-  border-radius: 16px;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
 }
 
 .form-card ion-card-content {
-  padding: 12px 12px 16px;
+  padding: clamp(14px, 3vw, 24px);
 }
 
 ion-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
   padding-bottom: 8px;
   background: transparent;
 }
@@ -78,32 +225,35 @@ ion-list {
   --border-radius: 12px;
   --padding-start: 12px;
   --inner-padding-end: 12px;
-  --min-height: 58px;
+  --min-height: 62px;
+  min-width: 0;
   border: 1px solid #e5ebf5;
   border-radius: 12px;
-  margin-bottom: 10px;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
 }
 
+.form-field:last-child {
+  grid-column: 1 / -1;
+}
+
 ion-label {
-  font-size: 0.94rem;
-  font-weight: 600;
   color: #30425f;
+  font-size: 0.94rem;
+  font-weight: 650;
 }
 
 ion-input,
 ion-select {
-  font-size: 0.96rem;
   color: #10223f;
+  font-size: 0.96rem;
 }
 
 .save-button {
-  margin-top: 8px;
-  margin-bottom: 4px;
-  height: 48px;
-  font-weight: 700;
+  min-height: 48px;
+  margin: 8px 0 4px;
   --border-radius: 14px;
-  --box-shadow: 0 10px 18px rgba(59, 130, 246, 0.22);
+  --box-shadow: 0 8px 18px rgba(59, 130, 246, 0.2);
+  font-weight: 700;
 }
 
 ion-alert {
@@ -125,5 +275,40 @@ ion-alert .alert-message {
 }
 
 ion-alert .alert-button {
+  min-height: 44px;
   font-weight: 700;
+}
+
+@media (min-width: 760px) {
+  .details-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .profile-page {
+    gap: 18px;
+  }
+
+  .profile-card {
+    gap: 14px;
+    border-radius: 18px;
+  }
+
+  .avatar {
+    flex-basis: 58px;
+    width: 58px;
+    height: 58px;
+    border-radius: 18px;
+    font-size: 1.1rem;
+  }
+
+  .details-grid,
+  ion-list {
+    grid-template-columns: 1fr;
+  }
+
+  .form-field:last-child {
+    grid-column: auto;
+  }
 }

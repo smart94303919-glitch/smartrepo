@@ -54,6 +54,8 @@ export class StudentInfoPage implements OnInit {
       last_name: queryParams.get('last_name') ?? '',
       age: queryParams.get('age') ?? '',
       gender: queryParams.get('gender') ?? '',
+      department: queryParams.get('department') ?? '',
+      year: queryParams.get('year') ?? '',
       section: queryParams.get('section') ?? '',
       subject: queryParams.get('subject') ?? '',
       subjectId: Number(queryParams.get('subjectId')) || null
@@ -66,6 +68,34 @@ export class StudentInfoPage implements OnInit {
     }
 
     void this.loadSections();
+  }
+
+  get fullName(): string {
+    return [
+      this.student.first_name,
+      this.student.middle_name,
+      this.student.last_name
+    ]
+      .map((part: unknown) => String(part ?? '').trim())
+      .filter(Boolean)
+      .join(' ') || 'Student name not provided';
+  }
+
+  get initials(): string {
+    const name = [
+      this.student.first_name,
+      this.student.middle_name,
+      this.student.last_name
+    ]
+      .map((part: unknown) => String(part ?? '').trim())
+      .filter(Boolean);
+    const initials = `${name[0]?.[0] ?? ''}${name.length > 1 ? name[name.length - 1][0] : ''}`;
+    return initials.toUpperCase() || 'S';
+  }
+
+  displayValue(value: unknown, fallback = 'Not specified'): string {
+    const normalized = String(value ?? '').trim();
+    return normalized || fallback;
   }
 
   async handleRefresh(event: any): Promise<void> {
