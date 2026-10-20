@@ -126,8 +126,6 @@ export class StudentregPage implements OnInit {
       'last_name',
       'age',
       'gender',
-      'department',
-      'year',
       'section',
       'subject',
     ]];
