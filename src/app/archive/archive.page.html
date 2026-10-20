@@ -7,8 +7,11 @@
       <span class="archive-toolbar-title">Student List</span>
     </ion-buttons>
     <ion-buttons slot="end">
-      <ion-button *ngIf="!exportSelectionMode" fill="clear" (click)="startExportSelection()" aria-label="Select archived students to export">
+      <ion-button *ngIf="!exportSelectionMode && !restoreSelectionMode" fill="clear" (click)="startExportSelection()" aria-label="Select archived students to export">
         Export
+      </ion-button>
+      <ion-button *ngIf="!exportSelectionMode && !restoreSelectionMode" fill="clear" (click)="startRestoreSelection()" aria-label="Select archived students to restore">
+        Restore
       </ion-button>
       <ion-button
         *ngIf="exportSelectionMode"
@@ -41,6 +44,28 @@
 
   <div *ngIf="errorMessage" class="archive-empty-state error-state">{{ errorMessage }}</div>
 
+  <div *ngIf="restoreSelectionMode" class="archive-restore-actions">
+    <ion-button
+      class="archive-select-toggle"
+      fill="clear"
+      [disabled]="!archivedStudents.length"
+      [attr.aria-label]="isAllRestoreSelected ? 'Deselect all archived students to restore' : 'Select all archived students to restore'"
+      (click)="toggleSelectAllRestore()"
+    >
+      {{ isAllRestoreSelected ? 'Deselect All' : 'Select All' }}
+    </ion-button>
+    <ion-button
+      fill="solid"
+      [disabled]="!selectedRestoreCount || restoringArchiveId !== null"
+      (click)="restoreSelectedStudents()"
+    >
+      Restore Selected
+    </ion-button>
+    <ion-button fill="clear" color="medium" (click)="cancelRestoreSelection()">
+      Cancel
+    </ion-button>
+  </div>
+
   <div *ngIf="!loading && !errorMessage && archivedStudents.length" class="archive-list">
     <ion-card *ngFor="let student of archivedStudents; trackBy: trackByArchiveId" class="archive-card">
       <ion-card-header>
@@ -50,6 +75,12 @@
             [checked]="isArchiveSelected(student)"
             (ionChange)="toggleArchiveSelection(student)"
             [attr.aria-label]="'Select archive record ' + student.s_archive_id + ' for export'"
+          ></ion-checkbox>
+          <ion-checkbox
+            *ngIf="restoreSelectionMode"
+            [checked]="isRestoreArchiveSelected(student)"
+            (ionChange)="toggleRestoreArchiveSelection(student)"
+            [attr.aria-label]="'Select archive record ' + student.s_archive_id + ' for restoration'"
           ></ion-checkbox>
           <div>
             <ion-card-title>

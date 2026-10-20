@@ -16,6 +16,21 @@
   font-size: 0.82rem;
 }
 
+.archive-restore-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto 16px;
+
+  ion-button {
+    min-height: 44px;
+    margin: 0;
+  }
+}
+
 .archive-list {
   display: grid;
   gap: 16px;

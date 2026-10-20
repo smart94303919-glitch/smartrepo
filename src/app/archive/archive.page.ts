@@ -19,11 +19,25 @@ export class ArchivePage {
   restoringArchiveId: number | null = null;
   exportSelectionMode = false;
   selectedArchiveIds = new Set<number>();
+  restoreSelectionMode = false;
+  selectedRestoreArchiveIds = new Set<number>();
 
   get isAllSelected(): boolean {
     return this.archivedStudents.length > 0 && this.archivedStudents.every((student) =>
       this.selectedArchiveIds.has(Number(student?.s_archive_id))
     );
+  }
+
+  get isAllRestoreSelected(): boolean {
+    return this.archivedStudents.length > 0 && this.archivedStudents.every((student) =>
+      this.selectedRestoreArchiveIds.has(Number(student?.s_archive_id))
+    );
+  }
+
+  get selectedRestoreCount(): number {
+    return this.archivedStudents.filter((student) =>
+      this.selectedRestoreArchiveIds.has(Number(student?.s_archive_id))
+    ).length;
   }
 
   constructor(
@@ -56,13 +70,27 @@ export class ArchivePage {
   }
 
   startExportSelection(): void {
+    this.restoreSelectionMode = false;
+    this.selectedRestoreArchiveIds.clear();
     this.exportSelectionMode = true;
     this.selectedArchiveIds.clear();
+  }
+
+  startRestoreSelection(): void {
+    this.exportSelectionMode = false;
+    this.selectedArchiveIds.clear();
+    this.restoreSelectionMode = true;
+    this.selectedRestoreArchiveIds.clear();
   }
 
   cancelExportSelection(): void {
     this.exportSelectionMode = false;
     this.selectedArchiveIds.clear();
+  }
+
+  cancelRestoreSelection(): void {
+    this.restoreSelectionMode = false;
+    this.selectedRestoreArchiveIds.clear();
   }
 
   toggleArchiveSelection(archiveRow: any): void {
@@ -92,6 +120,39 @@ export class ArchivePage {
         this.selectedArchiveIds.add(archiveId);
       }
     });
+  }
+
+  toggleRestoreArchiveSelection(archiveRow: any): void {
+    const archiveId = Number(archiveRow?.s_archive_id);
+    if (!Number.isFinite(archiveId)) {
+      return;
+    }
+
+    if (this.selectedRestoreArchiveIds.has(archiveId)) {
+      this.selectedRestoreArchiveIds.delete(archiveId);
+    } else {
+      this.selectedRestoreArchiveIds.add(archiveId);
+    }
+  }
+
+  toggleSelectAllRestore(): void {
+    if (this.isAllRestoreSelected) {
+      this.archivedStudents.forEach((student) =>
+        this.selectedRestoreArchiveIds.delete(Number(student?.s_archive_id))
+      );
+      return;
+    }
+
+    this.archivedStudents.forEach((student) => {
+      const archiveId = Number(student?.s_archive_id);
+      if (Number.isFinite(archiveId)) {
+        this.selectedRestoreArchiveIds.add(archiveId);
+      }
+    });
+  }
+
+  isRestoreArchiveSelected(archiveRow: any): boolean {
+    return this.selectedRestoreArchiveIds.has(Number(archiveRow?.s_archive_id));
   }
 
   isArchiveSelected(archiveRow: any): boolean {
@@ -128,6 +189,28 @@ export class ArchivePage {
     this.cancelExportSelection();
   }
 
+  async restoreSelectedStudents(): Promise<void> {
+    if (this.restoringArchiveId !== null) {
+      return;
+    }
+
+    const selectedRows = this.archivedStudents.filter((student) =>
+      this.selectedRestoreArchiveIds.has(Number(student?.s_archive_id))
+    );
+
+    for (const archiveRow of selectedRows) {
+      const archiveId = Number(archiveRow?.s_archive_id);
+      await this.restoreStudent(archiveRow);
+      if (this.archivedStudents.some((student) => Number(student?.s_archive_id) === archiveId)) {
+        return;
+      }
+    }
+
+    if (this.selectedRestoreCount === 0) {
+      this.cancelRestoreSelection();
+    }
+  }
+
   async restoreStudent(archiveRow: any): Promise<void> {
     const currentUser = localStorage.getItem('currentUser');
     const profId = currentUser ? JSON.parse(currentUser)?.prof_id : null;
@@ -144,6 +227,7 @@ export class ArchivePage {
         (student) => student.s_archive_id !== archiveRow.s_archive_id
       );
       this.selectedArchiveIds.delete(Number(archiveRow.s_archive_id));
+      this.selectedRestoreArchiveIds.delete(Number(archiveRow.s_archive_id));
     } catch (error) {
       console.error('Failed to restore archived student:', error);
       this.errorMessage = 'Failed to restore the student.';
