@@ -107,6 +107,41 @@ export class SupabaseService {
     }
   }
 
+  async getProfessorDepartmentValues(profId: number): Promise<string[]> {
+    const departmentId = await this.getProfessorDepartmentId(profId);
+    if (departmentId === null) {
+      throw new Error('Professor department assignment was not found.');
+    }
+
+    const { data, error } = await this.supabase
+      .from(this.departmentTable)
+      .select('*')
+      .eq('dept_id', departmentId)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+    if (!data) {
+      throw new Error('Professor department record was not found.');
+    }
+
+    const values = Object.entries(data)
+      .filter(([key, value]) =>
+        /department|dept|name|code|abbr/i.test(key) &&
+        !/id$/i.test(key) &&
+        (typeof value === 'string' || typeof value === 'number')
+      )
+      .map(([, value]) => String(value).trim().toLowerCase())
+      .filter(Boolean);
+
+    if (!values.length) {
+      throw new Error('Professor department name could not be resolved.');
+    }
+
+    return values;
+  }
+
   constructor() {
     this.supabase = createClient(
       environment.supabase.url,
