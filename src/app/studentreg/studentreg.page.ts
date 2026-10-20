@@ -298,6 +298,22 @@ export class StudentregPage implements OnInit {
       return;
     }
 
+    const textFields = [
+      this.student.student_id,
+      this.student.first_name,
+      this.student.middle_name,
+      this.student.last_name,
+      this.student.section,
+      this.student.subject
+    ];
+    const containsOnlyWhitespace = textFields.some(
+      (value) => typeof value === 'string' && value.length > 0 && value.trim().length === 0
+    );
+    if (containsOnlyWhitespace) {
+      await this.showToast('Text fields cannot contain only spaces.', 'warning');
+      return;
+    }
+
     const invalidName = [
       this.student.first_name,
       this.student.middle_name,
