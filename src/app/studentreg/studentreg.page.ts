@@ -476,6 +476,18 @@ export class StudentregPage implements OnInit {
     return (value ?? '').toString().trim();
   }
 
+  private deriveDepartmentAndYear(section: string): { department: string; year: string } | null {
+    const match = section.trim().match(/^(.+?)\s+(\d+)[A-Z]*$/i);
+    if (!match) {
+      return null;
+    }
+
+    return {
+      department: match[1].trim(),
+      year: match[2]
+    };
+  }
+
   private async resolveImportedStudentSubjectId(importedStudent: any): Promise<number | null> {
     const sectionName = this.normalizeCsvValue(importedStudent.section);
     if (sectionName) {
@@ -557,8 +569,6 @@ export class StudentregPage implements OnInit {
         'last_name',
         'age',
         'gender',
-        'department',
-        'year',
         'section',
         'subject'
       ];
@@ -600,8 +610,6 @@ export class StudentregPage implements OnInit {
         'last_name',
         'age',
         'gender',
-        'department',
-        'year',
         'section',
         'subject'
       ];
@@ -616,6 +624,16 @@ export class StudentregPage implements OnInit {
         return;
       }
 
+      const activeSection = this.route.snapshot.queryParamMap.get('section')?.trim() || this.student.section.trim();
+      const derivedDepartmentAndYear = this.deriveDepartmentAndYear(activeSection);
+      if (!derivedDepartmentAndYear) {
+        await this.showToast(
+          'Unable to derive department and year from the selected section. Use a section such as "BSIT 1A".',
+          'warning'
+        );
+        return;
+      }
+
       if (professorId === null || !Number.isFinite(Number(professorId))) {
         await this.showToast('Unable to verify the department enrolled to this account.', 'danger');
         return;
@@ -623,8 +641,8 @@ export class StudentregPage implements OnInit {
 
       const professorDepartments = await this.supabaseService.getProfessorDepartmentValues(Number(professorId));
       const authorizedDepartments = new Set(professorDepartments.map((department) => department.toLowerCase()));
-      const hasDepartmentMismatch = importedStudents.some((studentData) =>
-        !authorizedDepartments.has(this.normalizeCsvValue(studentData.department).toLowerCase())
+      const hasDepartmentMismatch = !authorizedDepartments.has(
+        derivedDepartmentAndYear.department.toLowerCase()
       );
       if (hasDepartmentMismatch) {
         await this.showToast('The department is not enrolled to this account', 'danger');
@@ -640,6 +658,8 @@ export class StudentregPage implements OnInit {
         registrationPayloads.push({
           ...this.getEmptyStudent(),
           ...importedStudent,
+          department: derivedDepartmentAndYear.department,
+          year: derivedDepartmentAndYear.year,
           subject: subjectValue,
           subjectId,
           section: sectionValue,
