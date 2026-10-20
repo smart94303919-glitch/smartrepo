@@ -5,7 +5,7 @@
         <ion-icon name="arrow-back-outline" slot="icon-only"></ion-icon>
       </ion-button>
     </ion-buttons>
-    <ion-title>Student Profile</ion-title>
+    <ion-title>Edit Student Details</ion-title>
   </ion-toolbar>
 </ion-header>
 
@@ -15,55 +15,6 @@
   </ion-refresher>
   <div class="form-scroll-area">
     <main class="profile-page">
-      <section class="profile-card" aria-labelledby="profile-name">
-        <div class="avatar" aria-hidden="true">{{ initials }}</div>
-        <div class="profile-copy">
-          <p class="eyebrow">STUDENT PROFILE</p>
-          <h1 id="profile-name">{{ fullName }}</h1>
-          <p class="student-id">
-            <ion-icon name="person-outline" aria-hidden="true"></ion-icon>
-            <span>{{ displayValue(student.student_id, 'N/A') }}</span>
-          </p>
-        </div>
-      </section>
-
-      <section class="details-section" aria-labelledby="details-heading">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">PROFILE OVERVIEW</p>
-            <h2 id="details-heading">Student details</h2>
-          </div>
-          <ion-icon name="reader-outline" aria-hidden="true"></ion-icon>
-        </div>
-
-        <div class="details-grid">
-          <article class="detail-card">
-            <span class="detail-icon personal"><ion-icon name="calendar-outline"></ion-icon></span>
-            <div><p>Age</p><strong>{{ displayValue(student.age) }}</strong></div>
-          </article>
-          <article class="detail-card">
-            <span class="detail-icon personal"><ion-icon name="people-outline"></ion-icon></span>
-            <div><p>Gender</p><strong>{{ displayValue(student.gender) }}</strong></div>
-          </article>
-          <article class="detail-card">
-            <span class="detail-icon academic"><ion-icon name="business-outline"></ion-icon></span>
-            <div><p>Department</p><strong>{{ displayValue(student.department) }}</strong></div>
-          </article>
-          <article class="detail-card">
-            <span class="detail-icon academic"><ion-icon name="school-outline"></ion-icon></span>
-            <div><p>Year</p><strong>{{ displayValue(student.year) }}</strong></div>
-          </article>
-          <article class="detail-card">
-            <span class="detail-icon academic"><ion-icon name="layers-outline"></ion-icon></span>
-            <div><p>Section</p><strong>{{ displayValue(student.section) }}</strong></div>
-          </article>
-          <article class="detail-card">
-            <span class="detail-icon academic"><ion-icon name="book-outline"></ion-icon></span>
-            <div><p>Subject</p><strong>{{ displayValue(student.subject) }}</strong></div>
-          </article>
-        </div>
-      </section>
-
       <div class="edit-heading">
         <div>
           <p class="eyebrow">MANAGE RECORD</p>
