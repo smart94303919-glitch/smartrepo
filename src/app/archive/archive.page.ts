@@ -20,6 +20,12 @@ export class ArchivePage {
   exportSelectionMode = false;
   selectedArchiveIds = new Set<number>();
 
+  get isAllSelected(): boolean {
+    return this.archivedStudents.length > 0 && this.archivedStudents.every((student) =>
+      this.selectedArchiveIds.has(Number(student?.s_archive_id))
+    );
+  }
+
   constructor(
     private router: Router,
     private supabaseService: SupabaseService
@@ -72,6 +78,22 @@ export class ArchivePage {
     }
   }
 
+  toggleSelectAll(): void {
+    if (this.isAllSelected) {
+      this.archivedStudents.forEach((student) =>
+        this.selectedArchiveIds.delete(Number(student?.s_archive_id))
+      );
+      return;
+    }
+
+    this.archivedStudents.forEach((student) => {
+      const archiveId = Number(student?.s_archive_id);
+      if (Number.isFinite(archiveId)) {
+        this.selectedArchiveIds.add(archiveId);
+      }
+    });
+  }
+
   isArchiveSelected(archiveRow: any): boolean {
     return this.selectedArchiveIds.has(Number(archiveRow?.s_archive_id));
   }
@@ -121,6 +143,7 @@ export class ArchivePage {
       this.archivedStudents = this.archivedStudents.filter(
         (student) => student.s_archive_id !== archiveRow.s_archive_id
       );
+      this.selectedArchiveIds.delete(Number(archiveRow.s_archive_id));
     } catch (error) {
       console.error('Failed to restore archived student:', error);
       this.errorMessage = 'Failed to restore the student.';

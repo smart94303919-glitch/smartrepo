@@ -10,6 +10,16 @@
       <ion-button *ngIf="!exportSelectionMode" fill="clear" (click)="startExportSelection()" aria-label="Select archived students to export">
         Export
       </ion-button>
+      <ion-button
+        *ngIf="exportSelectionMode"
+        class="archive-select-toggle"
+        fill="clear"
+        [disabled]="!archivedStudents.length"
+        [attr.aria-label]="isAllSelected ? 'Deselect all archived students' : 'Select all archived students'"
+        (click)="toggleSelectAll()"
+      >
+        {{ isAllSelected ? 'Deselect All' : 'Select All' }}
+      </ion-button>
       <ion-button *ngIf="exportSelectionMode" fill="clear" [disabled]="!selectedArchiveIds.size" (click)="exportSelectedStudents()">
         Export Selected
       </ion-button>

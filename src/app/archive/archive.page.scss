@@ -9,6 +9,13 @@
   white-space: nowrap;
 }
 
+.archive-select-toggle {
+  min-height: 44px;
+  --padding-start: 8px;
+  --padding-end: 8px;
+  font-size: 0.82rem;
+}
+
 .archive-list {
   display: grid;
   gap: 16px;
