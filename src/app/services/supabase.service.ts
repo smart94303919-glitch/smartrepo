@@ -1345,7 +1345,7 @@ async registerStudent(studentData: any): Promise<{
 
     const { data: professorAssignment, error: assignmentError } = await this.supabase
       .from(this.professorDepartmentAssignmentTable)
-      .select('sy_id')
+      .select('p_assignment_id, sy_id, schoolyear_tbl(sy_id)')
       .eq('prof_id', normalizedProfessorId)
       .not('sy_id', 'is', null)
       .order('p_assignment_id', { ascending: false })
@@ -1354,7 +1354,10 @@ async registerStudent(studentData: any): Promise<{
 
     if (assignmentError) throw assignmentError;
 
-    const currentProfessorSyId = professorAssignment?.sy_id ?? null;
+    const schoolYear = Array.isArray(professorAssignment?.schoolyear_tbl)
+      ? professorAssignment.schoolyear_tbl[0]
+      : professorAssignment?.schoolyear_tbl;
+    const currentProfessorSyId = schoolYear?.sy_id ?? professorAssignment?.sy_id ?? null;
     if (currentProfessorSyId === null || currentProfessorSyId === undefined) {
       return { success: false, error: 'Active school year not set for professor.', data: [] };
     }
@@ -1384,6 +1387,7 @@ async registerStudent(studentData: any): Promise<{
     if (studentCheckError) throw studentCheckError;
 
     let studentRow: { student_id: string };
+    let createdStudent = false;
     if (existingStudent) {
       const { data: updatedStudent, error: studentUpdateError } = await this.supabase
         .from('student_tbl')
@@ -1403,6 +1407,41 @@ async registerStudent(studentData: any): Promise<{
 
       if (studentInsertError) throw studentInsertError;
       studentRow = insertedStudent;
+      createdStudent = true;
+    }
+
+    try {
+      const { data: existingStudentSchoolYear, error: studentSchoolYearCheckError } = await this.supabase
+        .from('stud_sy')
+        .select('stud_sy_id')
+        .eq('student_id', studentRow.student_id)
+        .eq('sy_id', currentProfessorSyId)
+        .maybeSingle();
+
+      if (studentSchoolYearCheckError) throw studentSchoolYearCheckError;
+      if (!existingStudentSchoolYear) {
+        const { error: studentSchoolYearInsertError } = await this.supabase
+          .from('stud_sy')
+          .insert([{
+            student_id: studentRow.student_id,
+            sy_id: currentProfessorSyId
+          }]);
+
+        if (studentSchoolYearInsertError) throw studentSchoolYearInsertError;
+      }
+    } catch (error) {
+      if (createdStudent) {
+        const { error: rollbackError } = await this.supabase
+          .from('student_tbl')
+          .delete()
+          .eq('student_id', studentRow.student_id);
+
+        if (rollbackError) {
+          console.error('Failed to roll back student after school-year assignment failed:', rollbackError);
+        }
+      }
+
+      throw error;
     }
 
     if (normalizedProfessorId !== null) {
@@ -1440,25 +1479,6 @@ async registerStudent(studentData: any): Promise<{
           if (studentDepartmentInsertError) throw studentDepartmentInsertError;
         }
       }
-    }
-
-    const { data: existingStudentSchoolYear, error: studentSchoolYearCheckError } = await this.supabase
-      .from('stud_sy')
-      .select('assignment_id')
-      .eq('student_id', studentRow.student_id)
-      .eq('sy_id', currentProfessorSyId)
-      .maybeSingle();
-
-    if (studentSchoolYearCheckError) throw studentSchoolYearCheckError;
-    if (!existingStudentSchoolYear) {
-      const { error: studentSchoolYearInsertError } = await this.supabase
-        .from('stud_sy')
-        .insert([{
-          student_id: studentRow.student_id,
-          sy_id: currentProfessorSyId
-        }]);
-
-      if (studentSchoolYearInsertError) throw studentSchoolYearInsertError;
     }
 
     const sectionName = studentData.section?.toString().trim();
