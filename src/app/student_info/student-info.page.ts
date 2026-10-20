@@ -199,7 +199,14 @@ export class StudentInfoPage implements OnInit {
   }
 
   onAgeInput(event: CustomEvent<{ value?: string | number | null }>): void {
-    const value = event.detail?.value;
+    let value = event.detail?.value;
+    const rawValue = String(value ?? '');
+    if (rawValue.length > 2) {
+      value = rawValue.slice(0, 2);
+      (event.target as HTMLIonInputElement).value = value;
+      this.student.age = value === '' ? '' : Number(value);
+    }
+
     const hasValue = value !== null && value !== undefined && String(value).trim() !== '';
     if (hasValue && Number(value) < 18) {
       if (!this.invalidAgeNotified) {
