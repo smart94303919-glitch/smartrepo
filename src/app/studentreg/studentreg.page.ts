@@ -32,6 +32,8 @@ export class StudentregPage implements OnInit {
   private studentIdLimitNotified = false;
   private readonly invalidNameNotifications = new Set<StudentNameField>();
   private invalidAgeNotified = false;
+  private invalidAgeToast: HTMLIonToastElement | null = null;
+  private ageValidationRevision = 0;
 
   constructor(
     private supabaseService: SupabaseService,
@@ -106,12 +108,39 @@ export class StudentregPage implements OnInit {
     if (hasValue && Number(value) < 18) {
       if (!this.invalidAgeNotified) {
         this.invalidAgeNotified = true;
-        void this.showToast('Age is invalid. The minimum age is 18.', 'warning');
+        void this.showInvalidAgeWarning(this.ageValidationRevision);
       }
       return;
     }
 
+    this.ageValidationRevision += 1;
     this.invalidAgeNotified = false;
+    if (this.invalidAgeToast) {
+      const toast = this.invalidAgeToast;
+      this.invalidAgeToast = null;
+      void toast.dismiss();
+    }
+  }
+
+  private async showInvalidAgeWarning(validationRevision: number): Promise<void> {
+    const toast = await this.toastCtrl.create({
+      message: 'Age is invalid. The minimum age is 18.',
+      duration: 3000,
+      position: 'bottom',
+      color: 'warning'
+    });
+
+    if (!this.invalidAgeNotified || validationRevision !== this.ageValidationRevision) {
+      return;
+    }
+
+    this.invalidAgeToast = toast;
+    toast.addEventListener('ionToastDidDismiss', () => {
+      if (this.invalidAgeToast === toast) {
+        this.invalidAgeToast = null;
+      }
+    }, { once: true });
+    await toast.present();
   }
 
   private isValidName(name: string): boolean {

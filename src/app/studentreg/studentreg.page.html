@@ -144,7 +144,7 @@
               </ion-select>
             </ion-item>
 
-          <ion-button expand="block" type="submit" class="submit-button" [disabled]="isUploading">
+          <ion-button expand="block" type="submit" class="submit-button" [disabled]="isUploading || (student.age != null && student.age < 18)">
             <ion-spinner *ngIf="registeringStudent" name="crescent"></ion-spinner>
             <ion-icon *ngIf="!registeringStudent" slot="start" name="person-add-outline"></ion-icon>
             {{ registeringStudent ? 'Registering Student...' : 'Register Student' }}
@@ -154,5 +154,4 @@
     </form>
   </div>
 </ion-content>
-
 
