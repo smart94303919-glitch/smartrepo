@@ -102,6 +102,10 @@ export class SectionsComponent implements OnInit {
     this.router.navigate(['/studentreg'], { queryParams });
   }
 
+  openArchive(): void {
+    this.router.navigate(['/archive']);
+  }
+
   onGoBack() {
     this.router.navigate(['/mainhome']);
   }
