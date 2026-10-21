@@ -91,7 +91,10 @@ export class StudentDashboardComponent implements OnDestroy {
     }
 
     if (this.initializationPromise) {
-      return this.initializationPromise;
+      await this.initializationPromise;
+      if (!forceReload) {
+        return;
+      }
     }
 
     this.initializationPromise = this.loadSubjectTabsForSection().then(() => {
@@ -109,7 +112,7 @@ export class StudentDashboardComponent implements OnDestroy {
     } catch (error) {
       console.error('Error during pull-to-refresh:', error);
     } finally {
-      event?.target?.complete();
+      await event?.target?.complete();
       this.cdr.markForCheck();
     }
   }
@@ -269,7 +272,8 @@ export class StudentDashboardComponent implements OnDestroy {
     this.router.navigate(['/archive'], {
       queryParams: {
         section: this.selectedSectionName || undefined,
-        subject: this.selectedSubject || undefined
+        subject: this.selectedSubject || undefined,
+        subjectId: this.subjectId || undefined
       }
     });
   }

@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule, ToastController } from '@ionic/angular';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { SupabaseService } from '../services/supabase.service';
 import * as XLSX from 'xlsx';
 
@@ -70,6 +70,7 @@ export class ArchivePage {
 
   constructor(
     private router: Router,
+    private route: ActivatedRoute,
     private supabaseService: SupabaseService,
     private toastCtrl: ToastController
   ) {}
@@ -102,8 +103,18 @@ export class ArchivePage {
     }
   }
 
-  goBack(): void {
-    this.router.navigate(['/student_dashboard']);
+  async goBack(): Promise<void> {
+    if (this.restoringArchiveId !== null) {
+      return;
+    }
+
+    await this.router.navigate(['/student_dashboard'], {
+      queryParams: {
+        section: this.route.snapshot.queryParamMap.get('section') || undefined,
+        subject: this.route.snapshot.queryParamMap.get('subject') || undefined,
+        subjectId: this.route.snapshot.queryParamMap.get('subjectId') || undefined
+      }
+    });
   }
 
   startExportSelection(): void {
