@@ -455,6 +455,7 @@ class SheetConfigRequest(BaseModel):
     section_id: Optional[int] = None
     SubjectID: Optional[int] = None
     prof_id: Optional[int] = None
+    reuse_existing_sheet: bool = False
     professor_id: str = ""
     professor_name: str = "MASTER ANSWER KEY"
 
@@ -823,6 +824,85 @@ def save_student_score(payload: SaveStudentScoreRequest):
 def generate_pdf(payload: SheetConfigRequest):
     section_id = payload.section_id
     subject_id = payload.SubjectID
+
+    supabase = None
+    existing_sheet = None
+    if payload.reuse_existing_sheet:
+        if payload.prof_id is None:
+            raise HTTPException(status_code=400, detail="prof_id is required to reuse an existing sheet.")
+
+        try:
+            supabase = _get_supabase_client()
+            _require_sheet_ownership(supabase, payload.sheet_id, payload.prof_id)
+            sheet_response = (
+                supabase.table("sheet_tbl")
+                .select("sheet_id, sheet_title, quiz_type, questions, options, columns, section_id, subj_id")
+                .eq("sheet_id", payload.sheet_id.strip())
+                .maybe_single()
+                .execute()
+            )
+            existing_sheet = sheet_response.data
+        except HTTPException:
+            raise
+        except Exception as db_err:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Existing sheet metadata could not be loaded: {db_err}",
+            ) from db_err
+
+        if not existing_sheet:
+            raise HTTPException(status_code=404, detail="The selected sheet was not found.")
+
+        section_id = existing_sheet.get("section_id")
+        subject_id = existing_sheet.get("subj_id")
+        if not section_id or not subject_id:
+            raise HTTPException(status_code=409, detail="The selected sheet is missing section or subject metadata.")
+        if payload.section_id is not None and int(payload.section_id) != int(section_id):
+            raise HTTPException(status_code=409, detail="The selected section does not match the sheet.")
+        if payload.SubjectID is not None and int(payload.SubjectID) != int(subject_id):
+            raise HTTPException(status_code=409, detail="The selected subject does not match the sheet.")
+
+        requested_student_ids = list(dict.fromkeys(
+            str(student_id).strip() for student_id in payload.student_ids if str(student_id).strip()
+        ))
+        if len(requested_student_ids) != 1:
+            raise HTTPException(status_code=400, detail="Reusing a sheet requires exactly one student.")
+
+        student_id = requested_student_ids[0]
+        professor_student = (
+            supabase.table("prof_stud")
+            .select("student_id")
+            .eq("prof_id", payload.prof_id)
+            .eq("student_id", student_id)
+            .limit(1)
+            .execute()
+        )
+        student_enrollment = (
+            supabase.table("stud_section_subj")
+            .select("student_id")
+            .eq("student_id", student_id)
+            .eq("section_id", int(section_id))
+            .eq("subj_id", int(subject_id))
+            .limit(1)
+            .execute()
+        )
+        if not professor_student.data or not student_enrollment.data:
+            raise HTTPException(
+                status_code=403,
+                detail="The selected student is not enrolled in this professor's sheet section and subject.",
+            )
+
+        existing_score = (
+            supabase.table("student_score")
+            .select('"Score_id"')
+            .eq("student_id", student_id)
+            .eq("sheet_id", payload.sheet_id.strip())
+            .limit(1)
+            .execute()
+        )
+        if existing_score.data:
+            raise HTTPException(status_code=409, detail="This student already has a score for the selected sheet.")
+
     if payload.student_ids:
         enrolled_students = list(dict.fromkeys(
             str(student_id).strip() for student_id in payload.student_ids if str(student_id).strip()
@@ -837,6 +917,14 @@ def generate_pdf(payload: SheetConfigRequest):
     if not enrolled_students:
         raise HTTPException(status_code=400, detail="student_ids must contain at least one student ID.")
     cfg = payload.to_sheet_config()
+    if existing_sheet:
+        cfg.title = str(existing_sheet.get("sheet_title") or payload.sheet_id)
+        cfg.quiz_type = "True or False" if existing_sheet.get("quiz_type") == "True or False" else "Multiple Choice"
+        cfg.total_questions = int(existing_sheet.get("questions") or payload.total_questions)
+        cfg.options_per_question = 2 if cfg.quiz_type == "True or False" else int(
+            existing_sheet.get("options") or payload.options_per_question
+        )
+        cfg.columns = int(existing_sheet.get("columns") or payload.columns)
     cfg.section_id = section_id if section_id is not None else ""
     cfg.SubjectID = subject_id if subject_id is not None else ""
     out_path = os.path.join(PDFS_DIR, payload.output_name)
@@ -860,38 +948,39 @@ def generate_pdf(payload: SheetConfigRequest):
         encode_student_qr_payload(student_id, cfg.sheet_id)
         for student_id in enrolled_students
     ]
-    try:
-        supabase = _get_supabase_client()
-    except Exception as db_err:
-        supabase = None
-        print(f"[PDF GEN] Warning: Supabase mapping unavailable: {db_err}")
+    if supabase is None:
+        try:
+            supabase = _get_supabase_client()
+        except Exception as db_err:
+            print(f"[PDF GEN] Warning: Supabase mapping unavailable: {db_err}")
 
     if supabase is not None:
-        try:
-            mapping_payload = {
-                "sheet_id": str(cfg.sheet_id),
-                "sheet_title": str(sheet_title_val),
-                "quiz_type": str(cfg.quiz_type),
-                "questions": int(cfg.total_questions),
-                "options": int(cfg.options_per_question),
-                "columns": int(cfg.columns),
-            }
-            if section_id:
-                mapping_payload["section_id"] = int(section_id)
-            if subject_id:
-                mapping_payload["subj_id"] = int(subject_id)
+        if not payload.reuse_existing_sheet:
+            try:
+                mapping_payload = {
+                    "sheet_id": str(cfg.sheet_id),
+                    "sheet_title": str(sheet_title_val),
+                    "quiz_type": str(cfg.quiz_type),
+                    "questions": int(cfg.total_questions),
+                    "options": int(cfg.options_per_question),
+                    "columns": int(cfg.columns),
+                }
+                if section_id:
+                    mapping_payload["section_id"] = int(section_id)
+                if subject_id:
+                    mapping_payload["subj_id"] = int(subject_id)
 
-            supabase.table("sheet_tbl").upsert(mapping_payload, on_conflict="sheet_id").execute()
-            print(f"[PDF Gen] Saved sheet_tbl record for '{cfg.sheet_id}'")
+                supabase.table("sheet_tbl").upsert(mapping_payload, on_conflict="sheet_id").execute()
+                print(f"[PDF Gen] Saved sheet_tbl record for '{cfg.sheet_id}'")
 
-            _link_sheet_to_professor(supabase, str(cfg.sheet_id), payload.prof_id)
-        except HTTPException:
-            raise
-        except Exception as db_err:
-            raise HTTPException(
-                status_code=502,
-                detail=f"Sheet metadata or ownership could not be persisted: {db_err}",
-            ) from db_err
+                _link_sheet_to_professor(supabase, str(cfg.sheet_id), payload.prof_id)
+            except HTTPException:
+                raise
+            except Exception as db_err:
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"Sheet metadata or ownership could not be persisted: {db_err}",
+                ) from db_err
     else:
         raise HTTPException(status_code=502, detail="Supabase is unavailable; sheet was not persisted.")
 
@@ -904,6 +993,7 @@ def generate_pdf(payload: SheetConfigRequest):
             page_qr_payloads,
             payload.professor_id or (str(payload.prof_id) if payload.prof_id is not None else ""),
             payload.professor_name,
+            include_teacher_key=not payload.reuse_existing_sheet,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {e}")

@@ -355,6 +355,9 @@ export class OmrContainerPage implements OnInit {
       questions: cfg.total_questions,
       columns: cfg.columns,
       options: cfg.options_per_question,
+      quiz_type: cfg.quiz_type,
+      section_id: Number(cfg.section_id ?? 0),
+      subj_id: Number(cfg.SubjectID ?? 0),
     };
     this.professorSheets = [
       ...this.professorSheets.filter((sheet) => sheet.sheet_id !== cfg.sheet_id),

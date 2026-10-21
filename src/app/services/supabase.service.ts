@@ -9,6 +9,9 @@ export interface ProfessorSheet {
   questions: number;
   columns: number;
   options: number;
+  quiz_type: string;
+  section_id: number;
+  subj_id: number;
 }
 
 @Injectable({
@@ -668,9 +671,12 @@ async getProfessorSheets(profId: number): Promise<ProfessorSheet[]> {
       sheet_tbl!inner (
         sheet_id,
         sheet_title,
+        quiz_type,
         questions,
         columns,
-        options
+        options,
+        section_id,
+        subj_id
       )
     `)
     .eq('prof_id', Number(profId));
@@ -683,10 +689,35 @@ async getProfessorSheets(profId: number): Promise<ProfessorSheet[]> {
   return (data || []).map((item: any) => ({
     sheet_id: String(item.sheet_id ?? '').trim(),
     sheet_title: item.sheet_tbl?.sheet_title || String(item.sheet_id ?? '').trim(),
+    quiz_type: String(item.sheet_tbl?.quiz_type ?? 'Multiple Choice'),
     questions: Number(item.sheet_tbl?.questions ?? 30),
     columns: Number(item.sheet_tbl?.columns ?? 2),
     options: Number(item.sheet_tbl?.options ?? 4),
+    section_id: Number(item.sheet_tbl?.section_id),
+    subj_id: Number(item.sheet_tbl?.subj_id),
   })).filter((sheet: ProfessorSheet) => Boolean(sheet.sheet_id));
+}
+
+async getScoredStudentIdsForSheet(sheetId: string): Promise<string[]> {
+  const normalizedSheetId = String(sheetId ?? '').trim();
+  if (!normalizedSheetId) {
+    throw new Error('A sheet ID is required to check existing scores.');
+  }
+
+  const { data, error } = await this.supabase
+    .from('student_score')
+    .select('student_id')
+    .eq('sheet_id', normalizedSheetId);
+
+  if (error) {
+    throw error;
+  }
+
+  return Array.from(new Set(
+    (data || [])
+      .map((row: any) => String(row.student_id ?? '').trim())
+      .filter(Boolean)
+  ));
 }
 
 async sheetIdExists(sheetId: string): Promise<boolean> {

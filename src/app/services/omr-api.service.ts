@@ -38,6 +38,7 @@ export interface SheetConfigRequest {
   professor_name?: string;
   student_id_digits?: number;
   embed_qr?: boolean;
+  reuse_existing_sheet?: boolean;
 }
 
 export interface ItemizedRow {

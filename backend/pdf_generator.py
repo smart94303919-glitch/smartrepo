@@ -307,31 +307,33 @@ def generate_omr_sheets(
     qr_payloads: list[str] | None = None,
     professor_id: str = "",
     professor_name: str = "MASTER ANSWER KEY",
+    include_teacher_key: bool = True,
 ) -> str:
-    """Build a professor key page followed by one OMR page per student ID."""
+    """Build an optional professor key page followed by one OMR page per student ID."""
     ids = [str(student_id).strip() for student_id in (student_ids or []) if str(student_id).strip()]
     if not ids:
         ids = ["UNASSIGNED"]
     os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
     c = canvas.Canvas(output_path, pagesize=(PAGE_WIDTH, PAGE_HEIGHT))
 
-    draw_fiducials(c)
-    draw_corner_labels(c)
-    draw_header(
-        c,
-        cfg,
-        professor_id,
-        professor_name or "MASTER ANSWER KEY",
-        encode_teacher_qr_payload(
+    if include_teacher_key:
+        draw_fiducials(c)
+        draw_corner_labels(c)
+        draw_header(
+            c,
+            cfg,
             professor_id,
-            cfg.sheet_id,
             professor_name or "MASTER ANSWER KEY",
-        ),
-        is_teacher_sheet=True,
-    )
-    draw_instructions(c)
-    draw_bubbles(c, cfg)
-    c.showPage()
+            encode_teacher_qr_payload(
+                professor_id,
+                cfg.sheet_id,
+                professor_name or "MASTER ANSWER KEY",
+            ),
+            is_teacher_sheet=True,
+        )
+        draw_instructions(c)
+        draw_bubbles(c, cfg)
+        c.showPage()
 
     for page_index, student_id in enumerate(ids):
         student_name = student_names[page_index] if student_names and page_index < len(student_names) else ""
