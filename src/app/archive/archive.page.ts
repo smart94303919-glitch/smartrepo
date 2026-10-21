@@ -4,9 +4,6 @@ import { IonicModule, ToastController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { SupabaseService } from '../services/supabase.service';
 import * as XLSX from 'xlsx';
-import { Capacitor } from '@capacitor/core';
-import { Directory, Filesystem } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
 
 @Component({
   selector: 'app-archive',
@@ -204,7 +201,7 @@ export class ArchivePage {
   }
 
   async exportSelectedStudents(): Promise<void> {
-    const selectedRows = this.archivedStudents.filter((row) =>
+    const selectedRows = this.filteredArchivedStudents.filter((row) =>
       this.selectedArchiveIds.has(Number(row.s_archive_id))
     );
 
@@ -212,82 +209,29 @@ export class ArchivePage {
       return;
     }
 
-    const exportRows = selectedRows.map((row) => ({
-      'Archive ID': row.s_archive_id,
-      'Student ID': row.student_id,
-      'Student Name': [
-        row.student_tbl?.s_firstname,
-        row.student_tbl?.s_middlename,
-        row.student_tbl?.s_lastname
-      ].filter(Boolean).join(' '),
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(exportRows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Archived Students');
-    const filename = `archived-students-${new Date().toISOString().slice(0, 10)}.xlsx`;
-
     try {
-      if (Capacitor.isNativePlatform()) {
-        const fileData = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
-        const savedFile = await Filesystem.writeFile({
-          path: filename,
-          data: fileData,
-          directory: Directory.Documents,
-          recursive: true
-        });
+      const exportRows = selectedRows.map((row) => ({
+        'Archive ID': row.s_archive_id,
+        'Student ID': row.student_id,
+        'Student Name': [
+          row.student_tbl?.s_firstname,
+          row.student_tbl?.s_middlename,
+          row.student_tbl?.s_lastname
+        ].filter(Boolean).join(' '),
+      }));
 
-        try {
-          await Share.share({
-            title: 'Archived students export',
-            text: 'Archived students Excel file',
-            url: savedFile.uri,
-            dialogTitle: 'Open or share archived students'
-          });
-        } catch (error) {
-          if ((error as Error)?.name !== 'AbortError') {
-            console.error('Failed to open archive export share sheet:', error);
-            await this.showExportToast('The export was saved to Documents, but could not be shared.', 'warning');
-          }
-        }
-
-        this.cancelExportSelection();
-        return;
-      }
-
-      if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        const fileData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-        const file = new File(
-          [fileData],
-          filename,
-          { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
-        );
-
-        if (navigator.canShare?.({ files: [file] }) && navigator.share) {
-          try {
-            await navigator.share({
-              files: [file],
-              title: 'Archived students export'
-            });
-          } catch (error) {
-            if ((error as Error)?.name === 'AbortError') {
-              return;
-            }
-            throw error;
-          }
-        } else {
-          this.downloadWorkbook(workbook, filename);
-        }
-
-        this.cancelExportSelection();
-        return;
-      }
-
-      XLSX.writeFile(workbook, filename);
+      const worksheet = XLSX.utils.json_to_sheet(exportRows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Archived Students');
+      const filename = `archived-students-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      this.downloadWorkbook(workbook, filename);
       this.cancelExportSelection();
     } catch (error) {
       console.error('Failed to export archived students:', error);
-      await this.showExportToast('Unable to export archived students. Please try again.', 'danger');
+      await this.showExportToast(
+        error instanceof Error ? `Unable to export archived students: ${error.message}` : 'Unable to export archived students. Please try again.',
+        'danger'
+      );
     }
   }
 
