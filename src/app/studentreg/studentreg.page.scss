@@ -9,8 +9,9 @@ ion-content {
 }
 
 .form-scroll-area {
-  height: calc(100vh - 180px);
-  overflow-y: auto;
+  min-height: 100%;
+  height: auto;
+  overflow: visible;
   padding-bottom: 8px;
 }
 
@@ -137,6 +138,43 @@ ion-toolbar {
   --min-height: 54px;
 }
 
+.app-footer {
+  border-top: 1px solid rgba(100, 116, 139, 0.16);
+  box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.05);
+}
+
+.app-footer ion-toolbar {
+  --background: #ffffff;
+  --border-color: transparent;
+  --min-height: 48px;
+  --padding-start: clamp(16px, 4vw, 32px);
+  --padding-end: clamp(16px, 4vw, 32px);
+}
+
+.footer-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  width: 100%;
+  padding: 8px 0;
+  color: #5f6f8f;
+  font-size: clamp(12px, 1.8vw, 13px);
+  line-height: 1.4;
+}
+
+.footer-brand {
+  color: #243b63;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.footer-caption {
+  font-weight: 500;
+}
+
 ion-title {
   font-size: clamp(16px, 2.5vw, 18px);
   font-weight: 700;
@@ -162,4 +200,11 @@ ion-alert .alert-message {
 
 ion-alert .alert-button {
   font-weight: 700;
+}
+
+@media (max-width: 360px) {
+  .footer-content {
+    justify-content: center;
+    text-align: center;
+  }
 }
