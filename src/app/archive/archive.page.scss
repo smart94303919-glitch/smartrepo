@@ -31,6 +31,16 @@
   }
 }
 
+.archive-search {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto 16px;
+  padding: 0;
+  --background: #ffffff;
+  --border-radius: 12px;
+  --box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+}
+
 .archive-list {
   display: grid;
   gap: 16px;

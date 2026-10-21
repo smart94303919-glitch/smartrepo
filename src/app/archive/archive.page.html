@@ -66,8 +66,17 @@
     </ion-button>
   </div>
 
-  <div *ngIf="!loading && !errorMessage && archivedStudents.length" class="archive-list">
-    <ion-card *ngFor="let student of archivedStudents; trackBy: trackByArchiveId" class="archive-card">
+  <ion-searchbar
+    *ngIf="!loading && !errorMessage && archivedStudents.length"
+    class="archive-search"
+    placeholder="Search archived students by name, ID, department, subject..."
+    aria-label="Search archived students"
+    [debounce]="0"
+    (ionInput)="onArchiveSearchInput($event)"
+  ></ion-searchbar>
+
+  <div *ngIf="!loading && !errorMessage && filteredArchivedStudents.length" class="archive-list">
+    <ion-card *ngFor="let student of filteredArchivedStudents; trackBy: trackByArchiveId" class="archive-card">
       <ion-card-header>
         <div class="archive-card-heading">
           <ion-checkbox
@@ -105,6 +114,12 @@
         </div>
       </ion-card-content>
     </ion-card>
+  </div>
+
+  <div class="archive-empty-state" *ngIf="!loading && !errorMessage && archivedStudents.length && !filteredArchivedStudents.length">
+    <ion-icon name="search-outline"></ion-icon>
+    <h1>No matches found</h1>
+    <p>Try another name, student ID, department, or subject.</p>
   </div>
 
   <div class="archive-empty-state" *ngIf="!loading && !errorMessage && !archivedStudents.length">

@@ -17,6 +17,7 @@ import { Share } from '@capacitor/share';
 })
 export class ArchivePage {
   archivedStudents: any[] = [];
+  searchTerm = '';
   loading = false;
   errorMessage = '';
   restoringArchiveId: number | null = null;
@@ -24,6 +25,33 @@ export class ArchivePage {
   selectedArchiveIds = new Set<number>();
   restoreSelectionMode = false;
   selectedRestoreArchiveIds = new Set<number>();
+
+  get filteredArchivedStudents(): any[] {
+    const query = this.searchTerm.trim().toLowerCase();
+    if (!query) {
+      return this.archivedStudents;
+    }
+
+    return this.archivedStudents.filter((row) => {
+      const searchableValues = [
+        row.student_id,
+        JSON.stringify(row.student_tbl ?? {}),
+        row.dept_id,
+        JSON.stringify(row.department ?? {}),
+        row.section_id,
+        JSON.stringify(row.section_tbl ?? {}),
+        row.subj_id,
+        JSON.stringify(row.subject_tbl ?? {}),
+        row.sy_id,
+        JSON.stringify(row.schoolyear_tbl ?? {})
+      ];
+      return searchableValues.some((value) => String(value ?? '').toLowerCase().includes(query));
+    });
+  }
+
+  onArchiveSearchInput(event: CustomEvent<{ value?: string | null }>): void {
+    this.searchTerm = String(event.detail?.value ?? '');
+  }
 
   get isAllSelected(): boolean {
     return this.archivedStudents.length > 0 && this.archivedStudents.every((student) =>
@@ -52,6 +80,7 @@ export class ArchivePage {
   async ngOnInit(): Promise<void> {
     try {
       this.loading = true;
+      this.searchTerm = '';
       const currentUser = localStorage.getItem('currentUser');
       const profId = Number(currentUser ? JSON.parse(currentUser)?.prof_id : null);
       if (!Number.isFinite(profId) || profId <= 0) {
