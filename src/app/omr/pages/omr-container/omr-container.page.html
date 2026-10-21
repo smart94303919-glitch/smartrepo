@@ -49,10 +49,32 @@
           aria-label="Search assigned sheets by ID or title"
           class="sheet-id-search"
           [debounce]="0"
+          (ionInput)="onSheetSearchInput($event)"
+          (keydown)="onSheetSearchKeydown($event)"
         ></ion-searchbar>
         <ion-note *ngIf="sheetSearchTerm && !filteredProfessorSheets.length" class="sheet-id-empty">
-          No matching sheet IDs found.
+          No matching Sheet ID found.
         </ion-note>
+        <ion-list *ngIf="sheetSearchTerm && filteredProfessorSheets.length" lines="none" class="sheet-id-suggestions">
+          <ion-item
+            *ngFor="let sheet of filteredProfessorSheets"
+            button
+            [detail]="false"
+            [class.top-sheet-match]="isTopSheetSearchMatch(sheet)"
+            [class.exact-sheet-match]="isExactSheetSearchMatch(sheet)"
+            (click)="onSheetSelected(sheet.sheet_id)"
+          >
+            <ion-icon
+              [name]="isExactSheetSearchMatch(sheet) ? 'checkmark-circle' : 'document-text-outline'"
+              slot="start"
+              color="primary"
+            ></ion-icon>
+            <ion-label>
+              <h2>{{ sheet.sheet_id }}</h2>
+              <p>{{ sheet.sheet_title }}</p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
         <ion-item class="control-item">
           <ion-icon name="key-outline" slot="start" color="primary"></ion-icon>
           <ion-label position="stacked">Sheet ID</ion-label>

@@ -56,6 +56,43 @@
   font-size: 0.85rem;
 }
 
+.sheet-id-suggestions {
+  max-height: 220px;
+  margin: -4px 0 10px;
+  overflow-y: auto;
+  border: 1px solid #dce7f5;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 54, 92, 0.1);
+
+  ion-item {
+    --background: #ffffff;
+    --min-height: 56px;
+  }
+
+  h2 {
+    margin: 0 0 3px;
+    color: #243b63;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0;
+    color: #5f6f8f;
+    font-size: 0.78rem;
+  }
+
+  .top-sheet-match {
+    --background: #eef6ff;
+  }
+
+  .exact-sheet-match {
+    --background: #dbeafe;
+    --color: #1d4ed8;
+  }
+}
+
 ::ng-deep .sheet-id-popover {
   --max-height: 240px;
 }

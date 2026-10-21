@@ -156,10 +156,74 @@ export class OmrContainerPage implements OnInit {
       return this.professorSheets;
     }
 
-    return this.professorSheets.filter((sheet) =>
-      sheet.sheet_id.toLowerCase().includes(searchTerm) ||
-      sheet.sheet_title.toLowerCase().includes(searchTerm)
+    return this.professorSheets
+      .filter((sheet) => {
+        const normalizedSheetId = String(sheet.sheet_id ?? '').replace(/\s+/g, '').toLowerCase();
+        return normalizedSheetId.includes(searchTerm.replace(/\s+/g, '')) ||
+          String(sheet.sheet_title ?? '').toLowerCase().includes(searchTerm);
+      })
+      .sort((first, second) =>
+        this.getSheetSearchRank(first, searchTerm) - this.getSheetSearchRank(second, searchTerm)
+      );
+  }
+
+  onSheetSearchInput(event: CustomEvent<{ value?: string | null }>): void {
+    this.sheetSearchTerm = String(event.detail?.value ?? '');
+  }
+
+  onSheetSearchKeydown(event: KeyboardEvent): void {
+    if (event.key !== 'Enter' && event.key !== 'Tab') {
+      return;
+    }
+
+    const matches = this.filteredProfessorSheets;
+    if (!matches.length) {
+      return;
+    }
+
+    const searchTerm = this.sheetSearchTerm.trim().replace(/\s+/g, '').toLowerCase();
+    const exactMatch = matches.find((sheet) =>
+      String(sheet.sheet_id ?? '').replace(/\s+/g, '').toLowerCase() === searchTerm
     );
+    const sheetToSelect = exactMatch ?? (event.key === 'Enter' ? matches[0] : null);
+    if (!sheetToSelect) {
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+    }
+    this.onSheetSelected(sheetToSelect.sheet_id);
+  }
+
+  isTopSheetSearchMatch(sheet: ProfessorSheet): boolean {
+    return this.filteredProfessorSheets[0]?.sheet_id === sheet.sheet_id;
+  }
+
+  isExactSheetSearchMatch(sheet: ProfessorSheet): boolean {
+    const searchTerm = this.sheetSearchTerm.trim().replace(/\s+/g, '').toLowerCase();
+    return Boolean(searchTerm) &&
+      String(sheet.sheet_id ?? '').replace(/\s+/g, '').toLowerCase() === searchTerm;
+  }
+
+  private getSheetSearchRank(sheet: ProfessorSheet, searchTerm: string): number {
+    const normalizedQuery = searchTerm.replace(/\s+/g, '');
+    const normalizedSheetId = String(sheet.sheet_id ?? '').replace(/\s+/g, '').toLowerCase();
+    const normalizedTitle = String(sheet.sheet_title ?? '').toLowerCase();
+
+    if (normalizedSheetId === normalizedQuery) {
+      return 0;
+    }
+    if (normalizedSheetId.startsWith(normalizedQuery)) {
+      return 1;
+    }
+    if (normalizedSheetId.includes(normalizedQuery)) {
+      return 2;
+    }
+    if (normalizedTitle.includes(searchTerm)) {
+      return 3;
+    }
+    return 4;
   }
 
   onSheetSelected(sheetId: string): void {
