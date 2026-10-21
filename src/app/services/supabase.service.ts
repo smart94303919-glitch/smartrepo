@@ -750,13 +750,15 @@ async professorOwnsSheet(profId: number, sheetId: string): Promise<boolean> {
 }
 
 async archiveStudents(studentIds: string[], subjectId: number | number[], sectionName?: string | null, profId?: number): Promise<boolean> {
+  const normalizedProfId = Number(profId);
   const normalizedIds = Array.from(new Set(studentIds.map((id) => id.trim()).filter(Boolean)));
   const normalizedSubjectIds = Array.from(new Set((Array.isArray(subjectId) ? subjectId : [subjectId])
     .map((id) => Number(id))
     .filter((id) => Number.isFinite(id) && id > 0)));
 
-  if (!normalizedIds.length || !normalizedSubjectIds.length || !sectionName?.trim()) {
-    throw new Error('Student, subject, and section are required to archive students.');
+  if (!normalizedIds.length || !normalizedSubjectIds.length || !sectionName?.trim() ||
+      !Number.isFinite(normalizedProfId) || normalizedProfId <= 0) {
+    throw new Error('Student, subject, section, and professor are required to archive students.');
   }
 
   const { data: section, error: sectionError } = await this.supabase
@@ -776,7 +778,7 @@ async archiveStudents(studentIds: string[], subjectId: number | number[], sectio
   const { data: professorAssignment, error: professorAssignmentError } = await this.supabase
     .from(this.professorDepartmentAssignmentTable)
     .select('sy_id')
-    .eq('prof_id', Number(profId))
+    .eq('prof_id', normalizedProfId)
     .not('sy_id', 'is', null)
     .order('p_assignment_id', { ascending: false })
     .limit(1)
@@ -788,34 +790,6 @@ async archiveStudents(studentIds: string[], subjectId: number | number[], sectio
 
   if (!professorAssignment?.sy_id) {
     throw new Error('Professor school year assignment was not found.');
-  }
-
-  const { data: matchingSheets, error: sheetError } = await this.supabase
-    .from('sheet_tbl')
-    .select('sheet_id, subj_id')
-    .in('subj_id', normalizedSubjectIds)
-    .eq('section_id', Number(section.section_id));
-
-  if (sheetError) {
-    throw sheetError;
-  }
-
-  const sheetSubjectById = new Map((matchingSheets || []).map((sheet: any) => [
-    String(sheet.sheet_id), Number(sheet.subj_id)
-  ]));
-  const matchingSheetIds = Array.from(sheetSubjectById.keys());
-  let scores: any[] = [];
-  if (matchingSheetIds.length) {
-    const { data, error } = await this.supabase
-      .from('student_score')
-      .select('student_id, sheet_id, "Score_id"')
-      .in('student_id', normalizedIds)
-      .in('sheet_id', matchingSheetIds);
-
-    if (error) {
-      throw error;
-    }
-    scores = data || [];
   }
 
   const { data: departments, error: departmentError } = await this.supabase
@@ -831,33 +805,19 @@ async archiveStudents(studentIds: string[], subjectId: number | number[], sectio
     (departments || []).map((department: any) => [String(department.student_id), department.dept_id])
   );
 
-  const scoreRowsByStudentSubject = new Map<string, any[]>();
-  (scores || []).forEach((score: any) => {
-    const key = `${score.student_id}:${sheetSubjectById.get(String(score.sheet_id))}`;
-    const studentScores = scoreRowsByStudentSubject.get(key) || [];
-    studentScores.push(score);
-    scoreRowsByStudentSubject.set(key, studentScores);
-  });
-
   const archiveRows: any[] = [];
   normalizedIds.forEach((studentId) => {
     normalizedSubjectIds.forEach((selectedSubjectId) => {
-      const studentScores = scoreRowsByStudentSubject.get(`${studentId}:${selectedSubjectId}`) || [];
-      (studentScores.length ? studentScores : [{ 'Score_id': null }]).forEach((score) => {
-        const departmentId = departmentByStudent.get(studentId);
-        const scoreId = score['Score_id'];
-        archiveRows.push({
-          student_id: String(studentId),
-          sy_id: Number(professorAssignment.sy_id),
-          dept_id: departmentId !== null && departmentId !== undefined && Number.isFinite(Number(departmentId))
-            ? Number(departmentId)
-            : null,
-          section_id: Number(section.section_id),
-          subj_id: Number(selectedSubjectId),
-          'Score_id': scoreId !== null && scoreId !== undefined && Number.isFinite(Number(scoreId))
-            ? Number(scoreId)
-            : null
-        });
+      const departmentId = departmentByStudent.get(studentId);
+      archiveRows.push({
+        student_id: String(studentId),
+        sy_id: Number(professorAssignment.sy_id),
+        dept_id: departmentId !== null && departmentId !== undefined && Number.isFinite(Number(departmentId))
+          ? Number(departmentId)
+          : null,
+        prof_id: normalizedProfId,
+        section_id: Number(section.section_id),
+        subj_id: Number(selectedSubjectId)
       });
     });
   });
@@ -894,7 +854,7 @@ async getArchivedStudents(profId: number): Promise<any[]> {
 
   const { data, error } = await this.supabase
     .from('s_archive')
-    .select('s_archive_id, student_id, sy_id, dept_id, section_id, subj_id, "Score_id", student_tbl(*), department(*), schoolyear_tbl(*)')
+    .select('s_archive_id, student_id, sy_id, dept_id, prof_id, section_id, subj_id, student_tbl(*), department(*), professor_tbl(*), schoolyear_tbl(*), section_tbl(*), subject_tbl(*)')
     .eq('prof_id', normalizedProfId)
     .order('s_archive_id', { ascending: false });
 
@@ -977,7 +937,8 @@ async restoreArchivedStudent(archiveRow: any, profId: number): Promise<void> {
   const { error: archiveDeleteError } = await this.supabase
     .from('s_archive')
     .delete()
-    .eq('s_archive_id', archiveId);
+    .eq('s_archive_id', archiveId)
+    .eq('prof_id', Number(profId));
 
   if (archiveDeleteError) {
     throw archiveDeleteError;
