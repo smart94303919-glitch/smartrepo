@@ -412,6 +412,7 @@ export class OmrContainerPage implements OnInit {
 
       await this.supabaseService.saveAnswerKey(sheetId, professorId, answerKey);
       if (this.activeSheetId.trim() === sheetId) this.answerKeyConfigured = true;
+      await this.imagePicker?.prepareForNextCapture();
       await this.showToast('Teacher answer key saved successfully.', 'success');
     } catch (error) {
       console.error('Teacher answer key could not be saved:', error);
@@ -745,6 +746,10 @@ export class OmrContainerPage implements OnInit {
         if (this.studentBatchResults.length === 0 && this.studentResult?.mode === 'grade') {
           this.studentResult = null;
           this.allStudentResultsSaved = true;
+        }
+        if (!this.studentResult && this.studentBatchResults.length === 0) {
+          const reopenCamera = this.imagePicker?.lastCaptureSource === 'camera';
+          await this.imagePicker?.prepareForNextCapture(reopenCamera);
         }
         await this.showToast('Score successfully saved to database!', 'success');
       } else if (response?.status === 'duplicate') {

@@ -52,6 +52,7 @@ export class ImagePickerComponent implements AfterViewInit, OnChanges, OnDestroy
   focusRing: { x: number; y: number } | null = null;
   currentFacingMode: 'environment' | 'user' = 'environment';
   hasMultipleCameras = false;
+  lastCaptureSource: 'camera' | 'gallery' | 'batch' | null = null;
   private mediaStream: MediaStream | null = null;
   private focusRingTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -80,12 +81,24 @@ export class ImagePickerComponent implements AfterViewInit, OnChanges, OnDestroy
     this.stopCamera();
     this.clearPreviews();
     this.cameraLocked = false;
+    this.lastCaptureSource = null;
   }
 
   resetTeacherKey() {
     this.stopCamera();
     this.clearPreviews();
     this.cameraLocked = false;
+    this.lastCaptureSource = null;
+  }
+
+  async prepareForNextCapture(reopenCamera = false): Promise<void> {
+    this.stopCamera();
+    this.clearPreviews();
+    this.cameraLocked = false;
+    this.lastCaptureSource = null;
+    if (reopenCamera) {
+      await this.openCamera();
+    }
   }
 
   private clearPreviews() {
@@ -151,6 +164,7 @@ export class ImagePickerComponent implements AfterViewInit, OnChanges, OnDestroy
     this.stopCamera();
     if (this.scanMode === 'grade') this.cameraLocked = true;
     this.previewDataUrl = dataUrl;
+    this.lastCaptureSource = 'camera';
     return file;
   }
 
@@ -236,6 +250,7 @@ export class ImagePickerComponent implements AfterViewInit, OnChanges, OnDestroy
       return;
     }
 
+    this.lastCaptureSource = this.scanMode === 'grade' ? 'batch' : 'gallery';
     if (this.scanMode === 'grade') {
       this.previewDataUrl = null;
       // Student Sheet mode: batch import of 1 to 5 images.
