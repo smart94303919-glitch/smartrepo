@@ -3,7 +3,10 @@ import { CommonModule } from '@angular/common';
 import { IonicModule, ToastController } from '@ionic/angular';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SupabaseService } from '../services/supabase.service';
-import * as XLSX from 'xlsx';
+import { Capacitor } from '@capacitor/core';
+import { Directory, Filesystem } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+import { jsPDF } from 'jspdf';
 
 @Component({
   selector: 'app-archive',
@@ -22,6 +25,10 @@ export class ArchivePage {
   selectedArchiveIds = new Set<number>();
   restoreSelectionMode = false;
   selectedRestoreArchiveIds = new Set<number>();
+
+  private get visibleArchivedStudents(): any[] {
+    return this.filteredArchivedStudents;
+  }
 
   get filteredArchivedStudents(): any[] {
     const query = this.searchTerm.trim().toLowerCase();
@@ -51,7 +58,7 @@ export class ArchivePage {
   }
 
   get isAllSelected(): boolean {
-    return this.archivedStudents.length > 0 && this.archivedStudents.every((student) =>
+    return this.visibleArchivedStudents.length > 0 && this.visibleArchivedStudents.every((student) =>
       this.selectedArchiveIds.has(Number(student?.s_archive_id))
     );
   }
@@ -65,6 +72,12 @@ export class ArchivePage {
   get selectedRestoreCount(): number {
     return this.archivedStudents.filter((student) =>
       this.selectedRestoreArchiveIds.has(Number(student?.s_archive_id))
+    ).length;
+  }
+
+  get selectedFilteredArchiveCount(): number {
+    return this.visibleArchivedStudents.filter((student) =>
+      this.selectedArchiveIds.has(Number(student?.s_archive_id))
     ).length;
   }
 
@@ -156,13 +169,13 @@ export class ArchivePage {
 
   toggleSelectAll(): void {
     if (this.isAllSelected) {
-      this.archivedStudents.forEach((student) =>
+      this.visibleArchivedStudents.forEach((student) =>
         this.selectedArchiveIds.delete(Number(student?.s_archive_id))
       );
       return;
     }
 
-    this.archivedStudents.forEach((student) => {
+    this.visibleArchivedStudents.forEach((student) => {
       const archiveId = Number(student?.s_archive_id);
       if (Number.isFinite(archiveId)) {
         this.selectedArchiveIds.add(archiveId);
@@ -221,22 +234,35 @@ export class ArchivePage {
     }
 
     try {
-      const exportRows = selectedRows.map((row) => ({
-        'Archive ID': row.s_archive_id,
-        'Student ID': row.student_id,
-        'Student Name': [
-          row.student_tbl?.s_firstname,
-          row.student_tbl?.s_middlename,
-          row.student_tbl?.s_lastname
-        ].filter(Boolean).join(' '),
-      }));
+      const pdf = this.createArchiveReportPdf(selectedRows);
+      const filename = `archived-students-${new Date().toISOString().slice(0, 10)}.pdf`;
+      const blob = pdf.output('blob');
 
-      const worksheet = XLSX.utils.json_to_sheet(exportRows);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Archived Students');
-      const filename = `archived-students-${new Date().toISOString().slice(0, 10)}.xlsx`;
-      this.downloadWorkbook(workbook, filename);
+      if (Capacitor.isNativePlatform()) {
+        const base64Data = await this.blobToBase64(blob);
+        const savedFile = await Filesystem.writeFile({
+          path: filename,
+          data: base64Data,
+          directory: Directory.Cache
+        });
+        try {
+          await Share.share({
+            title: 'Archived Students Report',
+            text: 'Archived students PDF report',
+            url: savedFile.uri,
+            dialogTitle: 'Open or share archived students report'
+          });
+        } catch (error) {
+          if ((error as Error)?.name !== 'AbortError') {
+            throw error;
+          }
+        }
+      } else {
+        this.downloadPdf(blob, filename);
+      }
+
       this.cancelExportSelection();
+      await this.showExportToast('Archived students PDF exported successfully.', 'success');
     } catch (error) {
       console.error('Failed to export archived students:', error);
       await this.showExportToast(
@@ -246,11 +272,123 @@ export class ArchivePage {
     }
   }
 
-  private downloadWorkbook(workbook: XLSX.WorkBook, filename: string): void {
-    const workbookData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([workbookData], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  private createArchiveReportPdf(rows: any[]): jsPDF {
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 14;
+    const tableX = margin;
+    const columnWidths = [30, 64, 42, 48];
+    const headers = ['Student ID', 'Student Name', 'Department', 'School Year'];
+    const rowHeight = (values: string[]): number => {
+      const lineCounts = values.map((value, index) =>
+        pdf.splitTextToSize(value || 'N/A', columnWidths[index] - 6).length
+      );
+      return Math.max(9, Math.max(...lineCounts) * 4.5 + 4);
+    };
+    let currentY = 0;
+
+    const drawHeader = (continued = false): void => {
+      pdf.setFillColor(20, 58, 111);
+      pdf.rect(0, 0, pageWidth, 36, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(18);
+      pdf.text(continued ? 'Archived Students Report (continued)' : 'Archived Students Report', margin, 16);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      const section = this.route.snapshot.queryParamMap.get('section') || 'All sections';
+      const subject = this.route.snapshot.queryParamMap.get('subject') || 'All subjects';
+      pdf.text(`Section: ${section}    Subject: ${subject}`, margin, 24);
+      pdf.text(`Generated: ${new Date().toLocaleString()}`, margin, 30);
+      pdf.setTextColor(30, 41, 59);
+      currentY = 43;
+      this.drawArchiveTableHeader(pdf, headers, columnWidths, tableX, currentY);
+      currentY += 8;
+    };
+
+    drawHeader();
+    rows.forEach((row, rowIndex) => {
+      const student = Array.isArray(row.student_tbl) ? row.student_tbl[0] : row.student_tbl;
+      const department = Array.isArray(row.department) ? row.department[0] : row.department;
+      const schoolYear = Array.isArray(row.schoolyear_tbl) ? row.schoolyear_tbl[0] : row.schoolyear_tbl;
+      const values = [
+        String(row.student_id ?? 'N/A'),
+        [student?.s_firstname, student?.s_middlename, student?.s_lastname].filter(Boolean).join(' ') || 'N/A',
+        this.getRelationLabel(department, ['department', 'dept_name', 'name']),
+        this.getRelationLabel(schoolYear, ['sy_label', 'school_year', 'schoolyear', 'school_year_name', 'sy_name', 'year'])
+      ];
+      const height = rowHeight(values);
+
+      if (currentY + height > pageHeight - margin) {
+        pdf.addPage();
+        drawHeader(true);
+      }
+
+      let cellX = tableX;
+      pdf.setDrawColor(218, 226, 237);
+      const rowColor = rowIndex % 2 === 0 ? 248 : 255;
+      pdf.setFillColor(rowColor, rowIndex % 2 === 0 ? 250 : 255, rowIndex % 2 === 0 ? 253 : 255);
+      pdf.rect(tableX, currentY, columnWidths.reduce((total, width) => total + width, 0), height, 'FD');
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(30, 41, 59);
+      values.forEach((value, index) => {
+        const lines = pdf.splitTextToSize(value, columnWidths[index] - 6);
+        pdf.text(lines, cellX + 3, currentY + 5);
+        cellX += columnWidths[index];
+      });
+      currentY += height;
     });
+
+    return pdf;
+  }
+
+  private drawArchiveTableHeader(
+    pdf: jsPDF,
+    headers: string[],
+    columnWidths: number[],
+    startX: number,
+    y: number
+  ): void {
+    pdf.setFillColor(230, 237, 247);
+    pdf.rect(startX, y, columnWidths.reduce((total, width) => total + width, 0), 8, 'F');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(9);
+    pdf.setTextColor(20, 58, 111);
+    let cellX = startX;
+    headers.forEach((header, index) => {
+      pdf.text(header, cellX + 3, y + 5.5);
+      cellX += columnWidths[index];
+    });
+  }
+
+  private getRelationLabel(relation: Record<string, unknown> | null | undefined, keys: string[]): string {
+    if (!relation) {
+      return 'N/A';
+    }
+    const value = keys.map((key) => relation[key]).find((item) => item !== null && item !== undefined);
+    return value === undefined ? 'N/A' : String(value);
+  }
+
+  private blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(reader.error ?? new Error('Unable to read PDF data.'));
+      reader.onload = () => {
+        const result = String(reader.result ?? '');
+        const base64 = result.split(',')[1];
+        if (!base64) {
+          reject(new Error('Unable to encode PDF for sharing.'));
+          return;
+        }
+        resolve(base64);
+      };
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  private downloadPdf(blob: Blob, filename: string): void {
     const url = window.URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
@@ -263,7 +401,7 @@ export class ArchivePage {
 
   private async showExportToast(
     message: string,
-    color: 'warning' | 'danger'
+    color: 'success' | 'warning' | 'danger'
   ): Promise<void> {
     const toast = await this.toastCtrl.create({ message, duration: 3500, color });
     await toast.present();
