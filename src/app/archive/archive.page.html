@@ -9,7 +9,7 @@
     <ion-buttons slot="end">
       <ion-button *ngIf="!exportSelectionMode && !restoreSelectionMode" fill="clear" (click)="startExportSelection()" aria-label="Select archived students to export as PDF">
         <ion-icon name="document-text-outline" slot="start"></ion-icon>
-        Export PDF
+        Export Archive Record
       </ion-button>
       <ion-button *ngIf="!exportSelectionMode && !restoreSelectionMode" fill="clear" (click)="startRestoreSelection()" aria-label="Select archived students to restore">
         Restore
@@ -26,7 +26,7 @@
       </ion-button>
       <ion-button *ngIf="exportSelectionMode" fill="clear" [disabled]="!selectedFilteredArchiveCount" (click)="exportSelectedStudents()">
         <ion-icon name="document-text-outline" slot="start"></ion-icon>
-        Export Selected PDF
+        Export Archive Record
       </ion-button>
       <ion-button *ngIf="exportSelectionMode" fill="clear" color="light" (click)="cancelExportSelection()">
         Cancel

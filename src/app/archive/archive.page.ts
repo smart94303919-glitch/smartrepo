@@ -297,10 +297,7 @@ export class ArchivePage {
       pdf.text(continued ? 'Archived Students Report (continued)' : 'Archived Students Report', margin, 16);
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(9);
-      const section = this.route.snapshot.queryParamMap.get('section') || 'All sections';
-      const subject = this.route.snapshot.queryParamMap.get('subject') || 'All subjects';
-      pdf.text(`Section: ${section}    Subject: ${subject}`, margin, 24);
-      pdf.text(`Generated: ${new Date().toLocaleString()}`, margin, 30);
+      pdf.text(`Generated: ${new Date().toLocaleString()}`, margin, 24);
       pdf.setTextColor(30, 41, 59);
       currentY = 43;
       this.drawArchiveTableHeader(pdf, headers, columnWidths, tableX, currentY);
