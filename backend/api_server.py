@@ -865,43 +865,65 @@ def generate_pdf(payload: SheetConfigRequest):
         requested_student_ids = list(dict.fromkeys(
             str(student_id).strip() for student_id in payload.student_ids if str(student_id).strip()
         ))
-        if len(requested_student_ids) != 1:
-            raise HTTPException(status_code=400, detail="Reusing a sheet requires exactly one student.")
+        if not requested_student_ids:
+            raise HTTPException(status_code=400, detail="Reusing a sheet requires at least one student.")
 
-        student_id = requested_student_ids[0]
         professor_student = (
             supabase.table("prof_stud")
             .select("student_id")
             .eq("prof_id", payload.prof_id)
-            .eq("student_id", student_id)
-            .limit(1)
+            .in_("student_id", requested_student_ids)
             .execute()
         )
         student_enrollment = (
             supabase.table("stud_section_subj")
             .select("student_id")
-            .eq("student_id", student_id)
+            .in_("student_id", requested_student_ids)
             .eq("section_id", int(section_id))
             .eq("subj_id", int(subject_id))
-            .limit(1)
             .execute()
         )
-        if not professor_student.data or not student_enrollment.data:
+        professor_student_ids = {
+            str(row.get("student_id", "")).strip()
+            for row in professor_student.data or []
+        }
+        enrolled_student_ids = {
+            str(row.get("student_id", "")).strip()
+            for row in student_enrollment.data or []
+        }
+        unauthorized_student_ids = [
+            student_id for student_id in requested_student_ids
+            if student_id not in professor_student_ids or student_id not in enrolled_student_ids
+        ]
+        if unauthorized_student_ids:
             raise HTTPException(
                 status_code=403,
-                detail="The selected student is not enrolled in this professor's sheet section and subject.",
+                detail=(
+                    "One or more selected students are not enrolled in this professor's "
+                    "sheet section and subject."
+                ),
             )
 
         existing_score = (
             supabase.table("student_score")
-            .select('"Score_id"')
-            .eq("student_id", student_id)
+            .select("student_id")
             .eq("sheet_id", payload.sheet_id.strip())
-            .limit(1)
+            .in_("student_id", requested_student_ids)
             .execute()
         )
         if existing_score.data:
-            raise HTTPException(status_code=409, detail="This student already has a score for the selected sheet.")
+            scored_student_ids = sorted({
+                str(row.get("student_id", "")).strip()
+                for row in existing_score.data
+                if row.get("student_id")
+            })
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "One or more selected students already have a score for the selected sheet: "
+                    + ", ".join(scored_student_ids)
+                ),
+            )
 
     if payload.student_ids:
         enrolled_students = list(dict.fromkeys(

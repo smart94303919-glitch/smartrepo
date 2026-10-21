@@ -286,7 +286,21 @@
         </ng-container>
 
         <div *ngIf="selectedSingleSheet" class="single-student-picker">
-          <ion-label class="single-sheet-label">Select Student</ion-label>
+          <div class="single-student-heading">
+            <ion-label class="single-sheet-label">Select Students</ion-label>
+            <ion-button
+              type="button"
+              fill="clear"
+              size="small"
+              [disabled]="loadingSingleSheetStudents || !availableSingleStudents.length"
+              (click)="toggleAllSingleStudents()"
+            >
+              {{ allSingleStudentsSelected ? 'Clear all' : 'Select all' }}
+            </ion-button>
+          </div>
+          <p class="single-student-count">
+            {{ selectedSingleStudentIds.size }} {{ selectedSingleStudentIds.size === 1 ? 'student' : 'students' }} selected
+          </p>
           <ion-searchbar
             [(ngModel)]="singleStudentSearch"
             placeholder="Search name or student ID"
@@ -300,22 +314,18 @@
           <ion-list *ngIf="!loadingSingleSheetStudents" lines="none" class="single-sheet-options">
             <ion-item
               *ngFor="let student of filteredSingleStudents"
-              button
-              [detail]="false"
-              [class.selected-sheet]="selectedSingleStudent?.student_id === student.student_id"
-              (click)="selectSingleStudent(student)"
+              [class.selected-sheet]="isSingleStudentSelected(student)"
             >
-              <ion-icon name="person-circle-outline" slot="start" color="primary"></ion-icon>
+              <ion-checkbox
+                slot="start"
+                [checked]="isSingleStudentSelected(student)"
+                (ionChange)="toggleSingleStudent(student)"
+                [attr.aria-label]="'Select ' + student.first_name + ' ' + student.last_name"
+              ></ion-checkbox>
               <ion-label>
                 <h2>{{ student.first_name }} {{ student.middle_name || '' }} {{ student.last_name }}</h2>
                 <p>{{ student.student_id }}</p>
               </ion-label>
-              <ion-icon
-                *ngIf="selectedSingleStudent?.student_id === student.student_id"
-                name="checkmark-circle"
-                slot="end"
-                color="primary"
-              ></ion-icon>
             </ion-item>
             <ion-item *ngIf="!filteredSingleStudents.length && !singleSheetError">
               <ion-label>No eligible students found for this sheet.</ion-label>
@@ -327,12 +337,19 @@
         <ion-text *ngIf="singleSheetError" color="danger" class="single-sheet-error">
           {{ singleSheetError }}
         </ion-text>
+        <ion-text
+          *ngIf="selectedSingleSheet && !loadingSingleSheetStudents && availableSingleStudents.length && !selectedSingleStudentIds.size"
+          color="medium"
+          class="single-sheet-error"
+        >
+          Select one or more students to generate their OMR sheets.
+        </ion-text>
 
         <ion-button
           expand="block"
           class="single-sheet-generate"
-          [disabled]="!selectedSingleSheet || !selectedSingleStudent || loadingSingleSheetStudents || generatingSingleSheet"
-          (click)="generateSingleStudentSheet()"
+          [disabled]="!selectedSingleSheet || !selectedSingleStudentIds.size || loadingSingleSheetStudents || generatingSingleSheet"
+          (click)="generateSelectedStudentSheets()"
         >
           <ion-spinner *ngIf="generatingSingleSheet" name="crescent"></ion-spinner>
           <ion-icon *ngIf="!generatingSingleSheet" name="print-outline" slot="start"></ion-icon>

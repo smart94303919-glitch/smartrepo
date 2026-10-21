@@ -543,6 +543,25 @@ ion-modal.single-sheet-modal {
   gap: 10px;
 }
 
+.single-student-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  ion-button {
+    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+}
+
+.single-student-count {
+  margin: -8px 0 0;
+  color: #5f6f8f;
+  font-size: 0.82rem;
+}
+
 .single-sheet-note {
   color: #5f6f8f;
   font-size: 0.78rem;

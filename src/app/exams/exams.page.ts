@@ -38,9 +38,9 @@ export class ExamsPage implements OnInit {
   singleSheetSections: { id: number; name: string }[] = [];
   professorSheets: ProfessorSheet[] = [];
   availableSingleStudents: any[] = [];
+  selectedSingleStudentIds = new Set<string>();
   selectedSingleSectionId: number | null = null;
   selectedSingleSheet: ProfessorSheet | null = null;
-  selectedSingleStudent: any | null = null;
   singleSheetSubjects = new Map<number, string>();
   private singleSheetSectionNames = new Map<number, string>();
 
@@ -80,7 +80,7 @@ export class ExamsPage implements OnInit {
     this.singleSheetSections = [];
     this.selectedSingleSectionId = null;
     this.selectedSingleSheet = null;
-    this.selectedSingleStudent = null;
+    this.selectedSingleStudentIds.clear();
     this.availableSingleStudents = [];
 
     try {
@@ -145,19 +145,32 @@ export class ExamsPage implements OnInit {
     });
   }
 
+  get selectedSingleStudents(): any[] {
+    return this.availableSingleStudents.filter((student) =>
+      this.selectedSingleStudentIds.has(String(student.student_id).trim())
+    );
+  }
+
+  get allSingleStudentsSelected(): boolean {
+    return this.availableSingleStudents.length > 0 &&
+      this.availableSingleStudents.every((student) =>
+        this.selectedSingleStudentIds.has(String(student.student_id).trim())
+      );
+  }
+
   onSingleSheetSectionChanged(sectionId: number | string | null | undefined): void {
     this.selectedSingleSectionId = sectionId == null || sectionId === ''
       ? null
       : Number(sectionId);
     this.selectedSingleSheet = null;
-    this.selectedSingleStudent = null;
+    this.selectedSingleStudentIds.clear();
     this.availableSingleStudents = [];
     this.singleSheetError = '';
   }
 
   async selectSingleSheet(sheet: ProfessorSheet): Promise<void> {
     this.selectedSingleSheet = sheet;
-    this.selectedSingleStudent = null;
+    this.selectedSingleStudentIds.clear();
     this.availableSingleStudents = [];
     this.loadingSingleSheetStudents = true;
     this.singleSheetError = '';
@@ -189,24 +202,50 @@ export class ExamsPage implements OnInit {
     }
   }
 
-  selectSingleStudent(student: any): void {
-    this.selectedSingleStudent = student;
+  toggleSingleStudent(student: any): void {
+    const studentId = String(student?.student_id ?? '').trim();
+    if (!studentId) {
+      return;
+    }
+
+    if (this.selectedSingleStudentIds.has(studentId)) {
+      this.selectedSingleStudentIds.delete(studentId);
+    } else {
+      this.selectedSingleStudentIds.add(studentId);
+    }
   }
 
-  async generateSingleStudentSheet(): Promise<void> {
+  toggleAllSingleStudents(): void {
+    if (this.allSingleStudentsSelected) {
+      this.selectedSingleStudentIds.clear();
+      return;
+    }
+
+    this.selectedSingleStudentIds = new Set(
+      this.availableSingleStudents
+        .map((student) => String(student.student_id ?? '').trim())
+        .filter(Boolean)
+    );
+  }
+
+  isSingleStudentSelected(student: any): boolean {
+    return this.selectedSingleStudentIds.has(String(student?.student_id ?? '').trim());
+  }
+
+  async generateSelectedStudentSheets(): Promise<void> {
     const sheet = this.selectedSingleSheet;
-    const student = this.selectedSingleStudent;
+    const selectedStudents = this.selectedSingleStudents;
     const professorId = this.getActiveProfessorId();
     const sectionName = sheet ? this.singleSheetSectionNames.get(sheet.section_id) : null;
     const subjectName = sheet ? this.singleSheetSubjects.get(sheet.subj_id) : null;
-    if (!sheet || !student || !professorId || !sectionName || !subjectName) {
-      this.singleSheetError = 'Select a section, sheet ID, and student before generating.';
+    if (!sheet || !selectedStudents.length || !professorId || !sectionName || !subjectName) {
+      this.singleSheetError = 'Select a section, sheet ID, and at least one student before generating.';
       return;
     }
 
     this.generatingSingleSheet = true;
     const loading = await this.loadingCtrl.create({
-      message: 'Generating single-student answer sheet...',
+      message: 'Generating answer sheets...',
       spinner: 'crescent',
       backdropDismiss: false
     });
@@ -214,12 +253,16 @@ export class ExamsPage implements OnInit {
 
     try {
       const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-      const studentName = [
-        student.first_name,
-        student.middle_name,
-        student.last_name
-      ].filter(Boolean).join(' ');
-      const filenamePart = `${sheet.sheet_id}-${student.student_id}`.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const studentIds = selectedStudents.map((student) => String(student.student_id).trim());
+      const studentMetadata = selectedStudents.map((student) => ({
+        student_id: String(student.student_id).trim(),
+        student_name: [
+          student.first_name,
+          student.middle_name,
+          student.last_name
+        ].filter(Boolean).join(' ') || String(student.student_id).trim()
+      }));
+      const filenamePart = `${sheet.sheet_id}-students`.replace(/[^a-zA-Z0-9_-]/g, '_');
       const pdf = await firstValueFrom(this.omrApi.generatePdf({
         title: sheet.sheet_title,
         subject: subjectName,
@@ -232,11 +275,8 @@ export class ExamsPage implements OnInit {
         columns: sheet.columns,
         sheet_id: sheet.sheet_id,
         output_name: `single-sheet-${filenamePart}.pdf`,
-        student_ids: [String(student.student_id)],
-        student_metadata: [{
-          student_id: String(student.student_id),
-          student_name: studentName || String(student.student_id)
-        }],
+        student_ids: studentIds,
+        student_metadata: studentMetadata,
         prof_id: professorId,
         professor_id: String(currentUser.prof_number || professorId),
         professor_name: [
@@ -251,15 +291,15 @@ export class ExamsPage implements OnInit {
       await loading.dismiss();
       this.generatingSingleSheet = false;
       await this.showSingleSheetToast(
-        `Single OMR Sheet generated for ${studentName || student.student_id}.`,
+        `Successfully generated ${studentIds.length} OMR sheet${studentIds.length === 1 ? '' : 's'} for selected students.`,
         'success'
       );
       this.singleSheetModalOpen = false;
     } catch (error) {
-      console.error('Failed to generate reusable single-student sheet:', error);
+      console.error('Failed to generate reusable student sheets:', error);
       await loading.dismiss();
       this.generatingSingleSheet = false;
-      await this.showSingleSheetToast('Unable to generate the single OMR sheet. Please try again.', 'danger');
+      await this.showSingleSheetToast('Unable to generate the OMR sheets. Please try again.', 'danger');
     }
   }
 
@@ -276,16 +316,10 @@ export class ExamsPage implements OnInit {
   private async saveOrShareSingleSheet(pdf: Blob, filename: string): Promise<void> {
     if (Capacitor.isNativePlatform()) {
       const base64Data = await this.blobToBase64(pdf);
-      const savedFile = await Filesystem.writeFile({
+      await Filesystem.writeFile({
         path: filename,
         data: base64Data,
         directory: Directory.Documents
-      });
-      await Share.share({
-        title: 'Single student OMR sheet',
-        text: 'Generated OMR answer sheet',
-        url: savedFile.uri,
-        dialogTitle: 'Open or share answer sheet'
       });
       return;
     }
@@ -294,10 +328,8 @@ export class ExamsPage implements OnInit {
     const anchor = document.createElement('a');
     anchor.href = url;
     anchor.download = filename;
-    document.body.appendChild(anchor);
     anchor.click();
-    anchor.remove();
-    window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+    window.URL.revokeObjectURL(url);
   }
 
   private blobToBase64(blob: Blob): Promise<string> {
