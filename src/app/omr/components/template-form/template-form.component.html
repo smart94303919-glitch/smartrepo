@@ -125,6 +125,8 @@
               [(ngModel)]="model.total_questions"
               min="1"
               max="100"
+              step="1"
+              required
               (ionInput)="sanitizeQuestionInput($event)"
               (keyup)="sanitizeQuestionInput($event)"
               placeholder="Enter total questions (1-100)"

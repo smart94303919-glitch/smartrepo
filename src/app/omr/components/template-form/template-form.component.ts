@@ -180,10 +180,11 @@ export class TemplateFormComponent implements OnInit {
 
   onQuestionCountChange(): void {
     const totalQuestions = Number(this.model.total_questions);
-    this.model.total_questions = Number.isFinite(totalQuestions)
-      ? Math.min(100, Math.max(1, Math.trunc(totalQuestions)))
-      : 1;
+    if (!Number.isInteger(totalQuestions) || totalQuestions < 1 || totalQuestions > 100) {
+      return;
+    }
 
+    this.model.total_questions = totalQuestions;
     this.sanitizeOptionsInput();
     this.model.columns = this.fixedColumnForQuestionCount(this.model.total_questions);
   }
@@ -210,16 +211,15 @@ export class TemplateFormComponent implements OnInit {
 
   sanitizeQuestionInput(event: any): void {
     const value = event?.detail?.value ?? event?.target?.value;
-    if (value !== null && value !== undefined && value !== '') {
-      const parsedValue = Number.parseInt(String(value), 10);
-      if (Number.isFinite(parsedValue)) {
-        this.model.total_questions = Math.min(100, Math.max(1, parsedValue));
-        if (parsedValue > 100 && event?.target) {
-          event.target.value = 100;
-        }
-      }
+    if (value === null || value === undefined || value === '') {
+      this.model.total_questions = 0;
+      return;
     }
 
+    const parsedValue = Number(value);
+    if (Number.isFinite(parsedValue)) {
+      this.model.total_questions = parsedValue;
+    }
     this.onQuestionCountChange();
   }
 
@@ -234,15 +234,16 @@ export class TemplateFormComponent implements OnInit {
    * the constraints enforced server-side in config.SheetConfig.__post_init__. */
   private validate(): string | null {
     this.onQuizTypeChange(this.model.quiz_type);
+    const totalQuestions = Number(this.model.total_questions);
+    if (!Number.isInteger(totalQuestions) || totalQuestions < 1 || totalQuestions > 100) {
+      return '0 is not acceptable. Total questions must be an integer between 1 and 100.';
+    }
     this.onQuestionCountChange();
     if (!this.model.title.trim()) return 'Title is required.';
     if (!this.model.section_id) return 'Section is required.';
     if (!this.model.SubjectID) return 'Subject is required.';
     if (!this.model.sheet_id.trim()) return 'Sheet ID is required.';
     if (!this.model.output_name.trim()) return 'Output filename is required.';
-    if (this.model.total_questions < 1 || this.model.total_questions > 100) {
-      return 'Total questions must be between 1 and 100.';
-    }
     if (this.model.columns < 1 || this.model.columns > this.maxAllowedColumns) {
       return `Columns must be between 1 and ${this.maxAllowedColumns}.`;
     }
