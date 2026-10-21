@@ -886,10 +886,16 @@ async archiveStudents(studentIds: string[], subjectId: number | number[], sectio
   return true;
 }
 
-async getArchivedStudents(): Promise<any[]> {
+async getArchivedStudents(profId: number): Promise<any[]> {
+  const normalizedProfId = Number(profId);
+  if (!Number.isFinite(normalizedProfId) || normalizedProfId <= 0) {
+    throw new Error('A valid professor ID is required to load archived students.');
+  }
+
   const { data, error } = await this.supabase
     .from('s_archive')
     .select('s_archive_id, student_id, sy_id, dept_id, section_id, subj_id, "Score_id", student_tbl(*), department(*), section_tbl(*), subject_tbl(*), schoolyear_tbl(*), student_score(*)')
+    .eq('prof_id', normalizedProfId)
     .order('s_archive_id', { ascending: false });
 
   if (error) {

@@ -52,10 +52,17 @@ export class ArchivePage {
   async ngOnInit(): Promise<void> {
     try {
       this.loading = true;
-      this.archivedStudents = await this.supabaseService.getArchivedStudents();
+      const currentUser = localStorage.getItem('currentUser');
+      const profId = Number(currentUser ? JSON.parse(currentUser)?.prof_id : null);
+      if (!Number.isFinite(profId) || profId <= 0) {
+        throw new Error('Professor ID is missing.');
+      }
+      this.archivedStudents = await this.supabaseService.getArchivedStudents(profId);
     } catch (error: any) {
       console.error('Failed to load archived records:', error?.message, error?.details);
-      this.errorMessage = 'Failed to load archived students.';
+      this.errorMessage = error?.message === 'Professor ID is missing.'
+        ? error.message
+        : 'Failed to load archived students.';
     } finally {
       this.loading = false;
     }
