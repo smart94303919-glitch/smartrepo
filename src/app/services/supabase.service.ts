@@ -1593,15 +1593,20 @@ async removeStudentFromSubjectSectionAssignment(studentId: string, subjectId: nu
       throw new Error('Section could not be found.');
     }
 
-    const { error: assignmentError } = await this.supabase
+    const { data: deletedAssignments, error: assignmentError } = await this.supabase
       .from('stud_section_subj')
       .delete()
       .eq('student_id', normalizedStudentId)
       .eq('section_id', Number(section.section_id))
-      .eq('subj_id', normalizedSubjectId);
+      .eq('subj_id', normalizedSubjectId)
+      .select('student_id');
 
     if (assignmentError) {
       throw assignmentError;
+    }
+
+    if (!deletedAssignments?.length) {
+      throw new Error('No matching student subject section assignment was deleted.');
     }
 
     return true;
