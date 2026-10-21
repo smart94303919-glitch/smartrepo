@@ -1,9 +1,12 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonicModule, ToastController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { SupabaseService } from '../services/supabase.service';
 import * as XLSX from 'xlsx';
+import { Capacitor } from '@capacitor/core';
+import { Directory, Filesystem } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 @Component({
   selector: 'app-archive',
@@ -42,7 +45,8 @@ export class ArchivePage {
 
   constructor(
     private router: Router,
-    private supabaseService: SupabaseService
+    private supabaseService: SupabaseService,
+    private toastCtrl: ToastController
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -163,7 +167,7 @@ export class ArchivePage {
     return Number(archiveRow?.s_archive_id);
   }
 
-  exportSelectedStudents(): void {
+  async exportSelectedStudents(): Promise<void> {
     const selectedRows = this.archivedStudents.filter((row) =>
       this.selectedArchiveIds.has(Number(row.s_archive_id))
     );
@@ -185,8 +189,93 @@ export class ArchivePage {
     const worksheet = XLSX.utils.json_to_sheet(exportRows);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Archived Students');
-    XLSX.writeFile(workbook, `archived-students-${new Date().toISOString().slice(0, 10)}.xlsx`);
-    this.cancelExportSelection();
+    const filename = `archived-students-${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const fileData = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' });
+        const savedFile = await Filesystem.writeFile({
+          path: filename,
+          data: fileData,
+          directory: Directory.Documents,
+          recursive: true
+        });
+
+        try {
+          await Share.share({
+            title: 'Archived students export',
+            text: 'Archived students Excel file',
+            url: savedFile.uri,
+            dialogTitle: 'Open or share archived students'
+          });
+        } catch (error) {
+          if ((error as Error)?.name !== 'AbortError') {
+            console.error('Failed to open archive export share sheet:', error);
+            await this.showExportToast('The export was saved to Documents, but could not be shared.', 'warning');
+          }
+        }
+
+        this.cancelExportSelection();
+        return;
+      }
+
+      if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        const fileData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const file = new File(
+          [fileData],
+          filename,
+          { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
+        );
+
+        if (navigator.canShare?.({ files: [file] }) && navigator.share) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: 'Archived students export'
+            });
+          } catch (error) {
+            if ((error as Error)?.name === 'AbortError') {
+              return;
+            }
+            throw error;
+          }
+        } else {
+          this.downloadWorkbook(workbook, filename);
+        }
+
+        this.cancelExportSelection();
+        return;
+      }
+
+      XLSX.writeFile(workbook, filename);
+      this.cancelExportSelection();
+    } catch (error) {
+      console.error('Failed to export archived students:', error);
+      await this.showExportToast('Unable to export archived students. Please try again.', 'danger');
+    }
+  }
+
+  private downloadWorkbook(workbook: XLSX.WorkBook, filename: string): void {
+    const workbookData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([workbookData], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+  }
+
+  private async showExportToast(
+    message: string,
+    color: 'warning' | 'danger'
+  ): Promise<void> {
+    const toast = await this.toastCtrl.create({ message, duration: 3500, color });
+    await toast.present();
   }
 
   async restoreSelectedStudents(): Promise<void> {
