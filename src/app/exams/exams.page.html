@@ -31,6 +31,15 @@
         <ion-icon class="arrow-icon" name="chevron-forward"></ion-icon>
       </div>
 
+      <div class="feature-card single-sheet" (click)="openSingleSheet()" role="button" tabindex="0" (keydown.enter)="openSingleSheet()" (keydown.space)="openSingleSheet()">
+        <div class="card-icon">
+          <ion-icon name="copy-outline"></ion-icon>
+        </div>
+        <h3>Single Sheet</h3>
+        <p>Re-use Sheet ID</p>
+        <ion-icon class="arrow-icon" name="chevron-forward"></ion-icon>
+      </div>
+
       <!--Scan Answer Sheet -->
       <div class="feature-card students" (click)="openScanner()" role="button" tabindex="0" (keydown.enter)="openScanner()" (keydown.space)="openScanner()">
         <div class="card-icon">
@@ -194,3 +203,142 @@
     <div *ngIf="gradesError" class="grades-state error-state">{{ gradesError }}</div>
   </div>
 </ion-content>
+
+<ion-modal
+  class="single-sheet-modal"
+  [isOpen]="singleSheetModalOpen"
+  (didDismiss)="closeSingleSheetModal()"
+  aria-label="Generate a single answer sheet"
+>
+  <ng-template>
+    <ion-header>
+      <ion-toolbar color="primary">
+        <ion-title>Single Sheet</ion-title>
+        <ion-buttons slot="end">
+          <ion-button fill="clear" color="light" aria-label="Close" (click)="closeSingleSheetModal()">
+            <ion-icon name="close-outline" slot="icon-only"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="ion-padding single-sheet-content">
+      <p class="single-sheet-intro">Re-use an existing Sheet ID to print one student’s answer sheet.</p>
+
+      <div *ngIf="loadingSingleSheetOptions" class="grades-state single-sheet-state">
+        <ion-spinner name="crescent"></ion-spinner>
+        <p>Loading your answer sheets...</p>
+      </div>
+
+      <div *ngIf="!loadingSingleSheetOptions && !professorSheets.length" class="grades-state single-sheet-state">
+        <ion-icon name="document-text-outline"></ion-icon>
+        <p>{{ singleSheetError || 'No reusable answer sheets found. Create an answer sheet first.' }}</p>
+        <ion-button fill="solid" (click)="closeSingleSheetModal()">Got it</ion-button>
+      </div>
+
+      <div *ngIf="!loadingSingleSheetOptions && professorSheets.length" class="single-sheet-form">
+        <ion-item class="single-sheet-field">
+          <ion-label position="stacked">Select Section</ion-label>
+          <ion-select
+            [value]="selectedSingleSectionId"
+            interface="popover"
+            placeholder="Choose a section"
+            (ionChange)="onSingleSheetSectionChanged($event.detail.value)"
+          >
+            <ion-select-option *ngFor="let section of singleSheetSections" [value]="section.id">
+              {{ section.name }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <ng-container *ngIf="selectedSingleSectionId !== null">
+          <ion-label class="single-sheet-label">Select Sheet ID</ion-label>
+          <ion-searchbar
+            [(ngModel)]="singleSheetSearch"
+            placeholder="Search sheet ID or title"
+            aria-label="Search answer sheets"
+            class="single-sheet-search"
+          ></ion-searchbar>
+          <ion-list lines="none" class="single-sheet-options">
+            <ion-item
+              *ngFor="let sheet of filteredProfessorSheets"
+              button
+              [detail]="false"
+              [class.selected-sheet]="selectedSingleSheet?.sheet_id === sheet.sheet_id"
+              (click)="selectSingleSheet(sheet)"
+            >
+              <ion-icon name="document-text-outline" slot="start" color="primary"></ion-icon>
+              <ion-label>
+                <h2>{{ sheet.sheet_id }}</h2>
+                <p>{{ sheet.sheet_title }} · {{ singleSheetSubjects.get(sheet.subj_id) || 'Subject' }} · {{ sheet.questions }} questions</p>
+              </ion-label>
+              <ion-icon
+                *ngIf="selectedSingleSheet?.sheet_id === sheet.sheet_id"
+                name="checkmark-circle"
+                slot="end"
+                color="primary"
+              ></ion-icon>
+            </ion-item>
+            <ion-item *ngIf="!filteredProfessorSheets.length">
+              <ion-label>No sheets match this section or search.</ion-label>
+            </ion-item>
+          </ion-list>
+        </ng-container>
+
+        <div *ngIf="selectedSingleSheet" class="single-student-picker">
+          <ion-label class="single-sheet-label">Select Student</ion-label>
+          <ion-searchbar
+            [(ngModel)]="singleStudentSearch"
+            placeholder="Search name or student ID"
+            aria-label="Search students"
+            class="single-sheet-search"
+          ></ion-searchbar>
+          <div *ngIf="loadingSingleSheetStudents" class="single-sheet-inline-state">
+            <ion-spinner name="crescent"></ion-spinner>
+            <span>Loading eligible students...</span>
+          </div>
+          <ion-list *ngIf="!loadingSingleSheetStudents" lines="none" class="single-sheet-options">
+            <ion-item
+              *ngFor="let student of filteredSingleStudents"
+              button
+              [detail]="false"
+              [class.selected-sheet]="selectedSingleStudent?.student_id === student.student_id"
+              (click)="selectSingleStudent(student)"
+            >
+              <ion-icon name="person-circle-outline" slot="start" color="primary"></ion-icon>
+              <ion-label>
+                <h2>{{ student.first_name }} {{ student.middle_name || '' }} {{ student.last_name }}</h2>
+                <p>{{ student.student_id }}</p>
+              </ion-label>
+              <ion-icon
+                *ngIf="selectedSingleStudent?.student_id === student.student_id"
+                name="checkmark-circle"
+                slot="end"
+                color="primary"
+              ></ion-icon>
+            </ion-item>
+            <ion-item *ngIf="!filteredSingleStudents.length && !singleSheetError">
+              <ion-label>No eligible students found for this sheet.</ion-label>
+            </ion-item>
+          </ion-list>
+          <ion-note class="single-sheet-note">Students who already have a score for this sheet are excluded.</ion-note>
+        </div>
+
+        <ion-text *ngIf="singleSheetError" color="danger" class="single-sheet-error">
+          {{ singleSheetError }}
+        </ion-text>
+
+        <ion-button
+          expand="block"
+          class="single-sheet-generate"
+          [disabled]="!selectedSingleSheet || !selectedSingleStudent || loadingSingleSheetStudents || generatingSingleSheet"
+          (click)="generateSingleStudentSheet()"
+        >
+          <ion-spinner *ngIf="generatingSingleSheet" name="crescent"></ion-spinner>
+          <ion-icon *ngIf="!generatingSingleSheet" name="print-outline" slot="start"></ion-icon>
+          {{ generatingSingleSheet ? 'Generating...' : 'Generate Single Sheet' }}
+        </ion-button>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>

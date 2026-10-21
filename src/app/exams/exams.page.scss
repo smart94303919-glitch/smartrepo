@@ -393,6 +393,23 @@
   }
 }
 
+.feature-card.single-sheet {
+  background: linear-gradient(135deg, #e9f7ff 0%, #f5fbff 100%);
+  border-color: rgba(14, 116, 144, 0.2);
+
+  .card-icon {
+    color: #0e7490;
+  }
+
+  h3 {
+    color: #0a1935;
+  }
+
+  p {
+    color: #57607a;
+  }
+}
+
 .feature-card.students {
   background: linear-gradient(135deg, #e8f5f0 0%, #f0faf7 100%);
   border-color: rgba(34, 180, 115, 0.15);
@@ -441,6 +458,126 @@
 
   p {
     color: #57607a;
+  }
+}
+
+ion-modal.single-sheet-modal {
+  --width: min(94vw, 640px);
+  --height: min(90vh, 760px);
+  --border-radius: 18px;
+  --box-shadow: 0 20px 60px rgba(15, 23, 42, 0.24);
+}
+
+.single-sheet-content {
+  --background: #f7f9fd;
+}
+
+.single-sheet-intro {
+  margin: 0 0 16px;
+  color: #57607a;
+  line-height: 1.5;
+}
+
+.single-sheet-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.single-sheet-field {
+  --background: #ffffff;
+  --border-radius: 12px;
+  --padding-start: 12px;
+  border: 1px solid #dce5f2;
+  border-radius: 12px;
+}
+
+.single-sheet-label {
+  display: block;
+  margin: 4px 0 0;
+  color: #243b63;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.single-sheet-search {
+  --background: #ffffff;
+  --border-radius: 12px;
+  --box-shadow: none;
+  padding: 0;
+}
+
+.single-sheet-options {
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid #dce5f2;
+  border-radius: 12px;
+  background: #ffffff;
+
+  ion-item {
+    --background: #ffffff;
+    --min-height: 58px;
+  }
+
+  h2 {
+    margin: 0 0 3px;
+    color: #11213d;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0;
+    color: #5f6f8f;
+    font-size: 0.8rem;
+  }
+}
+
+.single-sheet-options .selected-sheet {
+  --background: #eef6ff;
+}
+
+.single-student-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.single-sheet-note {
+  color: #5f6f8f;
+  font-size: 0.78rem;
+}
+
+.single-sheet-error {
+  font-size: 0.88rem;
+}
+
+.single-sheet-state {
+  min-height: 180px;
+
+  ion-icon {
+    font-size: 36px;
+  }
+
+  p {
+    margin: 8px 0 0;
+  }
+}
+
+.single-sheet-inline-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.single-sheet-generate {
+  min-height: 48px;
+  margin: 8px 0 0;
+  --border-radius: 12px;
+  font-weight: 700;
+
+  ion-spinner {
+    margin-right: 8px;
   }
 }
 
