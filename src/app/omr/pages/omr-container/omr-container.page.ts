@@ -52,6 +52,7 @@ export class OmrContainerPage implements OnInit {
 
   // Populated once a sheet has been generated
   activeSheetId = '';
+  sheetSearchTerm = '';
   professorSheets: ProfessorSheet[] = [];
   professorSheetIds: string[] = [];
   activeProfessorId: number | null = null;
@@ -149,7 +150,20 @@ export class OmrContainerPage implements OnInit {
     )).sort((first, second) => second.localeCompare(first));
   }
 
+  get filteredProfessorSheets(): ProfessorSheet[] {
+    const searchTerm = this.sheetSearchTerm.trim().toLowerCase();
+    if (!searchTerm) {
+      return this.professorSheets;
+    }
+
+    return this.professorSheets.filter((sheet) =>
+      sheet.sheet_id.toLowerCase().includes(searchTerm) ||
+      sheet.sheet_title.toLowerCase().includes(searchTerm)
+    );
+  }
+
   onSheetSelected(sheetId: string): void {
+    this.sheetSearchTerm = '';
     this.closeTeacherAnswerKeyEditor();
     this.storedTeacherAnswerKey = null;
     this.storedTeacherAnswerKeySheetId = null;

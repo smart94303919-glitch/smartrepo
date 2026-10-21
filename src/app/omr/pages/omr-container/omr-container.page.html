@@ -43,6 +43,16 @@
       </ion-card-header>
 
       <ion-card-content>
+        <ion-searchbar
+          [(ngModel)]="sheetSearchTerm"
+          placeholder="Search by Sheet ID or title"
+          aria-label="Search assigned sheets by ID or title"
+          class="sheet-id-search"
+          [debounce]="0"
+        ></ion-searchbar>
+        <ion-note *ngIf="sheetSearchTerm && !filteredProfessorSheets.length" class="sheet-id-empty">
+          No matching sheet IDs found.
+        </ion-note>
         <ion-item class="control-item">
           <ion-icon name="key-outline" slot="start" color="primary"></ion-icon>
           <ion-label position="stacked">Sheet ID</ion-label>
@@ -54,8 +64,8 @@
             class="sheet-id-dropdown"
             placeholder="Select an assigned sheet"
           >
-            <ion-select-option *ngFor="let sheetId of professorSheetIds" [value]="sheetId">
-              {{ sheetId }}
+            <ion-select-option *ngFor="let sheet of filteredProfessorSheets" [value]="sheet.sheet_id">
+              {{ sheet.sheet_id }} — {{ sheet.sheet_title }}
             </ion-select-option>
           </ion-select>
         </ion-item>

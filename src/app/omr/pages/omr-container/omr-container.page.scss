@@ -42,6 +42,20 @@
   min-width: 0;
 }
 
+.sheet-id-search {
+  --background: #f6f9fd;
+  --border-radius: 10px;
+  --box-shadow: none;
+  padding: 0 0 8px;
+}
+
+.sheet-id-empty {
+  display: block;
+  padding: 0 12px 10px;
+  color: var(--ion-color-medium);
+  font-size: 0.85rem;
+}
+
 ::ng-deep .sheet-id-popover {
   --max-height: 240px;
 }
