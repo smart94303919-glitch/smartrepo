@@ -34,6 +34,7 @@ export class ResultsDisplayComponent implements OnChanges {
   @Input() results: GradeSheetResponse[] = [];
 
   @Input() optionsPerQuestion: number | null = null;
+  @Input() quizType: string | null = null;
 
   @Input() processingError: string | null = null;
 
@@ -60,7 +61,7 @@ export class ResultsDisplayComponent implements OnChanges {
     if (changes['result'] && this.result?.overlay_image_base64) {
       this.overlayImageUrl = `data:image/png;base64,${this.result.overlay_image_base64}`;
     }
-    if (changes['result'] || changes['results']) {
+    if (changes['result'] || changes['results'] || changes['quizType']) {
       this.refreshSortedAnswers();
     }
   }
@@ -96,7 +97,7 @@ export class ResultsDisplayComponent implements OnChanges {
     const answerKey = result.mode === 'key'
       ? result.answer_key ?? {}
       : this.editedAnswerKeys.get(result) ?? result.answer_key ?? {};
-    this.sortedAnswers = Object.entries(answerKey)
+    this.sortedAnswers = Object.entries(this.normalizeAnswerKey(answerKey))
       .map(([question, answer]) => ({ question: Number(question), answer }))
       .filter((item) => Number.isInteger(item.question))
       .sort((first, second) => first.question - second.question);
@@ -108,6 +109,10 @@ export class ResultsDisplayComponent implements OnChanges {
   }
 
   getAvailableOptionChars(): string[] {
+    if (this.isTrueOrFalseQuizType) {
+      return ['T', 'F'];
+    }
+
     const configuredCount = Number(this.optionsPerQuestion) || 4;
     const count = Math.min(9, Math.max(2, Math.trunc(configuredCount)));
     return Array.from({ length: count }, (_, index) => String.fromCharCode(65 + index));
@@ -125,8 +130,11 @@ export class ResultsDisplayComponent implements OnChanges {
 
   updateQuestionAnswer(result: GradeSheetResponse, questionNumber: number, newAnswer: string): void {
     if (result.mode === 'key') return;
+    const currentAnswerKey = this.normalizeAnswerKey(
+      this.editedAnswerKeys.get(result) ?? result.answer_key ?? {}
+    );
     const updatedAnswerKey = {
-      ...(this.editedAnswerKeys.get(result) ?? result.answer_key ?? {}),
+      ...currentAnswerKey,
       [String(questionNumber)]: newAnswer.toUpperCase(),
     };
     this.editedAnswerKeys.set(result, updatedAnswerKey);
@@ -134,6 +142,41 @@ export class ResultsDisplayComponent implements OnChanges {
       item.question === questionNumber ? { ...item, answer: newAnswer.toUpperCase() } : item,
     );
     this.cancelAnswerEdit();
+  }
+
+  getDisplayAnswer(answer: string | null | undefined): string {
+    return this.normalizeAnswerLabel(answer) ?? '';
+  }
+
+  private get isTrueOrFalseQuizType(): boolean {
+    const normalizedType = String(this.quizType ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return ['trueorfalse', 'truefalse', 'tf'].includes(normalizedType);
+  }
+
+  private normalizeAnswerLabel(answer: string | null | undefined): string | null {
+    if (answer == null || answer.trim() === '') {
+      return null;
+    }
+
+    if (!this.isTrueOrFalseQuizType) {
+      return answer;
+    }
+
+    const normalizedAnswer = answer.trim().toUpperCase();
+    if (normalizedAnswer === 'A') return 'T';
+    if (normalizedAnswer === 'B') return 'F';
+    return normalizedAnswer;
+  }
+
+  private normalizeAnswerKey(answerKey: AnswerKey): AnswerKey {
+    if (!this.isTrueOrFalseQuizType) {
+      return answerKey;
+    }
+
+    return Object.entries(answerKey).reduce<AnswerKey>((normalized, [question, answer]) => {
+      normalized[question] = this.normalizeAnswerLabel(answer);
+      return normalized;
+    }, {});
   }
 
   cancelAnswerEdit(): void {

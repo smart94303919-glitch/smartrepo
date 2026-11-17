@@ -264,6 +264,8 @@ export class ExamsPage implements OnInit {
           student.last_name
         ].filter(Boolean).join(' ') || String(student.student_id).trim()
       }));
+      const normalizedQuizType = String(sheet.quiz_type ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const isTrueOrFalse = ['trueorfalse', 'truefalse', 'tf'].includes(normalizedQuizType);
       const filenamePart = `${sheet.sheet_id}-students`.replace(/[^a-zA-Z0-9_-]/g, '_');
       const pdf = await firstValueFrom(this.omrApi.generatePdf({
         title: sheet.sheet_title,
@@ -271,9 +273,9 @@ export class ExamsPage implements OnInit {
         SubjectID: sheet.subj_id,
         section_id: sheet.section_id,
         section: sectionName,
-        quiz_type: sheet.quiz_type === 'True or False' ? 'True or False' : 'Multiple Choice',
+        quiz_type: isTrueOrFalse ? 'True or False' : 'Multiple Choice',
         total_questions: sheet.questions,
-        options_per_question: sheet.quiz_type === 'True or False' ? 2 : sheet.options,
+        options_per_question: isTrueOrFalse ? 2 : sheet.options,
         columns: sheet.columns,
         sheet_id: sheet.sheet_id,
         output_name: `single-sheet-${filenamePart}.pdf`,

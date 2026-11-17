@@ -68,8 +68,8 @@
     <ion-list *ngIf="displayResult.itemized" lines="full">
       <ion-item *ngFor="let row of getSortedItemized(displayResult)" [color]="row.is_correct ? '' : 'light'">
         <ion-label>
-          Q{{ row.question }}: your answer <b>{{ row.student_answer }}</b>
-          &middot; correct: <b>{{ row.correct_answer }}</b>
+          Q{{ row.question }}: your answer <b>{{ getDisplayAnswer(row.student_answer) }}</b>
+          &middot; correct: <b>{{ getDisplayAnswer(row.correct_answer) }}</b>
         </ion-label>
         <ion-icon
           [name]="row.is_correct ? 'checkmark-circle' : 'close-circle'"
@@ -85,7 +85,7 @@
         [button]="displayResult.mode !== 'key'"
         (click)="enableAnswerEdit(displayResult, q.question)"
       >
-        <ion-label>Q{{ q.question }}: {{ q.answer ?? '(blank)' }}</ion-label>
+        <ion-label>Q{{ q.question }}: {{ getDisplayAnswer(q.answer) || '(blank)' }}</ion-label>
         <ion-select
           *ngIf="displayResult.mode !== 'key' && isEditingAnswer(displayResult, q.question)"
           [value]="q.answer"

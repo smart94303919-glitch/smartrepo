@@ -311,6 +311,7 @@
       [result]="scanMode === 'key' ? teacherKeyResult : studentResult"
       [results]="scanMode === 'grade' ? studentBatchResults : []"
       [optionsPerQuestion]="activeOptionsPerQuestion"
+      [quizType]="activeQuizType"
       [answerKeySaved]="answerKeyConfigured"
       [answerKeySaveDisabled]="!canSaveTeacherAnswerKey"
       [savingAnswerKey]="isSavingTeacherAnswerKey"

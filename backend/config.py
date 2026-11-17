@@ -112,6 +112,15 @@ RESULTS_XLSX_PATH = f"{OUTPUT_DIR}/results.xlsx"
 DEBUG_DIR = f"{OUTPUT_DIR}/debug"
 
 
+def normalize_quiz_type(quiz_type: object) -> str:
+    normalized = "".join(
+        character for character in str(quiz_type or "").lower() if character.isalnum()
+    )
+    if normalized in {"trueorfalse", "truefalse", "tf"}:
+        return "True or False"
+    return "Multiple Choice"
+
+
 def fiducial_bounded_page_size() -> "tuple[float, float]":
     """
     Returns the (width, height) of the region BETWEEN the 4 fiducial
@@ -146,6 +155,7 @@ class SheetConfig:
     SubjectID: int | str = ""
 
     def __post_init__(self):
+        self.quiz_type = normalize_quiz_type(self.quiz_type)
         if self.quiz_type == "True or False":
             self.options_per_question = 2
         if not (2 <= self.options_per_question <= MAX_OPTIONS):

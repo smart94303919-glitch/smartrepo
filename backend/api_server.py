@@ -66,7 +66,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from PIL import Image, ImageOps
 
-from config import SheetConfig, OUTPUT_DIR, DEBUG_DIR
+from config import SheetConfig, OUTPUT_DIR, DEBUG_DIR, normalize_quiz_type
 from pdf_generator import (
     encode_student_qr_payload,
     format_student_name,
@@ -461,7 +461,7 @@ class SheetConfigRequest(BaseModel):
 
     @property
     def normalized_quiz_type(self) -> str:
-        return "True or False" if self.quiz_type == "True or False" else "Multiple Choice"
+        return normalize_quiz_type(self.quiz_type)
 
     def to_sheet_config(self) -> SheetConfig:
         quiz_type = self.normalized_quiz_type
@@ -941,7 +941,7 @@ def generate_pdf(payload: SheetConfigRequest):
     cfg = payload.to_sheet_config()
     if existing_sheet:
         cfg.title = str(existing_sheet.get("sheet_title") or payload.sheet_id)
-        cfg.quiz_type = "True or False" if existing_sheet.get("quiz_type") == "True or False" else "Multiple Choice"
+        cfg.quiz_type = normalize_quiz_type(existing_sheet.get("quiz_type"))
         cfg.total_questions = int(existing_sheet.get("questions") or payload.total_questions)
         cfg.options_per_question = 2 if cfg.quiz_type == "True or False" else int(
             existing_sheet.get("options") or payload.options_per_question
@@ -1102,6 +1102,14 @@ def grade_sheet(
         )
 
     answer_key = {int(k): v for k, v in _load_answer_key(supabase, sheet_id, int(prof_id)).items()}
+    if cfg.quiz_type == "True or False":
+        normalized_answer_key = {}
+        for question, answer in answer_key.items():
+            if isinstance(answer, str):
+                normalized_answer = answer.strip().upper()
+                answer = {"A": "T", "B": "F"}.get(normalized_answer, normalized_answer)
+            normalized_answer_key[question] = answer
+        answer_key = normalized_answer_key
 
     student_id_missing = False
     student_id_note = None

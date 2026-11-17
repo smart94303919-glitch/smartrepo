@@ -61,6 +61,7 @@ export class OmrContainerPage implements OnInit {
   professorSheets: ProfessorSheet[] = [];
   professorSheetIds: string[] = [];
   activeProfessorId: number | null = null;
+  activeQuizType = '';
   activeTotalQuestions: number | null = null;
   activeOptionsPerQuestion: number | null = null;
   activeColumns: number | null = null;
@@ -245,11 +246,13 @@ export class OmrContainerPage implements OnInit {
     this.storedTeacherAnswerKeySheetId = null;
     const selectedSheet = this.professorSheets.find((sheet) => sheet.sheet_id === sheetId);
     if (!selectedSheet) {
+      this.activeQuizType = '';
       void this.refreshAnswerKeyStatus();
       return;
     }
 
     this.activeSheetId = selectedSheet.sheet_id;
+    this.activeQuizType = selectedSheet.quiz_type;
     this.activeTotalQuestions = selectedSheet.questions;
     this.activeColumns = selectedSheet.columns;
     this.activeOptionsPerQuestion = selectedSheet.options;
@@ -295,9 +298,33 @@ export class OmrContainerPage implements OnInit {
   }
 
   get teacherAnswerKeyOptionChars(): string[] {
+    if (this.isTrueOrFalseQuizType) {
+      return ['T', 'F'];
+    }
+
     const configuredCount = Number(this.activeOptionsPerQuestion) || 4;
     const count = Math.min(9, Math.max(2, Math.trunc(configuredCount)));
     return Array.from({ length: count }, (_, index) => String.fromCharCode(65 + index));
+  }
+
+  private get isTrueOrFalseQuizType(): boolean {
+    const normalizedType = String(this.activeQuizType ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return ['trueorfalse', 'truefalse', 'tf'].includes(normalizedType);
+  }
+
+  private normalizeAnswerLabel(answer: string | null): string | null {
+    if (answer === null || answer.trim() === '') {
+      return null;
+    }
+
+    if (!this.isTrueOrFalseQuizType) {
+      return answer;
+    }
+
+    const normalizedAnswer = answer.trim().toUpperCase();
+    if (normalizedAnswer === 'A') return 'T';
+    if (normalizedAnswer === 'B') return 'F';
+    return normalizedAnswer;
   }
 
   get teacherAnswerInputColumns(): TeacherAnswerInputRow[][] {
@@ -352,10 +379,12 @@ export class OmrContainerPage implements OnInit {
       const availableOptions = this.teacherAnswerKeyOptionChars;
       this.teacherAnswerInputRows = Array.from({ length: questionCount }, (_, index) => {
         const question = index + 1;
-        const savedAnswer = String(savedAnswerKey?.[String(question)] ?? '').toUpperCase();
+        const savedAnswer = this.normalizeAnswerLabel(
+          String(savedAnswerKey?.[String(question)] ?? '').toUpperCase()
+        );
         return {
           question,
-          answer: availableOptions.includes(savedAnswer) ? savedAnswer : null
+          answer: savedAnswer && availableOptions.includes(savedAnswer) ? savedAnswer : null
         };
       });
       this.teacherAnswerInputOpen = true;
@@ -457,8 +486,8 @@ export class OmrContainerPage implements OnInit {
       this.teacherAnswerKeyEditorRows = Object.entries(answerKey)
         .map(([question, answer]) => ({
           question: Number(question),
-          previousAnswer: answer,
-          answer,
+          previousAnswer: this.normalizeAnswerLabel(answer),
+          answer: this.normalizeAnswerLabel(answer),
         }))
         .filter((row) => Number.isInteger(row.question))
         .sort((first, second) => first.question - second.question);
