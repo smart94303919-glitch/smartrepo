@@ -31,6 +31,11 @@ interface TeacherAnswerKeyEditorRow {
   answer: string | null;
 }
 
+interface TeacherAnswerInputRow {
+  question: number;
+  answer: string | null;
+}
+
 @Component({
   selector: 'app-omr-container',
   standalone: true,
@@ -66,9 +71,15 @@ export class OmrContainerPage implements OnInit {
   teacherAnswerKeyEditorOpen = false;
   isLoadingTeacherAnswerKey = false;
   isUpdatingTeacherAnswerKey = false;
+  teacherAnswerInputOpen = false;
+  teacherAnswerInputRows: TeacherAnswerInputRow[] = [];
+  isLoadingTeacherAnswerInput = false;
+  isSavingTeacherAnswerInput = false;
   private storedTeacherAnswerKey: AnswerKey | null = null;
   private storedTeacherAnswerKeySheetId: string | null = null;
   private teacherAnswerKeyEditorSheetId: string | null = null;
+  teacherAnswerInputSheetId: string | null = null;
+  private teacherAnswerInputProfessorId: number | null = null;
   pendingAnswerKeySheetId: string | null = null;
   isSavingTeacherAnswerKey = false;
   sheetSelectOptions = { cssClass: 'sheet-id-popover' };
@@ -229,6 +240,7 @@ export class OmrContainerPage implements OnInit {
   onSheetSelected(sheetId: string): void {
     this.sheetSearchTerm = '';
     this.closeTeacherAnswerKeyEditor();
+    this.closeTeacherAnswerInput();
     this.storedTeacherAnswerKey = null;
     this.storedTeacherAnswerKeySheetId = null;
     const selectedSheet = this.professorSheets.find((sheet) => sheet.sheet_id === sheetId);
@@ -286,6 +298,134 @@ export class OmrContainerPage implements OnInit {
     const configuredCount = Number(this.activeOptionsPerQuestion) || 4;
     const count = Math.min(9, Math.max(2, Math.trunc(configuredCount)));
     return Array.from({ length: count }, (_, index) => String.fromCharCode(65 + index));
+  }
+
+  get teacherAnswerInputColumns(): TeacherAnswerInputRow[][] {
+    const columnCount = Math.max(1, Math.min(
+      Math.trunc(Number(this.activeColumns) || 1),
+      this.teacherAnswerInputRows.length || 1
+    ));
+    const questionsPerColumn = Math.ceil(this.teacherAnswerInputRows.length / columnCount);
+    return Array.from({ length: columnCount }, (_, index) =>
+      this.teacherAnswerInputRows.slice(index * questionsPerColumn, (index + 1) * questionsPerColumn)
+    );
+  }
+
+  async openTeacherAnswerInput(): Promise<void> {
+    if (this.isLoadingTeacherAnswerInput || this.teacherAnswerInputOpen) {
+      return;
+    }
+
+    const sheetId = this.activeSheetId.trim();
+    const professorId = this.activeProfessorId;
+    const questionCount = Number(this.activeTotalQuestions);
+    const columnCount = Number(this.activeColumns);
+    const optionCount = Number(this.activeOptionsPerQuestion);
+
+    if (!sheetId || !professorId || !this.professorSheetIds.includes(sheetId)) {
+      await this.showToast('Select a sheet assigned to your account before inputting answers.', 'warning');
+      return;
+    }
+    if (
+      !Number.isInteger(questionCount) || questionCount < 1 ||
+      !Number.isInteger(columnCount) || columnCount < 1 ||
+      !Number.isInteger(optionCount) || optionCount < 2 || optionCount > 9
+    ) {
+      await this.showToast('The selected sheet has an invalid answer layout.', 'danger');
+      return;
+    }
+
+    this.closeTeacherAnswerKeyEditor();
+    this.teacherAnswerInputSheetId = sheetId;
+    this.teacherAnswerInputProfessorId = professorId;
+    this.isLoadingTeacherAnswerInput = true;
+    try {
+      const savedAnswerKey = await this.supabaseService.getAnswerKey(sheetId, professorId);
+      if (
+        this.activeSheetId.trim() !== sheetId ||
+        this.activeProfessorId !== professorId ||
+        this.teacherAnswerInputSheetId !== sheetId
+      ) {
+        return;
+      }
+
+      const availableOptions = this.teacherAnswerKeyOptionChars;
+      this.teacherAnswerInputRows = Array.from({ length: questionCount }, (_, index) => {
+        const question = index + 1;
+        const savedAnswer = String(savedAnswerKey?.[String(question)] ?? '').toUpperCase();
+        return {
+          question,
+          answer: availableOptions.includes(savedAnswer) ? savedAnswer : null
+        };
+      });
+      this.teacherAnswerInputOpen = true;
+    } catch (error) {
+      console.error('Failed to load the answer key for manual input:', error);
+      this.closeTeacherAnswerInput();
+      await this.showToast('Unable to load the answer key. Please try again.', 'danger');
+    } finally {
+      this.isLoadingTeacherAnswerInput = false;
+    }
+  }
+
+  selectTeacherAnswerOption(row: TeacherAnswerInputRow, option: string): void {
+    if (this.teacherAnswerKeyOptionChars.includes(option)) {
+      row.answer = option;
+    }
+  }
+
+  async saveTeacherAnswerInput(): Promise<void> {
+    const sheetId = this.teacherAnswerInputSheetId;
+    const professorId = this.teacherAnswerInputProfessorId;
+    if (
+      !this.teacherAnswerInputOpen ||
+      !sheetId ||
+      !professorId ||
+      this.activeSheetId.trim() !== sheetId ||
+      this.activeProfessorId !== professorId ||
+      !this.professorSheetIds.includes(sheetId) ||
+      this.isSavingTeacherAnswerInput
+    ) {
+      return;
+    }
+
+    const availableOptions = this.teacherAnswerKeyOptionChars;
+    if (this.teacherAnswerInputRows.some((row) => !row.answer || !availableOptions.includes(row.answer))) {
+      await this.showToast('Select one answer for every question before saving.', 'warning');
+      return;
+    }
+
+    const answerKey = this.teacherAnswerInputRows.reduce<AnswerKey>((answers, row) => {
+      answers[String(row.question)] = row.answer;
+      return answers;
+    }, {});
+
+    this.isSavingTeacherAnswerInput = true;
+    try {
+      await this.supabaseService.saveAnswerKey(sheetId, professorId, answerKey);
+      if (this.activeSheetId.trim() === sheetId && this.activeProfessorId === professorId) {
+        this.answerKeyConfigured = true;
+      }
+      this.closeTeacherAnswerInput();
+      await this.showToast('Teacher answer key saved successfully.', 'success');
+    } catch (error) {
+      console.error('Failed to save the manually entered teacher answer key:', error);
+      await this.showToast('Unable to save the teacher answer key. Please try again.', 'danger');
+    } finally {
+      this.isSavingTeacherAnswerInput = false;
+    }
+  }
+
+  cancelTeacherAnswerInput(): void {
+    this.closeTeacherAnswerInput();
+    void this.router.navigate(['/exams']);
+  }
+
+  closeTeacherAnswerInput(): void {
+    this.teacherAnswerInputOpen = false;
+    this.teacherAnswerInputRows = [];
+    this.teacherAnswerInputSheetId = null;
+    this.teacherAnswerInputProfessorId = null;
   }
 
   async editStoredTeacherAnswerKey(): Promise<void> {
@@ -467,6 +607,7 @@ export class OmrContainerPage implements OnInit {
   onScanModeChange(mode: unknown) {
     if (mode !== 'key' && mode !== 'grade') return;
     this.closeTeacherAnswerKeyEditor();
+    this.closeTeacherAnswerInput();
     this.scanMode = mode;
     this.resetStudentResultState();
     this.imagePicker?.resetTeacherKey();

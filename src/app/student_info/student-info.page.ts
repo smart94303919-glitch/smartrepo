@@ -208,10 +208,10 @@ export class StudentInfoPage implements OnInit {
     }
 
     const hasValue = value !== null && value !== undefined && String(value).trim() !== '';
-    if (hasValue && Number(value) < 18) {
+    if (hasValue && Number(value) < 17) {
       if (!this.invalidAgeNotified) {
         this.invalidAgeNotified = true;
-        void this.showValidationToast('Age is invalid. The minimum age is 18.');
+        void this.showValidationToast('Age is invalid. The minimum age is 17.');
       }
       return;
     }
@@ -278,8 +278,8 @@ export class StudentInfoPage implements OnInit {
       return false;
     }
 
-    if (this.student.age !== '' && this.student.age !== null && Number(this.student.age) < 18) {
-      await this.showValidationToast('Age is invalid. The minimum age is 18.');
+    if (this.student.age !== '' && this.student.age !== null && Number(this.student.age) < 17) {
+      await this.showValidationToast('Age is invalid. The minimum age is 17.');
       return false;
     }
 

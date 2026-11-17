@@ -1102,32 +1102,17 @@ async saveAnswerKey(
     throw new Error('A valid sheet ID and professor ID are required to save the answer key.');
   }
 
-  const { data: existingAnswerKey, error: lookupError } = await this.supabase
+  const { error } = await this.supabase
     .from('sheet_anskey')
-    .select('anskey_id')
-    .eq('sheet_id', normalizedSheetId)
-    .eq('prof_id', normalizedProfId)
-    .maybeSingle();
+    .upsert({
+      sheet_id: normalizedSheetId,
+      prof_id: normalizedProfId,
+      answer_key: answerKey,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'sheet_id,prof_id' });
 
-  if (lookupError) {
-    throw lookupError;
-  }
-
-  const writeResult = existingAnswerKey
-    ? await this.supabase
-      .from('sheet_anskey')
-      .update({ answer_key: answerKey })
-      .eq('anskey_id', existingAnswerKey.anskey_id)
-    : await this.supabase
-      .from('sheet_anskey')
-      .insert({
-        sheet_id: normalizedSheetId,
-        prof_id: normalizedProfId,
-        answer_key: answerKey,
-      });
-
-  if (writeResult.error) {
-    throw writeResult.error;
+  if (error) {
+    throw error;
   }
 }
 
@@ -1397,8 +1382,8 @@ async registerStudent(studentData: any): Promise<{
 
     if (studentData.age !== undefined && studentData.age !== null && studentData.age !== '') {
       const ageValue = Number(studentData.age);
-      if (ageValue < 18 || ageValue > 120) {
-        return { success: false, error: 'Invalid age. Must be between 18 and 120.', data: [] };
+      if (ageValue < 17 || ageValue > 120) {
+        return { success: false, error: 'Invalid age. Must be between 17 and 120.', data: [] };
       }
     }
 
@@ -1708,8 +1693,8 @@ async updateStudent(studentIdentifier: string | number, updates: any) {
 
   if (updates.age !== undefined && updates.age !== null && updates.age !== '') {
     const ageValue = Number(updates.age);
-    if (ageValue < 18 || ageValue > 120) {
-      return { error: { message: 'Invalid age. Must be between 18 and 120.' } };
+    if (ageValue < 17 || ageValue > 120) {
+      return { error: { message: 'Invalid age. Must be between 17 and 120.' } };
     }
   }
 

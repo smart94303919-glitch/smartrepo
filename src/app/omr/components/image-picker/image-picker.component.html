@@ -28,6 +28,17 @@
     <ion-icon name="image-outline" slot="start"></ion-icon>
     Import from Gallery
   </ion-button>
+  <ion-button
+    *ngIf="scanMode === 'key'"
+    expand="block"
+    fill="outline"
+    [disabled]="isLoadingManualAnswers"
+    (click)="requestManualAnswerInput()"
+  >
+    <ion-spinner *ngIf="isLoadingManualAnswers" name="crescent" slot="start"></ion-spinner>
+    <ion-icon *ngIf="!isLoadingManualAnswers" name="create-outline" slot="start"></ion-icon>
+    Input Answers
+  </ion-button>
   <p class="guide-text" *ngIf="scanMode === 'grade'">
     This button allows importing 1 to 10 photos per session.
   </p>

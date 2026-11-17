@@ -30,4 +30,23 @@ describe('StudentregPage', () => {
     expect(component['alertCtrl'].create).toHaveBeenCalled();
     expect(alert.present).toHaveBeenCalled();
   });
+
+  it('should accept age 17 without showing an invalid-age warning', () => {
+    spyOn(component['toastCtrl'], 'create');
+
+    component.onAgeInput(new CustomEvent('ionInput', { detail: { value: 17 } }));
+
+    expect(component['toastCtrl'].create).not.toHaveBeenCalled();
+  });
+
+  it('should not reject age 17 during registration submission validation', async () => {
+    const alert = jasmine.createSpyObj('HTMLIonAlertElement', ['present']);
+    spyOn(component['alertCtrl'], 'create').and.resolveTo(alert);
+    component.student.age = 17;
+
+    await component.onSubmit();
+
+    expect(component['alertCtrl'].create).toHaveBeenCalled();
+    expect(alert.present).toHaveBeenCalled();
+  });
 });

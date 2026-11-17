@@ -195,9 +195,74 @@
             <app-image-picker
               [scanMode]="scanMode"
               [answerKeyLocked]="scanMode === 'key' && (answerKeyConfigured || answerKeyStatusLoading)"
+              [isLoadingManualAnswers]="isLoadingTeacherAnswerInput"
               (imageCaptured)="onImageCaptured($event)"
               (imagesCaptured)="onImagesCaptured($event)"
+              (manualAnswerInputRequested)="openTeacherAnswerInput()"
             ></app-image-picker>
+            <ion-modal
+              [isOpen]="teacherAnswerInputOpen"
+              [backdropDismiss]="false"
+              class="teacher-answer-key-input-modal"
+              (didDismiss)="closeTeacherAnswerInput()"
+            >
+              <ng-template>
+                <ion-header>
+                  <ion-toolbar>
+                    <ion-title>Input Teacher Answers</ion-title>
+                  </ion-toolbar>
+                </ion-header>
+                <ion-content class="ion-padding">
+                  <p class="teacher-answer-input-instructions">
+                    Select one answer for each question on {{ teacherAnswerInputSheetId }}.
+                  </p>
+                  <div
+                    class="teacher-answer-bubble-columns"
+                    [style.grid-template-columns]="'repeat(' + teacherAnswerInputColumns.length + ', minmax(140px, 1fr))'"
+                  >
+                    <div class="teacher-answer-column" *ngFor="let column of teacherAnswerInputColumns">
+                      <div class="teacher-answer-question" *ngFor="let row of column">
+                        <strong class="teacher-answer-question-number">Question {{ row.question }}</strong>
+                        <div class="teacher-answer-bubbles">
+                          <button
+                            *ngFor="let optionChar of teacherAnswerKeyOptionChars"
+                            type="button"
+                            class="teacher-answer-bubble"
+                            [class.teacher-answer-bubble-selected]="row.answer === optionChar"
+                            [attr.aria-pressed]="row.answer === optionChar"
+                            [attr.aria-label]="'Question ' + row.question + ', answer ' + optionChar"
+                            (click)="selectTeacherAnswerOption(row, optionChar)"
+                          >
+                            {{ optionChar }}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </ion-content>
+                <ion-footer>
+                  <ion-toolbar>
+                    <ion-button
+                      expand="block"
+                      color="success"
+                      [disabled]="isSavingTeacherAnswerInput"
+                      (click)="saveTeacherAnswerInput()"
+                    >
+                      <ion-spinner *ngIf="isSavingTeacherAnswerInput" name="crescent" slot="start"></ion-spinner>
+                      Save Answer Key
+                    </ion-button>
+                    <ion-button
+                      expand="block"
+                      fill="outline"
+                      [disabled]="isSavingTeacherAnswerInput"
+                      (click)="cancelTeacherAnswerInput()"
+                    >
+                      Cancel
+                    </ion-button>
+                  </ion-toolbar>
+                </ion-footer>
+              </ng-template>
+            </ion-modal>
           </ion-card-content>
         </ion-card>
 

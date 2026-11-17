@@ -32,12 +32,14 @@ export class ImagePickerComponent implements AfterViewInit, OnChanges, OnDestroy
   /** Which workflow is active: 'key' = Teacher Answer Key, 'grade' = Student Sheet. */
   @Input() scanMode: 'key' | 'grade' = 'key';
   @Input() answerKeyLocked = false;
+  @Input() isLoadingManualAnswers = false;
 
   /** Fired once a single image has been acquired (camera capture or single gallery pick). */
   @Output() imageCaptured = new EventEmitter<File>();
 
   /** Fired when a batch of images is imported from the gallery (1-5 images). */
   @Output() imagesCaptured = new EventEmitter<File[]>();
+  @Output() manualAnswerInputRequested = new EventEmitter<void>();
   /** Local preview shown in the template after capture, before upload. */
   previewDataUrl: string | null = null;
 
@@ -99,6 +101,10 @@ export class ImagePickerComponent implements AfterViewInit, OnChanges, OnDestroy
     if (reopenCamera) {
       await this.openCamera();
     }
+  }
+
+  requestManualAnswerInput(): void {
+    this.manualAnswerInputRequested.emit();
   }
 
   private clearPreviews() {

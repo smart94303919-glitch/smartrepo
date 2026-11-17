@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { LoadingController, ToastController } from '@ionic/angular';
+import { AlertController, LoadingController, ToastController } from '@ionic/angular';
 import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { FileOpener } from '@capacitor-community/file-opener';
 import { firstValueFrom } from 'rxjs';
 import { OmrApiService } from '../services/omr-api.service';
 import { ProfessorSheet, SupabaseService } from '../services/supabase.service';
@@ -49,7 +50,8 @@ export class ExamsPage implements OnInit {
     private supabaseService: SupabaseService,
     private omrApi: OmrApiService,
     private loadingCtrl: LoadingController,
-    private toastCtrl: ToastController
+    private toastCtrl: ToastController,
+    private alertCtrl: AlertController
   ) {}
 
   ngOnInit(): void {}
@@ -287,9 +289,11 @@ export class ExamsPage implements OnInit {
         reuse_existing_sheet: true
       }));
 
-      await this.saveOrShareSingleSheet(pdf, `single-sheet-${filenamePart}.pdf`);
+      const filename = `single-sheet-${filenamePart}.pdf`;
+      const savedPdfLocation = await this.saveOrShareSingleSheet(pdf, filename);
       await loading.dismiss();
       this.generatingSingleSheet = false;
+      await this.showGeneratedSingleSheetAlert(savedPdfLocation, filename);
       await this.showSingleSheetToast(
         `Successfully generated ${studentIds.length} OMR sheet${studentIds.length === 1 ? '' : 's'} for selected students.`,
         'success'
@@ -313,15 +317,15 @@ export class ExamsPage implements OnInit {
     }
   }
 
-  private async saveOrShareSingleSheet(pdf: Blob, filename: string): Promise<void> {
+  private async saveOrShareSingleSheet(pdf: Blob, filename: string): Promise<string> {
     if (Capacitor.isNativePlatform()) {
       const base64Data = await this.blobToBase64(pdf);
-      await Filesystem.writeFile({
+      const savedFile = await Filesystem.writeFile({
         path: filename,
         data: base64Data,
         directory: Directory.Documents
       });
-      return;
+      return savedFile.uri;
     }
 
     const url = window.URL.createObjectURL(pdf);
@@ -329,7 +333,49 @@ export class ExamsPage implements OnInit {
     anchor.href = url;
     anchor.download = filename;
     anchor.click();
-    window.URL.revokeObjectURL(url);
+    return url;
+  }
+
+  private async showGeneratedSingleSheetAlert(fileLocation: string, filename: string): Promise<void> {
+    const alert = await this.alertCtrl.create({
+      header: 'PDF generated',
+      message: `${filename} was saved successfully.`,
+      buttons: [
+        { text: 'Close', role: 'cancel' },
+        {
+          text: 'Go to File',
+          handler: async () => {
+            try {
+              await this.openGeneratedSingleSheet(fileLocation);
+            } catch (error) {
+              console.error('Generated PDF could not be opened:', error);
+              await this.showSingleSheetToast('PDF was saved, but could not be opened.', 'danger');
+            }
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+    await alert.onDidDismiss();
+    if (!Capacitor.isNativePlatform()) {
+      window.setTimeout(() => window.URL.revokeObjectURL(fileLocation), 60_000);
+    }
+  }
+
+  private async openGeneratedSingleSheet(fileLocation: string): Promise<void> {
+    if (Capacitor.isNativePlatform()) {
+      await FileOpener.open({
+        filePath: fileLocation,
+        contentType: 'application/pdf'
+      });
+      return;
+    }
+
+    const openedWindow = window.open(fileLocation, '_blank');
+    if (!openedWindow) {
+      window.location.assign(fileLocation);
+    }
   }
 
   private blobToBase64(blob: Blob): Promise<string> {

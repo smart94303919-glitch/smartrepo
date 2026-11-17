@@ -179,3 +179,65 @@ ion-button {
     font-size: 0.76rem;
   }
 }
+
+.teacher-answer-input-instructions {
+  margin: 0 0 12px;
+  color: #5f6f8f;
+  font-size: 0.9rem;
+}
+
+.teacher-answer-bubble-columns {
+  display: grid;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.teacher-answer-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.teacher-answer-question {
+  padding: 8px;
+  border: 1px solid #dce7f5;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.teacher-answer-question-number {
+  display: block;
+  margin-bottom: 6px;
+  color: #334e68;
+  font-size: 0.82rem;
+}
+
+.teacher-answer-bubbles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.teacher-answer-bubble {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 2px solid #9aabc0;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #334e68;
+  font-size: 0.85rem;
+  font-weight: 700;
+  touch-action: manipulation;
+}
+
+.teacher-answer-bubble-selected {
+  border-color: #28a745;
+  background: #28a745;
+  color: #ffffff;
+}
