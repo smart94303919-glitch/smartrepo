@@ -220,8 +220,8 @@ def draw_instructions(c: canvas.Canvas) -> None:
     c.setFont("Helvetica-Oblique", 8)
     c.drawString(
         x0, top_y - 108,
-        "Fill each bubble completely with a dark pencil or pen. "
-        "Erase clean any stray marks. Do not fold or crease this sheet."
+        "Fill each bubble completely with a black marker or black ballpen. "
+        "No erasure or tampering. Do not fold or crease this sheet."
     )
 
 
