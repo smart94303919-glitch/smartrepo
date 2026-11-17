@@ -13,11 +13,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IonicModule, ToastController, LoadingController, NavController } from '@ionic/angular';
+import { AlertController, IonicModule, ToastController, LoadingController, NavController } from '@ionic/angular';
 import { OmrApiService, SheetConfigRequest } from '../../../services/omr-api.service';
 import { SupabaseService } from '../../../services/supabase.service';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
+import { FileOpener } from '@capacitor-community/file-opener';
 
 @Component({
   selector: 'app-template-form',
@@ -72,6 +73,7 @@ export class TemplateFormComponent implements OnInit {
   constructor(
     private api: OmrApiService,
     private supabaseService: SupabaseService,
+    private alertCtrl: AlertController,
     private toastCtrl: ToastController,
     private loadingCtrl: LoadingController,
     private navCtrl: NavController
@@ -334,7 +336,8 @@ export class TemplateFormComponent implements OnInit {
       next: async (pdfBlob: Blob) => {
         await loading.dismiss();
         this.isGenerating = false;
-        await this.saveOrSharePdf(pdfBlob, this.model.output_name);
+        const savedPdfLocation = await this.saveOrSharePdf(pdfBlob, this.model.output_name);
+        await this.showGeneratedPdfAlert(savedPdfLocation, this.model.output_name);
 
         try {
           const currentUser = localStorage.getItem('currentUser');
@@ -393,22 +396,64 @@ export class TemplateFormComponent implements OnInit {
    * print, etc.) is the natural next step here via @capacitor/share if
    * you want a "Share" button in addition to "Download".
    */
-  private async saveOrSharePdf(blob: Blob, filename: string) {
+  private async saveOrSharePdf(blob: Blob, filename: string): Promise<string> {
     if (Capacitor.isNativePlatform()) {
       const base64Data = await this.blobToBase64(blob);
-      await Filesystem.writeFile({
+      const savedFile = await Filesystem.writeFile({
         path: filename,
         data: base64Data,
         directory: Directory.Documents,
       });
-    } else {
-      // Plain web fallback (Ionic dev server in a desktop browser)
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      window.URL.revokeObjectURL(url);
+      return savedFile.uri;
+    }
+
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    return url;
+  }
+
+  private async showGeneratedPdfAlert(fileLocation: string, filename: string): Promise<void> {
+    const alert = await this.alertCtrl.create({
+      header: 'PDF generated',
+      message: `${filename} was saved successfully.`,
+      buttons: [
+        { text: 'Close', role: 'cancel' },
+        {
+          text: 'Go to File',
+          handler: async () => {
+            try {
+              await this.openGeneratedPdf(fileLocation);
+            } catch (error) {
+              console.error('Generated PDF could not be opened:', error);
+              await this.showToast('PDF was saved, but could not be opened.', 'danger');
+            }
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+    await alert.onDidDismiss();
+    if (!Capacitor.isNativePlatform()) {
+      window.setTimeout(() => window.URL.revokeObjectURL(fileLocation), 60_000);
+    }
+  }
+
+  private async openGeneratedPdf(fileLocation: string): Promise<void> {
+    if (Capacitor.isNativePlatform()) {
+      await FileOpener.open({
+        filePath: fileLocation,
+        contentType: 'application/pdf'
+      });
+      return;
+    }
+
+    const openedWindow = window.open(fileLocation, '_blank');
+    if (!openedWindow) {
+      window.location.assign(fileLocation);
     }
   }
 
