@@ -105,7 +105,7 @@ export class StudentregPage implements OnInit {
     }
 
     const hasValue = value !== null && value !== undefined && String(value).trim() !== '';
-    if (hasValue && Number(value) < 18) {
+    if (hasValue && Number(value) < 17) {
       if (!this.invalidAgeNotified) {
         this.invalidAgeNotified = true;
         void this.showInvalidAgeWarning(this.ageValidationRevision);
@@ -124,7 +124,7 @@ export class StudentregPage implements OnInit {
 
   private async showInvalidAgeWarning(validationRevision: number): Promise<void> {
     const toast = await this.toastCtrl.create({
-      message: 'Age is invalid. The minimum age is 18.',
+      message: 'Age is invalid. The minimum age is 17.',
       duration: 3000,
       position: 'bottom',
       color: 'warning'
@@ -351,8 +351,8 @@ export class StudentregPage implements OnInit {
       return;
     }
 
-    if (this.student.age != null && Number(this.student.age) < 18) {
-      await this.showToast('Age is invalid. The minimum age is 18.', 'warning');
+    if (this.student.age != null && Number(this.student.age) < 17) {
+      await this.showToast('Age is invalid. The minimum age is 17.', 'warning');
       return;
     }
 
